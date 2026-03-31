@@ -70,6 +70,17 @@ ros2 launch upnext_icarous_daa daa_stack.launch.py
 
 Topics por defecto: `/fmu/out/vehicle_global_position`, `/fmu/out/vehicle_local_position`. Parámetros: `intruder_n_m`, `intruder_e_m`, `intruder_enable`, etc.
 
+### Offboard en conflicto DAA (opcional)
+
+`daa_traffic_monitor_node` puede publicar en **`/fmu/in/offboard_control_mode`** y **`/fmu/in/trajectory_setpoint`** cuando DAIDALUS detecta tráfico en conflicto (`numConflictTraffic` ≥ `conflict_traffic_min`): mantiene **x/y** y pide **subida** en NED (`resolution_climb_m` en metros).
+
+- Por defecto **`offboard_enable:=false`** (no manda nada al FCU).
+- Activar: `offboard_enable:=true` (o `ros2 launch upnext_icarous_daa daa_stack_offboard.launch.py`).
+- **Solo simulación / pruebas**: en vuelo real hace falta caso de seguridad, modos y frecuencia offboard según PX4.
+- En PX4 hace falta **modo OFFBOARD**, **arming** y stream de setpoints acorde a la documentación (p. ej. `COM_OBL_RC_ACT`, `COM_RC_OVERRIDE`, etc., según versión).
+
+Cuando el conflicto cesa, el nodo **deja de publicar** setpoints; recupera el control manualmente o con otro nodo.
+
 ## PX4 SITL (VTOL por defecto)
 
 Necesitas un clon de **PX4-Autopilot** con simulación **Gazebo Harmonic** según [documentación PX4](https://docs.px4.io/).
