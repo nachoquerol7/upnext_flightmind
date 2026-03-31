@@ -31,10 +31,12 @@ cd third_party/icarous && bash UpdateModules.sh && cd ../..
 Ver `third_party/icarous/docs/compiling.md`. Resumen:
 
 ```bash
-export ICAROUS_HOME="$(pwd)/third_party/icarous"
-cd third_party/icarous/Modules && mkdir -p build && cd build && cmake .. && make -j"$(nproc)"
-export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}${ICAROUS_HOME}/Modules/lib"
+source scripts/setup_icarous_env.sh
+cd third_party/icarous && bash UpdateModules.sh
+cd Modules && mkdir -p build && cd build && cmake .. && make -j"$(nproc)"
 ```
+
+Tras compilar, `Modules/lib` contiene las `.so` (ACCoRD/DAIDALUS, TrafficMonitor, etc.). `source scripts/setup_icarous_env.sh` exporta `ICAROUS_HOME` y `LD_LIBRARY_PATH`.
 
 Integración ROS 2 / PX4 respecto a ICAROUS: **pendiente** (puente MAVLink o nodos propios).
 
