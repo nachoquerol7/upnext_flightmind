@@ -7,6 +7,7 @@ Repositorio **independiente** de Autonav: simulación y stack para el hilo UpNex
 | Ruta | Descripción |
 |------|-------------|
 | `src/upnext_bringup` | Paquete ROS 2: lanzamiento PX4 SITL (**por defecto VTOL** en Gazebo `gz`, no multicóptero). |
+| `src/upnext_icarous_bridge` | Nodo puente: resuelve `ICAROUS_HOME`, comprueba `Modules/lib`, publica estado; launch **stack** = PX4 + puente. |
 | `third_party/icarous` | Submódulo **NASA ICAROUS** (DAIDALUS, PolyCARP, módulos Core). |
 
 ## Clonar
@@ -58,6 +59,10 @@ source install/setup.bash
 ros2 launch upnext_bringup px4_sitl.launch.py
 ```
 
+Solo puente ICAROUS (sin PX4): `ros2 run upnext_icarous_bridge icarous_bridge_node`
+
+PX4 + puente: `ros2 launch upnext_icarous_bridge upnext_stack.launch.py`
+
 Parámetros útiles:
 
 - `px4_dir:=/ruta/a/PX4-Autopilot`
@@ -65,6 +70,24 @@ Parámetros útiles:
 - `vehicle:=gz_plane` — ala fija (si está disponible en vuestra versión de PX4)
 
 El objetivo por defecto `gz_standard_vtol` sustituye el enfoque “solo quad” del otro repo.
+
+## Publicar en Git (sin `gh` en esta máquina)
+
+Si aún no tienes remoto:
+
+```bash
+cd ~/upnext_uas_ws
+git remote add origin https://github.com/<usuario>/<repo>.git
+git push -u origin main
+```
+
+Copia portable del repo (un solo fichero):
+
+```bash
+git bundle create ~/upnext_uas_ws.bundle --all
+```
+
+En otro PC: `git clone upnext_uas_ws.bundle upnext_uas_ws`
 
 ## Licencia
 
