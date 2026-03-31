@@ -7,7 +7,8 @@ Repositorio **independiente** de Autonav: simulación y stack para el hilo UpNex
 | Ruta | Descripción |
 |------|-------------|
 | `src/upnext_bringup` | Paquete ROS 2: lanzamiento PX4 SITL (**por defecto VTOL** en Gazebo `gz`, no multicóptero). |
-| `src/upnext_icarous_bridge` | Nodo puente: resuelve `ICAROUS_HOME`, comprueba `Modules/lib`, publica estado; launch **stack** = PX4 + puente. |
+| `src/upnext_icarous_bridge` | Nodo Python: comprueba `ICAROUS_HOME` / `Modules/lib`. |
+| `src/upnext_icarous_daa` | Nodo C++ **`daa_traffic_monitor_node`**: enlaza `libTrafficMonitor` (DAIDALUS) con topics **PX4** `vehicle_global_position` + `vehicle_local_position`; intruso sintético NED opcional; publica `~/daa/bands_summary`. |
 | `third_party/icarous` | Submódulo **NASA ICAROUS** (DAIDALUS, PolyCARP, módulos Core). |
 
 ## Clonar
@@ -36,20 +37,38 @@ cd third_party/icarous && bash UpdateModules.sh
 cd Modules && mkdir -p build && cd build && cmake .. && make -j"$(nproc)"
 ```
 
-Tras compilar, `Modules/lib` contiene las `.so` (ACCoRD/DAIDALUS, TrafficMonitor, etc.). `source scripts/setup_icarous_env.sh` exporta `ICAROUS_HOME` y `LD_LIBRARY_PATH`.
-
-Integración ROS 2 / PX4 respecto a ICAROUS: **pendiente** (puente MAVLink o nodos propios).
+Tras compilar, `Modules/lib` contiene las `.so` (ACCoRD/DAIDALUS, TrafficMonitor, etc.). `source scripts/setup_icarous_env.sh` exporta `ICAROUS_HOME` y `LD_LIBRARY_PATH` (opcional; el binario `daa_traffic_monitor_node` lleva `RPATH` a `Modules/lib`).
 
 ## ROS 2
 
 Requisito: ROS 2 **Jazzy** (o la distro que uséis en el equipo).
 
+**Dependencia:** `px4_msgs` debe estar en el mismo overlay o en un underlay (p. ej. `~/ros2_ws`).
+
 ```bash
 cd /path/to/upnext_uas_ws
 source /opt/ros/jazzy/setup.bash
+source ~/ros2_ws/install/setup.bash   # px4_msgs
 colcon build --symlink-install
 source install/setup.bash
 ```
+
+### ICAROUS + PX4 (DAIDALUS en bucle)
+
+Con **uXRCE/Micro XRCE-DDS** en marcha (PX4 publicando en ROS 2):
+
+```bash
+# Solo el monitor DAA (sin lanzar PX4 desde aquí)
+ros2 launch upnext_icarous_daa daa_traffic_monitor.launch.py
+```
+
+PX4 SITL + DAA en un solo launch:
+
+```bash
+ros2 launch upnext_icarous_daa daa_stack.launch.py
+```
+
+Topics por defecto: `/fmu/out/vehicle_global_position`, `/fmu/out/vehicle_local_position`. Parámetros: `intruder_n_m`, `intruder_e_m`, `intruder_enable`, etc.
 
 ## PX4 SITL (VTOL por defecto)
 

@@ -4,6 +4,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 # shellcheck source=/dev/null
 source /opt/ros/jazzy/setup.bash
+if [[ -f "${HOME}/ros2_ws/install/setup.bash" ]]; then
+  # shellcheck source=/dev/null
+  source "${HOME}/ros2_ws/install/setup.bash"
+fi
 colcon build --symlink-install
 # shellcheck source=/dev/null
 source install/setup.bash
