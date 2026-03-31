@@ -9,6 +9,7 @@ Repositorio **independiente** de Autonav: simulación y stack para el hilo UpNex
 | `src/upnext_bringup` | Paquete ROS 2: lanzamiento PX4 SITL (**por defecto VTOL** en Gazebo `gz`, no multicóptero). |
 | `src/upnext_icarous_bridge` | Nodo Python: comprueba `ICAROUS_HOME` / `Modules/lib`. |
 | `src/upnext_icarous_daa` | Nodo C++ **`daa_traffic_monitor_node`**: enlaza `libTrafficMonitor` (DAIDALUS) con topics **PX4** `vehicle_global_position` + `vehicle_local_position`; intruso sintético NED opcional; publica `~/daa/bands_summary`. |
+| `src/upnext_airspace` | **GeoJSON** de zonas restringidas (`config/`), **`airspace_viz_node`** (RViz `MarkerArray` en `map`, alineado NED PX4), **`airspace_monitor_node`** (bool + id si `lat/lon/alt` dentro de polígono). |
 | `third_party/icarous` | Submódulo **NASA ICAROUS** (DAIDALUS, PolyCARP, módulos Core). |
 
 ## Clonar
@@ -80,6 +81,14 @@ Topics por defecto: `/fmu/out/vehicle_global_position`, `/fmu/out/vehicle_local_
 - En PX4 hace falta **modo OFFBOARD**, **arming** y stream de setpoints acorde a la documentación (p. ej. `COM_OBL_RC_ACT`, `COM_RC_OVERRIDE`, etc., según versión).
 
 Cuando el conflicto cesa, el nodo **deja de publicar** setpoints; recupera el control manualmente o con otro nodo.
+
+### Espacio aéreo restringido (GeoJSON + RViz)
+
+- Ejemplo: `src/upnext_airspace/config/restricted_zones_sample.geojson` (solo demo; no operacional).
+- `ros2 launch upnext_airspace airspace_demo.launch.py` — visualización + monitor (este último usa `px4_msgs` y `/fmu/out/vehicle_global_position`).
+- RViz2: Fixed Frame **`map`**, topic de markers bajo el namespace del nodo `airspace_viz`.
+- Origen del plano: por defecto **centroide** de los polígonos; para alinear con home EKF: `use_centroid_origin:=false` y `origin_lat_deg` / `origin_lon_deg`.
+- Script plantilla para descargar datos: `scripts/fetch_geojson_example.sh` (añade URL y licencia válida).
 
 ## PX4 SITL (VTOL por defecto)
 

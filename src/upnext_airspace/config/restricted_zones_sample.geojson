@@ -1,0 +1,48 @@
+{
+  "type": "FeatureCollection",
+  "description": "Demo: dos polígonos ficticios cerca de Getafe/Madrid (no usar para vuelo real).",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "demo_nfz_alpha",
+        "name": "Zona restringida demo A",
+        "floor_m": 0,
+        "ceiling_m": 500
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-3.784, 40.275],
+            [-3.768, 40.275],
+            [-3.768, 40.288],
+            [-3.784, 40.288],
+            [-3.784, 40.275]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "demo_nfz_beta",
+        "name": "Zona restringida demo B",
+        "floor_m": 0,
+        "ceiling_m": 1200
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-3.795, 40.265],
+            [-3.782, 40.265],
+            [-3.782, 40.272],
+            [-3.795, 40.272],
+            [-3.795, 40.265]
+          ]
+        ]
+      }
+    }
+  ]
+}
