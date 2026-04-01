@@ -1,0 +1,6 @@
+# Dependencias Python adicionales para rosbridge compilado desde fuente (sin apt ros-jazzy-rosbridge-suite).
+# Tras colcon build de rosbridge_suite, instalar antes de lanzar:
+#   pip install -r testbench/requirements-rosbridge-pip.txt --break-system-packages
+tornado>=6
+pymongo>=4
+roslibpy>=2
