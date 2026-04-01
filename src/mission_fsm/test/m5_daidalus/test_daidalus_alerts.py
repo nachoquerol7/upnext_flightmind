@@ -58,7 +58,7 @@ def test_tc_dai_002_alert_below_amber_keeps_cruise(mission_fsm_sil_with_daidalus
     mission_fsm_sil_with_daidalus.daidalus.inject("alert_level", 0)
     for _ in range(40):
         mission_fsm_sil_with_daidalus.ex.spin_once(timeout_sec=0.05)
-    assert mission_fsm_sil_with_daidalus.cap.mode == "CRUISE"
+    assert mission_fsm_sil_with_daidalus.fsm._fsm.state == "CRUISE"  # noqa: SLF001
 
 
 def test_tc_dai_003_alert_high_enters_event(mission_fsm_sil_with_daidalus: SimpleNamespace) -> None:
