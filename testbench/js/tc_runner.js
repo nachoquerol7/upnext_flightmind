@@ -113,9 +113,10 @@ class TCRunner {
         this._subs.push(unsub);
       });
     }
-    if (step.action === "wait_ms") {
-      await new Promise((r) => setTimeout(r, step.ms ?? 200));
-      return { ok: true, line: `[${this._ts()}] ${tcId} wait ${step.ms}ms` };
+    if (step.action === "wait_ms" || step.action === "wait") {
+      const ms = step.ms ?? 200;
+      await new Promise((r) => setTimeout(r, ms));
+      return { ok: true, line: `[${this._ts()}] ${tcId} wait ${ms}ms` };
     }
     throw new Error("Unknown step action: " + step.action);
   }
@@ -129,10 +130,14 @@ class TCRunner {
     const lines = [];
     /** @type {string} */
     let lastEvidence = "";
+    const tStart = Date.now();
+    const stepsTotal = (tc.steps && tc.steps.length) || 0;
+    let stepsOk = 0;
     try {
       for (const step of tc.steps) {
         const r = await this._runStep(step, tc.id);
         if (r.line) lines.push(r.line);
+        if (r.ok !== false) stepsOk += 1;
         if (step.action === "expect") {
           if (r.evidence) lastEvidence = r.evidence;
           if (!r.ok) {
@@ -140,13 +145,30 @@ class TCRunner {
               pass: false,
               detail: r.got != null ? `got ${JSON.stringify(r.got)}` : r.line || "expect failed",
               evidence: r.evidence || r.line || "FAIL",
+              durationMs: Date.now() - tStart,
+              stepsOk,
+              stepsTotal,
             };
           }
         }
       }
-      return { pass: true, detail: lines.join("\n"), evidence: lastEvidence || lines[lines.length - 1] || "PASS" };
+      return {
+        pass: true,
+        detail: lines.join("\n"),
+        evidence: lastEvidence || lines[lines.length - 1] || "PASS",
+        durationMs: Date.now() - tStart,
+        stepsOk,
+        stepsTotal,
+      };
     } catch (e) {
-      return { pass: false, detail: String(e && e.message ? e.message : e), evidence: String(e && e.message ? e.message : e) };
+      return {
+        pass: false,
+        detail: String(e && e.message ? e.message : e),
+        evidence: String(e && e.message ? e.message : e),
+        durationMs: Date.now() - tStart,
+        stepsOk,
+        stepsTotal,
+      };
     } finally {
       this.clearSubscriptions();
     }
@@ -155,7 +177,7 @@ class TCRunner {
 
 /** @typedef {{ action: 'publish', topic: string, type: string, msg: object }} TCPublish */
 /** @typedef {{ action: 'expect', topic: string, type: string, field?: string, value: *, timeout_ms?: number }} TCExpect */
-/** @typedef {{ action: 'wait_ms', ms: number }} TCWait */
+/** @typedef {{ action: 'wait_ms' | 'wait', ms: number }} TCWait */
 /** @typedef {TCPublish | TCExpect | TCWait} TCStep */
 /** @typedef {{ id: string, name: string, module: string, timeout_ms?: number, max_duration_sec?: number, steps: TCStep[] }} TestCase */
 

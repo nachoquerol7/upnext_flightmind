@@ -11,33 +11,13 @@
   let activeTc = null;
   /** @type {BasePanel | null} */
   let activePanel = null;
+  /** @type {TCDescriptionPanel | null} */
+  let tcDescPanel = null;
+  /** @type {ResultsPanel | null} */
+  let resultsPanel = null;
 
-  /** TC ID → panel class (M1 FSM, M4 map, M5 radar, M6 watchdog, M8 latency, M9 E2E/memory, M10 faults). */
-  const TC_PANEL_MAP = {
-    "TC-FSM-001": "FsmGraphPanel",
-    "TC-FSM-002": "FsmGraphPanel",
-    "TC-FSM-003": "FsmGraphPanel",
-    "TC-FSM-004": "FsmGraphPanel",
-    "TC-FSM-005": "FsmGraphPanel",
-    "TC-FSM-006": "FsmGraphPanel",
-    "TC-FSM-007": "FsmGraphPanel",
-    "TC-FSM-008": "FsmGraphPanel",
-    "TC-TO-001": "FsmGraphPanel",
-    "TC-LOC-001": "MapPanel",
-    "TC-LOC-003": "MapPanel",
-    "TC-DAI-001": "RadarPanel",
-    "TC-DAI-002": "RadarPanel",
-    "TC-DAI-003": "RadarPanel",
-    "TC-DAI-004": "RadarPanel",
-    "TC-FDIR-001": "WatchdogPanel",
-    "TC-FDIR-002": "WatchdogPanel",
-    "TC-FDIR-009": "WatchdogPanel",
-    "TC-MW-001": "LatencyPanel",
-    "TC-E2E-001": "E2EPanel",
-    "TC-E2E-007": "MemoryPanel",
-    "TC-FAULT-001": "E2EPanel",
-    "TC-FAULT-008": "WatchdogPanel",
-  };
+  /** @type {Map<string, object>} */
+  const tcResults = new Map();
 
   const state = {
     fsmState: {},
@@ -50,6 +30,14 @@
     vehicleState: null,
     _fdirEvent: null,
   };
+
+  function getModules() {
+    if (typeof window.getModulesForSidebar !== "function") {
+      console.warn("getModulesForSidebar missing; load tc_definitions.js");
+      return [];
+    }
+    return window.getModulesForSidebar();
+  }
 
   function logLine(text) {
     const log = document.getElementById("log");
@@ -69,7 +57,8 @@
   }
 
   function panelClassForTcId(tcId) {
-    const name = TC_PANEL_MAP[tcId] || "FsmGraphPanel";
+    const def = window.getTcDefinition && window.getTcDefinition(tcId);
+    const name = (def && def.panel) || "FsmGraphPanel";
     const Ctor = window[name];
     return Ctor || window.FsmGraphPanel;
   }
@@ -94,27 +83,8 @@
     activePanel.syncFromState(state);
   }
 
-  const PLACEHOLDER = (id, label) => ({
-    id,
-    title: label,
-    tcs: [],
-  });
-
-  const MODULES = [
-    window.M1FSM,
-    window.M2INT || PLACEHOLDER("M2", "M2 — Integrity"),
-    PLACEHOLDER("M3", "M3 — Middleware"),
-    window.M4LOC,
-    window.M5DAI,
-    window.M6FDIR,
-    window.M7NAV,
-    window.M8MW || PLACEHOLDER("M8", "M8 — Middleware ROS"),
-    window.M9E2E,
-    window.M10FLT || PLACEHOLDER("M10", "M10 — E2E Faults"),
-  ];
-
   function getModule(mid) {
-    return MODULES.find((m) => m.id === mid) || MODULES[0];
+    return getModules().find((m) => m.id === mid) || getModules()[0];
   }
 
   function setConnUi(connected) {
@@ -221,20 +191,22 @@
 
   function buildSidebar() {
     const sb = document.getElementById("sidebar-body");
+    if (!sb) return;
     sb.innerHTML = "";
+    const MODULES = getModules();
     MODULES.forEach((mod) => {
       const block = document.createElement("div");
       block.className = "module-block open";
       const head = document.createElement("div");
       head.className = "module-head";
-      head.innerHTML = `<span>${mod.title}</span><span class="chev">▼</span>`;
+      head.innerHTML = `<span>${escapeHtml(mod.title)}</span><span class="chev">▼</span>`;
       const body = document.createElement("div");
       body.className = "module-body";
       mod.tcs.forEach((tc) => {
         const row = document.createElement("div");
         row.className = "tc-item";
         row.dataset.tcId = tc.id;
-        row.innerHTML = `<span class="id">${tc.id}</span><span class="badge badge-idle" data-badge="${tc.id}">—</span>`;
+        row.innerHTML = `<span class="id">${escapeHtml(tc.id)}</span><span class="badge badge-idle" data-badge="${tc.id}">—</span>`;
         row.addEventListener("click", () => {
           document.querySelectorAll(".tc-item").forEach((el) => el.classList.remove("active"));
           row.classList.add("active");
@@ -243,6 +215,10 @@
           document.querySelectorAll(".module-block").forEach((b) => b.classList.remove("open"));
           block.classList.add("open");
           mountPanelForActiveTc();
+          if (tcDescPanel) tcDescPanel.show(tc);
+          const last = tcResults.get(tc.id);
+          if (last && resultsPanel) resultsPanel.show(last);
+          else if (resultsPanel) resultsPanel.clear();
         });
         body.appendChild(row);
       });
@@ -265,18 +241,53 @@
   function setBadge(tcId, status) {
     const el = document.querySelector(`[data-badge="${tcId}"]`);
     if (!el) return;
-    el.className = "badge " + (status === "pass" ? "badge-pass" : status === "fail" ? "badge-fail" : status === "run" ? "badge-run" : "badge-idle");
-    el.textContent = status === "pass" ? "PASS" : status === "fail" ? "FAIL" : status === "run" ? "RUN" : "—";
+    const map = {
+      pass: ["badge-pass", "PASS"],
+      fail: ["badge-fail", "FAIL"],
+      run: ["badge-run", "RUN"],
+      idle: ["badge-idle", "—"],
+      xfail: ["badge-xfail", "XFAIL"],
+    };
+    const [cls, text] = map[status] || map.idle;
+    el.className = "badge " + cls;
+    el.textContent = text;
+  }
+
+  function formatLocalTs() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   }
 
   async function runTc() {
     if (!activeTc || !bridge.connected) return;
     if (activePanel) activePanel.onTCStart(activeTc);
     setBadge(activeTc.id, "run");
-    logLine(`BEGIN ${activeTc.id} ${activeTc.name}`);
+    logLine(`BEGIN ${activeTc.id} ${activeTc.name || activeTc.title || ""}`);
+    const def = activeTc.definition || (window.getTcDefinition && window.getTcDefinition(activeTc.id));
     const res = await runner.run(activeTc);
-    setBadge(activeTc.id, res.pass ? "pass" : "fail");
+    const xfail = def && def.xfail ? def.xfail : null;
+    let badge = res.pass ? "pass" : "fail";
+    if (xfail && !res.pass) badge = "xfail";
+    setBadge(activeTc.id, badge);
     logLine(`END ${activeTc.id} → ${res.pass ? "PASS" : "FAIL"} (${res.detail})`);
+
+    const stepsTotal = res.stepsTotal != null ? res.stepsTotal : 0;
+    const stepsLabel =
+      stepsTotal > 0 ? `${res.stepsOk != null ? res.stepsOk : 0}/${stepsTotal} OK` : "N/A (0 pasos)";
+
+    const payload = {
+      tcId: activeTc.id,
+      pass: res.pass,
+      evidence: res.evidence,
+      detail: res.detail,
+      durationMs: res.durationMs != null ? res.durationMs : 0,
+      stepsLabel,
+      timestamp: formatLocalTs(),
+      xfail,
+    };
+    tcResults.set(activeTc.id, payload);
+    if (resultsPanel) resultsPanel.show(payload);
     if (activePanel) activePanel.onTCEnd(res);
   }
 
@@ -286,6 +297,8 @@
       el.className = "badge badge-idle";
       el.textContent = "—";
     });
+    tcResults.clear();
+    if (resultsPanel) resultsPanel.clear();
     if (activePanel && typeof activePanel.clearVerdict === "function") {
       activePanel.clearVerdict();
       activePanel.onTCStart(activeTc);
@@ -301,10 +314,20 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     window.testbenchLog = logLine;
+    window.tcResults = tcResults;
+
     TelemetryPanel.mount(document.getElementById("right-panel"));
+
+    const tcHost = document.getElementById("tc-description-host");
+    const resHost = document.getElementById("results-host");
+    tcDescPanel = new window.TCDescriptionPanel(tcHost);
+    resultsPanel = new window.ResultsPanel(resHost);
+    tcDescPanel.mount();
+    resultsPanel.mount();
+
     buildSidebar();
     let firstTc = null;
-    for (const m of MODULES) {
+    for (const m of getModules()) {
       if (m.tcs && m.tcs.length) {
         firstTc = m.tcs[0];
         activeModuleId = m.id;
@@ -314,6 +337,7 @@
     if (firstTc) {
       activeTc = firstTc;
       document.querySelector(`[data-badge="${firstTc.id}"]`)?.closest(".tc-item")?.classList.add("active");
+      tcDescPanel.show(firstTc);
     }
     mountPanelForActiveTc();
     wireRos();
