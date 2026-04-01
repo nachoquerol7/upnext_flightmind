@@ -201,7 +201,7 @@ def test_tc_loc007_nominal_quality_keeps_cruise(mission_fsm_sil_with_fastlio: Si
     mission_fsm_sil_with_fastlio.fastlio.inject("quality_flag", 1.0)
     for _ in range(40):
         mission_fsm_sil_with_fastlio.ex.spin_once(timeout_sec=0.05)
-    assert mission_fsm_sil_with_fastlio.cap.mode == "CRUISE"
+    assert mission_fsm_sil_with_fastlio.fsm._fsm.state == "CRUISE"  # noqa: SLF001
 
 
 def test_tc_loc008_odometry_header_frame_id_is_map(ros_context: None) -> None:
