@@ -113,6 +113,67 @@ class TCRunner {
         this._subs.push(unsub);
       });
     }
+    if (step.action === "expect_not") {
+      const timeoutMs = step.timeout_ms ?? 2000;
+      const topic = step.topic;
+      const type = step.type;
+      const field = step.field || "data";
+      const want = step.value;
+      const wantNum = typeof want === "number" ? want : null;
+
+      return await new Promise((resolve) => {
+        let done = false;
+        const to = setTimeout(() => {
+          if (done) return;
+          done = true;
+          try {
+            unsub();
+          } catch (_) {}
+          const line = `[${this._ts()}] ${tcId} OK expect_not ${topic} ${field} !== ${JSON.stringify(want)} (${timeoutMs}ms)`;
+          this.log(line);
+          resolve({
+            ok: true,
+            line,
+            evidence: `PASS: ${field} no alcanzó ${JSON.stringify(want)} en ${timeoutMs}ms`,
+          });
+        }, timeoutMs);
+
+        const unsub = this.bridge.subscribe(topic, type, (msg) => {
+          if (done) return;
+          let got = this._getField(msg, field);
+          if (got && typeof got === "object" && "data" in got && field.indexOf(".") === -1) {
+            got = got.data;
+          }
+          let match = false;
+          if (want === "__nonempty__") {
+            if (got != null && typeof got.length === "number" && typeof got !== "string") {
+              match = got.length > 0;
+            } else {
+              match = got != null && String(got).trim().length > 0;
+            }
+          } else if (wantNum !== null && typeof want === "number") {
+            match = Number(got) === wantNum;
+          } else if (typeof want === "boolean") {
+            match = Boolean(got) === want;
+          } else {
+            match = got === want || String(got) === String(want);
+          }
+          if (match) {
+            done = true;
+            clearTimeout(to);
+            try {
+              unsub();
+            } catch (_) {}
+            resolve({
+              ok: false,
+              line: `[${this._ts()}] ${tcId} FAIL expect_not saw ${topic} ${field} === ${JSON.stringify(got)}`,
+              evidence: `FAIL: recibió ${JSON.stringify(got)} cuando no debía`,
+            });
+          }
+        });
+        this._subs.push(unsub);
+      });
+    }
     if (step.action === "wait_ms" || step.action === "wait") {
       const ms = step.ms ?? 200;
       await new Promise((r) => setTimeout(r, ms));
@@ -138,7 +199,7 @@ class TCRunner {
         const r = await this._runStep(step, tc.id);
         if (r.line) lines.push(r.line);
         if (r.ok !== false) stepsOk += 1;
-        if (step.action === "expect") {
+        if (step.action === "expect" || step.action === "expect_not") {
           if (r.evidence) lastEvidence = r.evidence;
           if (!r.ok) {
             return {
@@ -177,8 +238,9 @@ class TCRunner {
 
 /** @typedef {{ action: 'publish', topic: string, type: string, msg: object }} TCPublish */
 /** @typedef {{ action: 'expect', topic: string, type: string, field?: string, value: *, timeout_ms?: number }} TCExpect */
+/** @typedef {{ action: 'expect_not', topic: string, type: string, field?: string, value: *, timeout_ms?: number }} TCExpectNot */
 /** @typedef {{ action: 'wait_ms' | 'wait', ms: number }} TCWait */
-/** @typedef {TCPublish | TCExpect | TCWait} TCStep */
+/** @typedef {TCPublish | TCExpect | TCExpectNot | TCWait} TCStep */
 /** @typedef {{ id: string, name: string, module: string, timeout_ms?: number, max_duration_sec?: number, steps: TCStep[] }} TestCase */
 
 window.TCRunner = TCRunner;

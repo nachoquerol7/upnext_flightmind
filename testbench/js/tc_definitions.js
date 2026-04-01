@@ -186,7 +186,7 @@
         const id = mod.prefix + PAD(n, w);
         const def = TC_DEFINITIONS[id];
         if (!def) continue;
-        const steps = legacy[id] || TC_STEPS[id] || def.steps || [];
+        const steps = TC_STEPS[id] || legacy[id] || def.steps || [];
         tcs.push({
           id: def.id,
           name: def.title,
