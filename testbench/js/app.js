@@ -12,6 +12,7 @@
   /** @type {BasePanel | null} */
   let activePanel = null;
 
+  /** TC ID → panel class (M1 FSM, M4 map, M5 radar, M6 watchdog, M8 latency, M9 E2E/memory, M10 faults). */
   const TC_PANEL_MAP = {
     "TC-FSM-001": "FsmGraphPanel",
     "TC-FSM-002": "FsmGraphPanel",
