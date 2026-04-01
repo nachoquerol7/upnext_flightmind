@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import math
 import random
 from typing import List, Sequence, Tuple
 
 from gpp.dubins import dubins_interpolate, dubins_length
-from gpp.geometry import point_in_polygon
+from gpp.geometry import point_in_polygon, segment_hits_nfz
+
+_logger = logging.getLogger(__name__)
 
 State = Tuple[float, float, float]  # n, e, heading rad
 Polygon = Sequence[Tuple[float, float]]
@@ -120,6 +123,13 @@ class RRTStarPlanner:
         ln, fn = dubins_interpolate(from_s[0], from_s[1], from_s[2], to_s[0], to_s[1], to_s[2], self.rho)
         return fn(self.step_size)
 
+    def _dense_dubins_fallback(self, start: State, goal: State, samples: int = 48) -> List[State]:
+        """Sample Dubins edge for visualization / execution when a straight chord would cross NFZ."""
+        ln, fn = dubins_interpolate(start[0], start[1], start[2], goal[0], goal[1], goal[2], self.rho)
+        if ln >= 1e8:
+            return [start]
+        return [fn(ln * i / samples) for i in range(samples + 1)]
+
     def _plan(self, start: State, goal: State, nfz: Sequence[Polygon], bounds: Tuple[float, float, float, float]) -> List[State]:
         self._last_start = start
         nodes: List[State] = [start]
@@ -183,8 +193,15 @@ class RRTStarPlanner:
                     informed = True
 
         if best_goal_idx is None:
-            # Fallback: direct path only if collision-free
+            # Fallback: Dubins edge [start, goal] only if collision-free
             if not _dubins_collision(start, goal, self.rho, nfz):
+                # FIX-GPP-G03: do not publish only two poses if the straight chord pierces NFZ
+                if segment_hits_nfz(start[0], start[1], goal[0], goal[1], nfz):
+                    _logger.warning(
+                        "WARNING: RRT* failed and direct path hits NFZ — no safe path found; "
+                        "using Dubins-sampled path"
+                    )
+                    return self._dense_dubins_fallback(start, goal)
                 return [start, goal]
             return [start]  # no safe path found
 

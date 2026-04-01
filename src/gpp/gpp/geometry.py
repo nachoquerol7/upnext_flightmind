@@ -48,10 +48,13 @@ def segment_hits_nfz(
     min_step_m: float = 10.0,
     steps: int = 24,
 ) -> bool:
-    seg_len = math.hypot(n1 - n0, e1 - e0)
-    adaptive_steps = max(steps, int(seg_len / min_step_m))
-    for k in range(adaptive_steps + 1):
-        t = k / adaptive_steps
+    segment_length_m = math.hypot(n1 - n0, e1 - e0)
+    # FIX-GPP-G02: at least one sample every 5 m along the segment (min 24 samples)
+    num_steps = max(24, int(segment_length_m / 5.0))
+    if num_steps < 1:
+        num_steps = 1
+    for k in range(num_steps + 1):
+        t = k / num_steps
         n = n0 + t * (n1 - n0)
         e = e0 + t * (e1 - e0)
         for poly in nfz:

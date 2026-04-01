@@ -123,6 +123,7 @@ class GppNode(Node):
             gn, ge, _ = goal_se2
             pad = 150.0
             start_n, start_e, _ = self._own_n_e_h
+            # FIX-GPP-G05: bounds must span both start and goal (not clamped to origin)
             bounds = (
                 min(start_n, gn) - pad,
                 max(start_n, gn) + pad,
