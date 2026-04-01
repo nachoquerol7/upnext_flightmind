@@ -49,7 +49,8 @@ class _FsmModeCapture(Node):
 def _spin_until(ex: MultiThreadedExecutor, pred: Callable[[], bool], *, timeout_sec: float = 3.0) -> bool:
     deadline = time.monotonic() + timeout_sec
     while time.monotonic() < deadline:
-        ex.spin_once(timeout_sec=0.05)
+        for _ in range(24):
+            ex.spin_once(timeout_sec=0.02)
         if pred():
             return True
     return False
@@ -92,7 +93,11 @@ def mission_fsm_sil_with_fastlio(ros_context: None) -> SimpleNamespace:
         ex.add_node(n)
 
     def wait_mode(expected: str, *, timeout_sec: float = 3.0) -> bool:
-        return _spin_until(ex, lambda: cap.mode == expected, timeout_sec=timeout_sec)
+        def _match() -> bool:
+            m = cap.mode
+            return m == expected or m.startswith(f"{expected}:")
+
+        return _spin_until(ex, _match, timeout_sec=timeout_sec)
 
     h = SimpleNamespace(
         ex=ex,

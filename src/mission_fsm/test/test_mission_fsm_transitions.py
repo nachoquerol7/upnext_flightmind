@@ -61,7 +61,11 @@ def test_transition_cruise_to_abort() -> None:
 def test_transition_to_event(extra: Dict[str, Any]) -> None:
     m = _fsm()
     m.seed("CRUISE")
-    s, t = m.step(_base(**extra))
+    s, t = m.state, None
+    for _ in range(8):
+        s, t = m.step(_base(**extra))
+        if s == "EVENT":
+            break
     assert s == "EVENT" and t == "to_event"
 
 

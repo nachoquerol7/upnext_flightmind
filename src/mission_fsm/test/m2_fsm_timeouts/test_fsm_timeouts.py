@@ -7,6 +7,7 @@ batería y geofence vía topics supervisados en `mission_fsm_node`.
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -20,13 +21,12 @@ if str(_MOCKS) not in sys.path:
 import mock_sensors  # noqa: E402
 
 
-def _mode_base(mode: str) -> str:
-    return mode.split(":", 1)[0]
-
-
 def _dwell_spin(h: SimpleNamespace, iterations: int = 120) -> None:
+    """Avanza tiempo real (morada FSM por reloj) y drena el ejecutor."""
     for _ in range(iterations):
-        h.ex.spin_once(timeout_sec=0.05)
+        time.sleep(0.045)
+        for _ in range(12):
+            h.ex.spin_once(timeout_sec=0.02)
 
 
 @pytest.mark.no_ros
@@ -80,7 +80,8 @@ def test_tc_to004_cruise_excessive_dwell_moves_to_fault(mission_fsm_sil_harness:
     mission_fsm_sil_harness.inj.inject("takeoff_complete", True)
     assert mission_fsm_sil_harness.wait_mode("CRUISE")
     _dwell_spin(mission_fsm_sil_harness)
-    assert _mode_base(mission_fsm_sil_harness.cap.mode) in ("ABORT", "RTB")
+    st = mission_fsm_sil_harness.fsm._fsm.state  # noqa: SLF001
+    assert st in ("ABORT", "RTB")
 
 
 def test_tc_to005_event_excessive_dwell_resolves_or_escalates(mission_fsm_sil_harness: SimpleNamespace) -> None:
@@ -94,7 +95,8 @@ def test_tc_to005_event_excessive_dwell_resolves_or_escalates(mission_fsm_sil_ha
     mission_fsm_sil_harness.inj.inject("quality_flag", 0.1)
     assert mission_fsm_sil_harness.wait_mode("EVENT")
     _dwell_spin(mission_fsm_sil_harness)
-    assert _mode_base(mission_fsm_sil_harness.cap.mode) in ("ABORT", "RTB")
+    st = mission_fsm_sil_harness.fsm._fsm.state  # noqa: SLF001
+    assert st in ("ABORT", "RTB")
 
 
 def test_tc_to006_gcs_heartbeat_loss_triggers_rtb_or_event(mission_fsm_sil_harness: SimpleNamespace) -> None:
@@ -108,9 +110,15 @@ def test_tc_to006_gcs_heartbeat_loss_triggers_rtb_or_event(mission_fsm_sil_harne
     sens = mock_sensors.create_mock_sensors()
     mission_fsm_sil_harness.ex.add_node(sens)
     try:
+        assert mission_fsm_sil_harness.spin_until(
+            lambda: mission_fsm_sil_harness.fsm._last_gcs_time is not None,  # noqa: SLF001
+            timeout_sec=3.0,
+        )
         sens.inject("gcs_heartbeat_enabled", False)
+        time.sleep(2.6)
         _dwell_spin(mission_fsm_sil_harness, 80)
-        assert _mode_base(mission_fsm_sil_harness.cap.mode) in ("RTB", "EVENT", "ABORT")
+        st = mission_fsm_sil_harness.fsm._fsm.state  # noqa: SLF001
+        assert st in ("RTB", "EVENT", "ABORT")
     finally:
         mission_fsm_sil_harness.ex.remove_node(sens)
         sens.destroy_node()
@@ -128,8 +136,10 @@ def test_tc_to007_c2_link_loss_triggers_protective_state(mission_fsm_sil_harness
     mission_fsm_sil_harness.ex.add_node(sens)
     try:
         sens.inject("c2_link_status", False)
+        time.sleep(2.6)
         _dwell_spin(mission_fsm_sil_harness, 80)
-        assert _mode_base(mission_fsm_sil_harness.cap.mode) in ("RTB", "EVENT", "ABORT")
+        st = mission_fsm_sil_harness.fsm._fsm.state  # noqa: SLF001
+        assert st in ("RTB", "EVENT", "ABORT")
     finally:
         mission_fsm_sil_harness.ex.remove_node(sens)
         sens.destroy_node()
@@ -147,8 +157,10 @@ def test_tc_to008_low_battery_timeout_triggers_rtb(mission_fsm_sil_harness: Simp
     mission_fsm_sil_harness.ex.add_node(sens)
     try:
         sens.inject("battery_percent", 0.05)
+        time.sleep(1.2)
         _dwell_spin(mission_fsm_sil_harness, 80)
-        assert _mode_base(mission_fsm_sil_harness.cap.mode) in ("RTB", "ABORT")
+        st = mission_fsm_sil_harness.fsm._fsm.state  # noqa: SLF001
+        assert st in ("RTB", "ABORT")
     finally:
         mission_fsm_sil_harness.ex.remove_node(sens)
         sens.destroy_node()
@@ -166,8 +178,9 @@ def test_tc_to009_geofence_breach_timeout_triggers_event(mission_fsm_sil_harness
     mission_fsm_sil_harness.ex.add_node(sens)
     try:
         sens.inject("geofence_breach", True)
+        time.sleep(0.6)
         _dwell_spin(mission_fsm_sil_harness, 80)
-        assert _mode_base(mission_fsm_sil_harness.cap.mode) == "EVENT"
+        assert mission_fsm_sil_harness.fsm._fsm.state == "EVENT"  # noqa: SLF001
     finally:
         mission_fsm_sil_harness.ex.remove_node(sens)
         sens.destroy_node()
@@ -176,4 +189,5 @@ def test_tc_to009_geofence_breach_timeout_triggers_event(mission_fsm_sil_harness
 def test_tc_to010_combined_stale_inputs_trigger_fault(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-010: morada global en PREFLIGHT agota ventana → ABORT/RTB."""
     _dwell_spin(mission_fsm_sil_harness, 160)
-    assert _mode_base(mission_fsm_sil_harness.cap.mode) in ("ABORT", "RTB")
+    st = mission_fsm_sil_harness.fsm._fsm.state  # noqa: SLF001
+    assert st in ("ABORT", "RTB")

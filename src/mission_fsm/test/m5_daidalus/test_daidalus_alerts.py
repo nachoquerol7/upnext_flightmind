@@ -70,13 +70,19 @@ def test_tc_dai_003_alert_high_enters_event(mission_fsm_sil_with_daidalus: Simpl
 def test_tc_dai_004_alert_near_fast_path_without_hysteresis(mission_fsm_sil_with_daidalus: SimpleNamespace) -> None:
     _reach_cruise(mission_fsm_sil_with_daidalus)
     mission_fsm_sil_with_daidalus.daidalus.inject("alert_level", 3)
-    assert "to_event_near_fastpath" in mission_fsm_sil_with_daidalus.cap.triggers
+    assert mission_fsm_sil_with_daidalus.spin_until(
+        lambda: "to_event_near_fastpath" in mission_fsm_sil_with_daidalus.cap.triggers,
+        timeout_sec=3.0,
+    )
 
 
 def test_tc_dai_005_alert_recovery_level_mapping(mission_fsm_sil_with_daidalus: SimpleNamespace) -> None:
     _reach_cruise(mission_fsm_sil_with_daidalus)
     mission_fsm_sil_with_daidalus.daidalus.inject("alert_level", 4)
-    assert "to_recovery" in mission_fsm_sil_with_daidalus.cap.triggers
+    assert mission_fsm_sil_with_daidalus.spin_until(
+        lambda: "to_recovery" in mission_fsm_sil_with_daidalus.cap.triggers,
+        timeout_sec=3.0,
+    )
 
 
 def test_tc_dai_006_event_clears_when_alert_returns_nominal(mission_fsm_sil_with_daidalus: SimpleNamespace) -> None:
@@ -110,10 +116,10 @@ def test_tc_dai_007_advisory_topic_is_published(ros_context: None) -> None:
 def test_tc_dai_008_daidalus_feed_timeout_raises_fault(mission_fsm_sil_with_daidalus: SimpleNamespace) -> None:
     _reach_cruise(mission_fsm_sil_with_daidalus)
     mission_fsm_sil_with_daidalus.daidalus.inject("fsm_feed_enabled", False)
-    for _ in range(120):
-        mission_fsm_sil_with_daidalus.ex.spin_once(timeout_sec=0.05)
-    base = mission_fsm_sil_with_daidalus.cap.mode.split(":", 1)[0]
-    assert base in ("EVENT", "ABORT", "RTB")
+    assert mission_fsm_sil_with_daidalus.spin_until(
+        lambda: mission_fsm_sil_with_daidalus.cap.mode.split(":", 1)[0] in ("EVENT", "ABORT", "RTB"),
+        timeout_sec=8.0,
+    )
 
 
 @pytest.mark.xfail(reason="advisory integration to guidance not implemented", strict=True)

@@ -58,7 +58,8 @@ class _FsmModeCapture(Node):
 def spin_until(ex: MultiThreadedExecutor, pred: Callable[[], bool], *, timeout_sec: float = 3.0) -> bool:
     deadline = time.monotonic() + timeout_sec
     while time.monotonic() < deadline:
-        ex.spin_once(timeout_sec=0.05)
+        for _ in range(24):
+            ex.spin_once(timeout_sec=0.02)
         if pred():
             return True
     return False

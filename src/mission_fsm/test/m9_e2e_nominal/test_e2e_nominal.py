@@ -25,6 +25,8 @@ import mock_fdir  # noqa: E402
 import mock_nav2  # noqa: E402
 import mock_sensors  # noqa: E402
 
+from mission_fsm.fsm import default_inputs  # noqa: E402
+
 
 class _FSMStateCollector(Node):
     def __init__(self) -> None:
@@ -108,6 +110,7 @@ def test_tc_e2e_005_male_config_exists_and_has_required_params() -> None:
 def test_tc_e2e_006_repeated_nominal_transition_stability(e2e_runtime: SimpleNamespace) -> None:
     for _ in range(3):
         e2e_runtime.fsm._fsm.reset("PREFLIGHT")
+        e2e_runtime.fsm._inputs = default_inputs()  # noqa: SLF001 — evitar saltar PREFLIGHT/AUTOTAXI por inputs rezagados
         _reach_cruise(e2e_runtime)
     assert e2e_runtime.cap.mode == "CRUISE"
 
@@ -118,6 +121,9 @@ def test_tc_e2e_007_memory_growth_under_10mb_across_5_missions(e2e_runtime: Simp
     rss0 = proc.memory_info().rss
     for _ in range(5):
         e2e_runtime.fsm._fsm.reset("PREFLIGHT")
+        e2e_runtime.fsm._inputs = default_inputs()  # noqa: SLF001
+        for _cmd in ("land_command", "abort_command", "rtb_command"):
+            e2e_runtime.inj.inject(_cmd, False)
         _reach_cruise(e2e_runtime)
         e2e_runtime.inj.inject("land_command", True)
         _spin(e2e_runtime.ex, 10)
@@ -126,7 +132,8 @@ def test_tc_e2e_007_memory_growth_under_10mb_across_5_missions(e2e_runtime: Simp
 
 
 def test_tc_e2e_008_fsm_state_contract_used_in_e2e(e2e_runtime: SimpleNamespace) -> None:
-    _spin(e2e_runtime.ex, 10)
+    _reach_cruise(e2e_runtime)
+    _spin(e2e_runtime.ex, 40)
     assert any(hasattr(m, "current_mode") and hasattr(m, "active_trigger") for m in e2e_runtime.fsm_state_sub.msgs)
 
 

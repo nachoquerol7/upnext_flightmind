@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any, Callable, Dict, List, Mapping, MutableMapping, Optional, Tuple, Union
 
 Condition = Union[str, Mapping[str, Any]]
@@ -113,6 +114,7 @@ class MissionFsm:
         self._quality_low_streak = 0
         self._quality_high_streak = 0
         self._daidalus_mid_streak = 0
+        self._state_enter_mono = time.monotonic()
         states = set(self._entry.keys())
         for t in self._transitions:
             states.add(str(t["from"]))
@@ -241,11 +243,8 @@ class MissionFsm:
 
         max_d = self._max_duration_by_state.get(self._state)
         self._ticks_in_state += 1
-        tick_hz = float(self._context.get("tick_hz", 10.0))
-        if tick_hz < 1e-6:
-            tick_hz = 10.0
-        elapsed = self._ticks_in_state / tick_hz
-        merged["state_dwell_timeout"] = bool(max_d is not None and elapsed >= float(max_d))
+        elapsed_wall = time.monotonic() - self._state_enter_mono
+        merged["state_dwell_timeout"] = bool(max_d is not None and elapsed_wall >= float(max_d))
 
         self._update_quality_hysteresis(merged)
         self._update_daidalus_mid_streak(merged)
@@ -272,6 +271,7 @@ class MissionFsm:
         if self._state != prev_state:
             self._ticks_in_state = 0
             self._reset_hysteresis_streaks()
+            self._state_enter_mono = time.monotonic()
         return self._state, fired
 
     def seed(self, state: str) -> None:
@@ -279,11 +279,13 @@ class MissionFsm:
         self._state = str(state)
         self._ticks_in_state = 0
         self._reset_hysteresis_streaks()
+        self._state_enter_mono = time.monotonic()
 
     def reset(self, state: Optional[str] = None) -> None:
         self._state = state if state is not None else self._initial_state
         self._ticks_in_state = 0
         self._reset_hysteresis_streaks()
+        self._state_enter_mono = time.monotonic()
 
 
 def load_fsm_yaml_dict(path: str) -> MutableMapping[str, Any]:

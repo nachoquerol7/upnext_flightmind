@@ -185,6 +185,10 @@ class MissionFsmNode(Node):
 
         self.get_logger().info(f"mission_fsm: loaded {path}, initial={self._fsm.state}")
 
+    def get_parameter_names(self) -> list[str]:
+        """Return declared parameter names (SIL tests expect this helper name)."""
+        return sorted(self.list_parameters([], 10).names)
+
     def _publish_fsm_heartbeat(self) -> None:
         self._fsm_heartbeat_pub.publish(Bool(data=True))
 
