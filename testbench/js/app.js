@@ -1,5 +1,5 @@
 /**
- * SIL V&V Testbench — layout, ROS subscriptions, module router, TC runner
+ * SIL V&V Testbench — paneles por TC, ROS, TC runner
  */
 (function () {
   /** @type {RosBridge} */
@@ -9,6 +9,34 @@
   let activeModuleId = "M1";
   /** @type {import('./tc_runner').TestCase | null} */
   let activeTc = null;
+  /** @type {BasePanel | null} */
+  let activePanel = null;
+
+  const TC_PANEL_MAP = {
+    "TC-FSM-001": "FsmGraphPanel",
+    "TC-FSM-002": "FsmGraphPanel",
+    "TC-FSM-003": "FsmGraphPanel",
+    "TC-FSM-004": "FsmGraphPanel",
+    "TC-FSM-005": "FsmGraphPanel",
+    "TC-FSM-006": "FsmGraphPanel",
+    "TC-FSM-007": "FsmGraphPanel",
+    "TC-FSM-008": "FsmGraphPanel",
+    "TC-TO-001": "FsmGraphPanel",
+    "TC-LOC-001": "MapPanel",
+    "TC-LOC-003": "MapPanel",
+    "TC-DAI-001": "RadarPanel",
+    "TC-DAI-002": "RadarPanel",
+    "TC-DAI-003": "RadarPanel",
+    "TC-DAI-004": "RadarPanel",
+    "TC-FDIR-001": "WatchdogPanel",
+    "TC-FDIR-002": "WatchdogPanel",
+    "TC-FDIR-009": "WatchdogPanel",
+    "TC-MW-001": "LatencyPanel",
+    "TC-E2E-001": "E2EPanel",
+    "TC-E2E-007": "MemoryPanel",
+    "TC-FAULT-001": "E2EPanel",
+    "TC-FAULT-008": "WatchdogPanel",
+  };
 
   const state = {
     fsmState: {},
@@ -39,44 +67,49 @@
     return d.innerHTML;
   }
 
+  function panelClassForTcId(tcId) {
+    const name = TC_PANEL_MAP[tcId] || "FsmGraphPanel";
+    const Ctor = window[name];
+    return Ctor || window.FsmGraphPanel;
+  }
+
+  function mountPanelForActiveTc() {
+    const root = document.getElementById("main-display");
+    if (!root) return;
+    if (activePanel) {
+      try {
+        activePanel.unmount();
+      } catch (e) {
+        console.error(e);
+      }
+      activePanel = null;
+    }
+    root.innerHTML = "";
+    const tcId = activeTc ? activeTc.id : null;
+    const Ctor = panelClassForTcId(tcId || "TC-FSM-001");
+    activePanel = new Ctor(root, bridge);
+    activePanel.mount();
+    activePanel.onTCStart(activeTc);
+    activePanel.syncFromState(state);
+  }
+
   const PLACEHOLDER = (id, label) => ({
     id,
     title: label,
     tcs: [],
-    mount(root) {
-      root.innerHTML = "";
-      const d = document.createElement("div");
-      d.className = "placeholder-box";
-      d.innerHTML = `${label}<br/>Sin TCs cableados en este build.`;
-      root.appendChild(d);
-    },
-    update() {},
   });
-
-  const M10E2E = {
-    id: "M10",
-    title: "M10 — E2E Faults",
-    tcs: [],
-    mount(root) {
-      root.innerHTML = "";
-      FaultTreeDisplay.mount(root);
-    },
-    update() {
-      FaultTreeDisplay.update();
-    },
-  };
 
   const MODULES = [
     window.M1FSM,
-    PLACEHOLDER("M2", "M2 — Integrity"),
+    window.M2INT || PLACEHOLDER("M2", "M2 — Integrity"),
     PLACEHOLDER("M3", "M3 — Middleware"),
     window.M4LOC,
     window.M5DAI,
     window.M6FDIR,
     window.M7NAV,
-    PLACEHOLDER("M8", "M8 — Middleware ROS"),
+    window.M8MW || PLACEHOLDER("M8", "M8 — Middleware ROS"),
     window.M9E2E,
-    M10E2E,
+    window.M10FLT || PLACEHOLDER("M10", "M10 — E2E Faults"),
   ];
 
   function getModule(mid) {
@@ -109,6 +142,16 @@
     bridge.connect();
   }
 
+  function dispatchPanel(topic, msg) {
+    if (activePanel && typeof activePanel.onMessage === "function") {
+      try {
+        activePanel.onMessage(topic, msg);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
+
   function subscribeAll() {
     if (!bridge || !bridge.ros) return;
     const sub = (name, type, fn) => {
@@ -121,30 +164,38 @@
 
     sub("/fsm/state", "flightmind_msgs/FSMState", (msg) => {
       state.fsmState = msg;
+      dispatchPanel("/fsm/state", msg);
     });
     sub("/fsm/current_mode", "std_msgs/String", (msg) => {
       state.legacyMode = msg.data;
+      dispatchPanel("/fsm/current_mode", msg);
     });
     sub("/nav/quality_flag", "std_msgs/Float64", (msg) => {
       state.quality = msg.data;
+      dispatchPanel("/nav/quality_flag", msg);
     });
     sub("/daidalus/alert_level", "std_msgs/Int32", (msg) => {
       state.daidalusLevel = msg.data;
+      dispatchPanel("/daidalus/alert_level", msg);
     });
     sub("/fdir/emergency", "std_msgs/Bool", (msg) => {
       state.fdirEmergency = msg.data;
+      dispatchPanel("/fdir/emergency", msg);
     });
     sub("/fdir/status", "std_msgs/String", (msg) => {
       state.fdirStatus = msg.data;
+      dispatchPanel("/fdir/status", msg);
     });
     sub("/fdir/active_fault", "std_msgs/String", (msg) => {
       if (msg.data !== state.fdirActiveFault) {
         state._fdirEvent = `${new Date().toISOString()} active_fault=${msg.data}`;
       }
       state.fdirActiveFault = msg.data;
+      dispatchPanel("/fdir/active_fault", msg);
     });
     sub("/vehicle_model/state", "std_msgs/Float64MultiArray", (msg) => {
       state.vehicleState = msg.data;
+      dispatchPanel("/vehicle_model/state", msg);
     });
 
     logLine("Subscriptions armed (si el tipo no coincide con tu stack, ajusta messageType en app.js).");
@@ -154,19 +205,13 @@
     TelemetryPanel.update(state);
   }
 
-  function refreshMain() {
-    const mod = getModule(activeModuleId);
-    const root = document.getElementById("main-display");
-    root.innerHTML = "";
-    mod.mount(root);
-  }
-
   function tick() {
-    const mod = getModule(activeModuleId);
-    try {
-      mod.update(state);
-    } catch (e) {
-      console.error(e);
+    if (activePanel && typeof activePanel.syncFromState === "function") {
+      try {
+        activePanel.syncFromState(state);
+      } catch (e) {
+        console.error(e);
+      }
     }
     refreshTelemetry();
     state._fdirEvent = null;
@@ -196,7 +241,7 @@
           activeModuleId = mod.id;
           document.querySelectorAll(".module-block").forEach((b) => b.classList.remove("open"));
           block.classList.add("open");
-          refreshMain();
+          mountPanelForActiveTc();
         });
         body.appendChild(row);
       });
@@ -225,11 +270,13 @@
 
   async function runTc() {
     if (!activeTc || !bridge.connected) return;
+    if (activePanel) activePanel.onTCStart(activeTc);
     setBadge(activeTc.id, "run");
     logLine(`BEGIN ${activeTc.id} ${activeTc.name}`);
     const res = await runner.run(activeTc);
     setBadge(activeTc.id, res.pass ? "pass" : "fail");
     logLine(`END ${activeTc.id} → ${res.pass ? "PASS" : "FAIL"} (${res.detail})`);
+    if (activePanel) activePanel.onTCEnd(res);
   }
 
   function resetBench() {
@@ -238,6 +285,10 @@
       el.className = "badge badge-idle";
       el.textContent = "—";
     });
+    if (activePanel && typeof activePanel.clearVerdict === "function") {
+      activePanel.clearVerdict();
+      activePanel.onTCStart(activeTc);
+    }
   }
 
   function stopStackClient() {
@@ -251,8 +302,19 @@
     window.testbenchLog = logLine;
     TelemetryPanel.mount(document.getElementById("right-panel"));
     buildSidebar();
-    activeModuleId = "M1";
-    refreshMain();
+    let firstTc = null;
+    for (const m of MODULES) {
+      if (m.tcs && m.tcs.length) {
+        firstTc = m.tcs[0];
+        activeModuleId = m.id;
+        break;
+      }
+    }
+    if (firstTc) {
+      activeTc = firstTc;
+      document.querySelector(`[data-badge="${firstTc.id}"]`)?.closest(".tc-item")?.classList.add("active");
+    }
+    mountPanelForActiveTc();
     wireRos();
     document.getElementById("btn-run").addEventListener("click", runTc);
     document.getElementById("btn-reset").addEventListener("click", resetBench);

@@ -6,6 +6,7 @@ source "$HOME/upnext_uas_ws/install/setup.bash"
 # Matar instancias previas
 pkill -f rosbridge_websocket || true
 pkill -f mission_fsm_node || true
+pkill -f "ram_monitor.py" || true
 sleep 1
 
 # Arrancar rosbridge en background
@@ -23,8 +24,12 @@ echo "mission_fsm PID: $FSM_PID"
 
 sleep 1
 
+# Monitor RAM para MemoryPanel (TC-E2E-007)
+python3 "$(dirname "$0")/ram_monitor.py" &
+echo "ram_monitor PID: $!"
+
 # Abrir el testbench en el navegador
 xdg-open "$(dirname "$0")/index.html"
 
-echo "Stack arrancado. Cierra esta terminal para parar todo."
+echo "Stack arrancado (rosbridge + mission_fsm + ram_monitor). Cierra esta terminal para parar todo."
 wait

@@ -43,12 +43,5 @@
         ],
       },
     ],
-    mount(root) {
-      root.innerHTML = "";
-      FdirTree.mount(root);
-    },
-    update(st) {
-      FdirTree.update(st);
-    },
   };
 })();

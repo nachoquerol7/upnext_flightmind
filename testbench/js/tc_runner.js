@@ -72,9 +72,11 @@ class TCRunner {
             ok: false,
             line: `[${this._ts()}] ${tcId} FAIL expect ${topic} ${field} === ${JSON.stringify(want)} (timeout ${timeoutMs}ms)`,
             got: null,
+            evidence: `FAIL: Timeout esperando ${topic} ${field} === ${JSON.stringify(want)} tras ${timeoutMs}ms`,
           });
         }, timeoutMs);
 
+        const t0 = Date.now();
         const unsub = this.bridge.subscribe(topic, type, (msg) => {
           if (done) return;
           let got = this._getField(msg, field);
@@ -83,7 +85,11 @@ class TCRunner {
           }
           let match = false;
           if (want === "__nonempty__") {
-            match = got != null && String(got).trim().length > 0;
+            if (got != null && typeof got.length === "number" && typeof got !== "string") {
+              match = got.length > 0;
+            } else {
+              match = got != null && String(got).trim().length > 0;
+            }
           } else if (wantNum !== null && typeof want === "number") {
             match = Number(got) === wantNum;
           } else if (typeof want === "boolean") {
@@ -97,9 +103,11 @@ class TCRunner {
             try {
               unsub();
             } catch (_) {}
+            const elapsed = Date.now() - t0;
             const line = `[${this._ts()}] ${tcId} OK expect ${topic} ${field} === ${JSON.stringify(want)}`;
             this.log(line);
-            resolve({ ok: true, line, got });
+            const evidence = `PASS: ${field} = ${JSON.stringify(got)} recibido en ${elapsed}ms (límite: ${timeoutMs}ms)`;
+            resolve({ ok: true, line, got, elapsedMs: elapsed, evidence });
           }
         });
         this._subs.push(unsub);
@@ -119,20 +127,26 @@ class TCRunner {
   async run(tc) {
     this.clearSubscriptions();
     const lines = [];
+    /** @type {string} */
+    let lastEvidence = "";
     try {
       for (const step of tc.steps) {
         const r = await this._runStep(step, tc.id);
         if (r.line) lines.push(r.line);
-        if (step.action === "expect" && !r.ok) {
-          return {
-            pass: false,
-            detail: r.got != null ? `got ${JSON.stringify(r.got)}` : r.line || "expect failed",
-          };
+        if (step.action === "expect") {
+          if (r.evidence) lastEvidence = r.evidence;
+          if (!r.ok) {
+            return {
+              pass: false,
+              detail: r.got != null ? `got ${JSON.stringify(r.got)}` : r.line || "expect failed",
+              evidence: r.evidence || r.line || "FAIL",
+            };
+          }
         }
       }
-      return { pass: true, detail: lines.join("\n") };
+      return { pass: true, detail: lines.join("\n"), evidence: lastEvidence || lines[lines.length - 1] || "PASS" };
     } catch (e) {
-      return { pass: false, detail: String(e && e.message ? e.message : e) };
+      return { pass: false, detail: String(e && e.message ? e.message : e), evidence: String(e && e.message ? e.message : e) };
     } finally {
       this.clearSubscriptions();
     }
@@ -143,6 +157,6 @@ class TCRunner {
 /** @typedef {{ action: 'expect', topic: string, type: string, field?: string, value: *, timeout_ms?: number }} TCExpect */
 /** @typedef {{ action: 'wait_ms', ms: number }} TCWait */
 /** @typedef {TCPublish | TCExpect | TCWait} TCStep */
-/** @typedef {{ id: string, name: string, module: string, timeout_ms?: number, steps: TCStep[] }} TestCase */
+/** @typedef {{ id: string, name: string, module: string, timeout_ms?: number, max_duration_sec?: number, steps: TCStep[] }} TestCase */
 
 window.TCRunner = TCRunner;

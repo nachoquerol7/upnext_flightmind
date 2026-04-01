@@ -117,7 +117,7 @@ const FsmGraph = {
     if (mode && mode !== this.lastMode) {
       if (this.lastMode) {
         this.activeEdge = [this.lastMode, mode];
-        this.edgeUntil = Date.now() + 500;
+        this.edgeUntil = Date.now() + 600;
       }
       this.lastMode = mode;
     }

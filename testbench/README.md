@@ -16,6 +16,9 @@ O haz **doble clic** en `testbench/testbench.desktop` (puede pedir marcar el eje
 2. Detiene instancias previas de rosbridge y `mission_fsm_node`
 3. Lanza **rosbridge** y **`mission_fsm_node`** en segundo plano
 4. Abre `testbench/index.html` en el navegador
+5. Arranca `ram_monitor.py` en **localhost:9091** (RAM por proceso para el panel **MemoryPanel** / TC-E2E-007). Opcional: `pip install psutil` para listar procesos; sin `psutil` el endpoint responde `[]`.
+
+Cada **TC** del sidebar monta un **panel visual** distinto (FSM, mapa, radar DAIDALUS, latencia, watchdog, E2E compuesto, memoria). Al terminar un TC con **Run TC**, el panel muestra **PASS/FAIL** con evidencia y **Limpiar** para volver al modo en vivo.
 
 Para detener los nodos ROS, cierra la terminal donde corre `launch.sh` (o Ctrl+C). En el testbench, **Stop stack** solo cierra el cliente WebSocket en el navegador; si el bridge se cae solo, el log muestra: *Stack detenido. Ejecuta launch.sh para reiniciar.*
 

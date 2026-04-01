@@ -142,16 +142,5 @@
         ],
       },
     ],
-
-    mount(root) {
-      root.innerHTML = "";
-      const box = document.createElement("div");
-      FsmGraph.mount(box);
-      root.appendChild(box);
-    },
-
-    update(st) {
-      FsmGraph.update(st);
-    },
   };
 })();

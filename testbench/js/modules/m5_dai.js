@@ -44,12 +44,5 @@
         steps: [T("/fsm/in/daidalus_alert", "std_msgs/Int32", { data: 0 }), W(200), E("/daidalus/alert_level", "std_msgs/Int32", "data", 0, 4000)],
       },
     ],
-    mount(root) {
-      root.innerHTML = "";
-      DaidalusDisplay.mount(root);
-    },
-    update(st) {
-      DaidalusDisplay.update(st);
-    },
   };
 })();
