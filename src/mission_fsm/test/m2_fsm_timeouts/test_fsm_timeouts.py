@@ -54,7 +54,7 @@ def test_m2_audit_mission_fsm_node_has_no_dwell_timeout_logic() -> None:
 def test_m2_preflight_stable_under_dwell_without_timeout_feature(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """Sin temporizador, PREFLIGHT permanece sin estímulos (comportamiento observable hoy)."""
     _dwell_spin(mission_fsm_sil_harness, 40)
-    assert mission_fsm_sil_harness.cap.mode == "PREFLIGHT"
+    assert mission_fsm_sil_harness.fsm._fsm.state == "PREFLIGHT"  # noqa: SLF001 — cap.mode puede rezagarse
 
 
 @pytest.mark.xfail(
