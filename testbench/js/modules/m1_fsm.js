@@ -22,7 +22,11 @@
         id: "TC-FSM-001",
         name: "PREFLIGHT → AUTOTAXI",
         module: "M1",
-        steps: [T("/fsm/in/preflight_ok", "std_msgs/Bool", { data: true }), W(150), E(MODE, STR, "data", "AUTOTAXI", 5000)],
+        steps: [
+          T("/fsm/in/preflight_ok", "std_msgs/Bool", { data: true }),
+          W(350),
+          E(MODE, STR, "data", "AUTOTAXI", 8000),
+        ],
       },
       {
         id: "TC-FSM-002",

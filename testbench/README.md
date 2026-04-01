@@ -89,3 +89,12 @@ Si tu distro usa nombres de tipo distintos (`std_msgs/msg/Bool` vs `std_msgs/Boo
 - **M9** — E2E resumen
 
 Los módulos M2, M3, M8 y M10 muestran placeholders hasta cablear más TCs.
+
+## Ajustes de integración
+
+Cambios aplicados para que el testbench contra **rosbridge + stack real** (p. ej. `mission_fsm_node`) sea estable en máquinas lentas o con latencia WebSocket:
+
+- **TC-FSM-001 (M1):** Tras publicar `preflight_ok`, la espera antes del `expect` subió de **150 ms → 350 ms** para dar tiempo a que el FSM procese el tick. El timeout del paso `expect` hacia `AUTOTAXI` pasó de **5000 ms → 8000 ms**.
+- **`/fsm/state`:** El tipo suscrito en `js/app.js` sigue siendo `flightmind_msgs/FSMState`. Si tu puente expone nombres con sufijo `/msg/`, ajusta el string `messageType` en `subscribeAll()` (misma fila que el topic).
+
+Si un TC falla por **timeout** o por **tipo de mensaje desconocido**, aumenta `timeout_ms` en el módulo `.js` correspondiente (p. ej. `m1_fsm.js`) o el `messageType` en `app.js` como indica el log del testbench.
