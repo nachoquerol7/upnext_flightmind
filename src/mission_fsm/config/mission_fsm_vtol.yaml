@@ -59,8 +59,9 @@ fsm:
     to: ABORT
     trigger: cruise_to_abort
     when:
-      all:
+      any:
       - abort_command
+      - fdir_emergency
   - from: CRUISE
     to: EVENT
     trigger: to_event
