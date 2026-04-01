@@ -1,4 +1,5 @@
 #!/bin/bash
+unset COLCON_TRACE
 set -euo pipefail
 
 source "$HOME/upnext_uas_ws/install/setup.bash"
