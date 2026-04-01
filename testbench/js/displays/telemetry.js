@@ -72,7 +72,11 @@ const TelemetryPanel = {
       bq.style.background = q < 0.5 ? "#ff5252" : q < 0.8 ? "#ffab40" : "#00e676";
     }
     const dai = st.daidalusLevel;
-    setCls(".sig-dai", dai != null ? String(dai) : "—");
+    const sigDai = this.root.querySelector(".sig-dai");
+    if (sigDai) {
+      sigDai.textContent = dai != null ? String(dai) : "—";
+      sigDai.className = "val sig-dai dai-badge lvl-" + (dai != null ? String(Math.min(3, Math.max(0, dai))) : "x");
+    }
     const bd = this.root.querySelector(".bar-dai");
     if (bd && dai != null) {
       bd.style.width = Math.min(100, dai * 25) + "%";

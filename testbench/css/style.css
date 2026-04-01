@@ -8,6 +8,7 @@ html, body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
   overflow: hidden;
+  overflow-x: hidden;
 }
 
 #app {
@@ -15,6 +16,9 @@ html, body {
   grid-template-columns: 260px minmax(0, 1fr) 300px;
   grid-template-rows: 1fr 120px;
   height: 100vh;
+  max-width: 1920px;
+  margin: 0 auto;
+  width: 100%;
   grid-template-areas:
     "sidebar main right"
     "sidebar log right";
@@ -174,6 +178,13 @@ h1.logo {
   display: flex;
   gap: 8px;
   border-top: 1px solid #152838;
+}
+.toolbar.toolbar-col {
+  flex-direction: column;
+  align-items: stretch;
+}
+.toolbar.toolbar-col button {
+  width: 100%;
 }
 button {
   background: #16334a;
@@ -828,3 +839,16 @@ h2.section-title {
   font-size: 9px;
   color: #4a9eff;
 }
+
+/* DAA badge (panel derecho) */
+.dai-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+.dai-badge.lvl-x { background: #2a3f55; color: #9ab; }
+.dai-badge.lvl-0 { background: rgba(74, 158, 255, 0.25); color: #4a9eff; }
+.dai-badge.lvl-1 { background: rgba(255, 238, 88, 0.2); color: #ffee58; }
+.dai-badge.lvl-2 { background: rgba(255, 171, 64, 0.25); color: #ffab40; }
+.dai-badge.lvl-3 { background: rgba(255, 82, 82, 0.3); color: #ff8a80; }
