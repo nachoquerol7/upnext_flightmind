@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, Generator
 
 import pytest
 import yaml
+from flightmind_msgs.msg import FSMState
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from std_msgs.msg import String
@@ -38,8 +39,15 @@ class _FsmModeCapture(Node):
         self.mode = ""
         self.trig = ""
         self.triggers: list[str] = []
+        self.create_subscription(FSMState, "/fsm/state", self._on_state, 10)
         self.create_subscription(String, "/fsm/current_mode", self._on_mode, 10)
         self.create_subscription(String, "/fsm/active_trigger", self._on_trig, 10)
+
+    def _on_state(self, msg: FSMState) -> None:
+        self.mode = msg.current_mode
+        self.trig = msg.active_trigger
+        if msg.active_trigger:
+            self.triggers.append(msg.active_trigger)
 
     def _on_mode(self, msg: String) -> None:
         self.mode = msg.data

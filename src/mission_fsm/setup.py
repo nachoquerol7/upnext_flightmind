@@ -20,7 +20,7 @@ setup(
             else []
         ),
     ],
-    install_requires=["setuptools"],
+    install_requires=["setuptools", "flightmind_msgs"],
     zip_safe=True,
     maintainer="ignacio",
     maintainer_email="ignacio@example.com",

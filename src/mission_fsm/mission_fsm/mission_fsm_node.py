@@ -6,7 +6,9 @@ import os
 from typing import Any, Callable, Dict, Tuple
 
 import rclpy
+from flightmind_msgs.msg import FSMState
 from rclpy.node import Node
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from std_msgs.msg import Bool, Float64, Int32, String
 
 from mission_fsm.fsm import MissionFsm, default_inputs, load_fsm_yaml_dict
@@ -69,6 +71,13 @@ class MissionFsmNode(Node):
         self._fsm = MissionFsm.from_fsm_yaml(root)
         self._inputs: Dict[str, Any] = default_inputs()
 
+        fsm_state_qos = QoSProfile(
+            depth=1,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+        )
+        self._fsm_state_pub = self.create_publisher(FSMState, "/fsm/state", fsm_state_qos)
+        # Legacy publishers kept for SIL compatibility while subscribers migrate to FSMState.
         self._pub_mode = self.create_publisher(String, "/fsm/current_mode", 10)
         self._pub_trig = self.create_publisher(String, "/fsm/active_trigger", 10)
 
@@ -102,8 +111,15 @@ class MissionFsmNode(Node):
         return cb
 
     def _on_tick(self) -> None:
-        _state, trig = self._fsm.step(self._inputs)
-        self._pub_mode.publish(String(data=self._fsm.state))
+        state, trig = self._fsm.step(self._inputs)
+        msg = FSMState()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.current_mode = state
+        msg.active_trigger = trig or ""
+        msg.event_substate = ""
+        msg.go_around_count = 0
+        self._fsm_state_pub.publish(msg)
+        self._pub_mode.publish(String(data=state))
         self._pub_trig.publish(String(data=trig if trig else ""))
 
 
