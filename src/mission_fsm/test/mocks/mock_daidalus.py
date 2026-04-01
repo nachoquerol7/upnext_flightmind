@@ -25,12 +25,14 @@ class MockDaidalus(Node):
         self._alert = 0
         self._ra = [0.0, 0.0, 0.0]
         self._received: Dict[str, List[Any]] = {}
+        self._fsm_feed_enabled = True
         self.create_timer(0.1, self._tick)
 
     def _tick(self) -> None:
         a = Int32(data=int(self._alert))
         self._pub_alert.publish(a)
-        self._pub_fsm_alert.publish(a)
+        if self._fsm_feed_enabled:
+            self._pub_fsm_alert.publish(a)
         adv = TwistStamped()
         adv.header.stamp = self.get_clock().now().to_msg()
         adv.twist.linear.x = float(self._ra[0])
@@ -42,9 +44,13 @@ class MockDaidalus(Node):
         self._pub_ra.publish(m)
 
     def inject(self, field: str, value: Any) -> None:
+        if field == "fsm_feed_enabled":
+            self._fsm_feed_enabled = bool(value)
+            return
         if field == "alert_level":
             self._alert = int(value)
-            self._pub_fsm_alert.publish(Int32(data=int(self._alert)))
+            if self._fsm_feed_enabled:
+                self._pub_fsm_alert.publish(Int32(data=int(self._alert)))
             return
         if field == "resolution_advisory":
             if isinstance(value, (list, tuple)) and len(value) >= 3:

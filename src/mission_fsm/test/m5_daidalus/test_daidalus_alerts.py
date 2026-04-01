@@ -67,14 +67,12 @@ def test_tc_dai_003_alert_high_enters_event(mission_fsm_sil_with_daidalus: Simpl
     assert mission_fsm_sil_with_daidalus.wait_mode("EVENT")
 
 
-@pytest.mark.xfail(reason="XFAIL-ARCH-1.1: no fast-path distinction for DAIDALUS NEAR(3)", strict=True)
 def test_tc_dai_004_alert_near_fast_path_without_hysteresis(mission_fsm_sil_with_daidalus: SimpleNamespace) -> None:
     _reach_cruise(mission_fsm_sil_with_daidalus)
     mission_fsm_sil_with_daidalus.daidalus.inject("alert_level", 3)
     assert "to_event_near_fastpath" in mission_fsm_sil_with_daidalus.cap.triggers
 
 
-@pytest.mark.xfail(reason="RECOVERY level not mapped", strict=True)
 def test_tc_dai_005_alert_recovery_level_mapping(mission_fsm_sil_with_daidalus: SimpleNamespace) -> None:
     _reach_cruise(mission_fsm_sil_with_daidalus)
     mission_fsm_sil_with_daidalus.daidalus.inject("alert_level", 4)
@@ -109,12 +107,13 @@ def test_tc_dai_007_advisory_topic_is_published(ros_context: None) -> None:
     assert len(sub.msgs) >= 1
 
 
-@pytest.mark.xfail(reason="no DAIDALUS feed timeout", strict=True)
 def test_tc_dai_008_daidalus_feed_timeout_raises_fault(mission_fsm_sil_with_daidalus: SimpleNamespace) -> None:
     _reach_cruise(mission_fsm_sil_with_daidalus)
+    mission_fsm_sil_with_daidalus.daidalus.inject("fsm_feed_enabled", False)
     for _ in range(120):
         mission_fsm_sil_with_daidalus.ex.spin_once(timeout_sec=0.05)
-    assert mission_fsm_sil_with_daidalus.cap.mode in ("EVENT", "ABORT")
+    base = mission_fsm_sil_with_daidalus.cap.mode.split(":", 1)[0]
+    assert base in ("EVENT", "ABORT", "RTB")
 
 
 @pytest.mark.xfail(reason="advisory integration to guidance not implemented", strict=True)

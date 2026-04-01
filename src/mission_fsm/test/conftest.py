@@ -125,7 +125,11 @@ def mission_fsm_sil_harness(ros_context: None) -> Generator[SimpleNamespace, Non
     cap.triggers.clear()
 
     def wait_mode(expected: str, *, timeout_sec: float = 3.0) -> bool:
-        return spin_until(ex, lambda: cap.mode == expected, timeout_sec=timeout_sec)
+        def _match() -> bool:
+            m = cap.mode
+            return m == expected or m.startswith(f"{expected}:")
+
+        return spin_until(ex, _match, timeout_sec=timeout_sec)
 
     def wait_trig(expected: str, *, timeout_sec: float = 3.0) -> bool:
         return spin_until(ex, lambda: cap.trig == expected, timeout_sec=timeout_sec)

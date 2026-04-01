@@ -251,14 +251,12 @@ def test_tc_fsm_022_autotaxi_holds_without_taxi_clear(mission_fsm_sil_harness: S
     assert mission_fsm_sil_harness.fsm._fsm.state == "AUTOTAXI"  # noqa: SLF001
 
 
-@pytest.mark.xfail(reason="XFAIL-ARCH-1.1: sin parámetro ni lógica de histéresis temporal en quality_flag", strict=True)
 def test_tc_fsm_023_quality_hysteresis_declared_on_node(mission_fsm_sil_harness: SimpleNamespace) -> None:
-    """TC-FSM-023: el nodo expone histéresis de calidad (p. ej. quality_flag_hysteresis_sec)."""
+    """TC-FSM-023: el nodo expone parámetros de histéresis de calidad."""
     names = mission_fsm_sil_harness.fsm.get_parameter_names()
     assert any("hysteresis" in n for n in names)
 
 
-@pytest.mark.xfail(reason="XFAIL-ARCH-1.3: sin substates de EVENT expuestos en /fsm", strict=True)
 def test_tc_fsm_024_event_substate_suffix_in_current_mode(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-FSM-024: modo publicado refleja subestado de EVENT (p. ej. EVENT:AVOID)."""
     _reach_event_via_quality(mission_fsm_sil_harness)

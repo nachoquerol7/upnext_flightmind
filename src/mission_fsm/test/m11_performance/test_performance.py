@@ -140,6 +140,7 @@ def test_tc_perf_007_logging_degradation_under_20_percent() -> None:
         fsm.seed("CRUISE")
         t0 = time.perf_counter()
         for _ in range(2000):
+            fsm.seed("CRUISE")
             fsm.step({"quality_flag": 1.0, "daidalus_alert": 0})
         return time.perf_counter() - t0
 

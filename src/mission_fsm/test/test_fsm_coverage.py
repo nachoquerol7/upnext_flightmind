@@ -97,7 +97,15 @@ def test_step_entry_guard_blocks_transition() -> None:
     """Rama continue cuando entry_guard del destino falla (línea 167)."""
     m = MissionFsm(
         initial_state="A",
-        context={"quality_flag_threshold": 0.5, "daidalus_alert_amber": 1},
+        context={
+            "quality_flag_threshold": 0.5,
+            "daidalus_alert_amber": 1,
+            "tick_hz": 10.0,
+            "hysteresis_ticks_on": 3,
+            "hysteresis_ticks_off": 5,
+            "hysteresis_margin": 0.05,
+            "daidalus_escalate_ticks": 2,
+        },
         state_entry={"B": {"all": ["must_be_false"]}},
         transitions=[{"from": "A", "to": "B", "trigger": "try_b", "when": {"all": ["go"]}}],
     )

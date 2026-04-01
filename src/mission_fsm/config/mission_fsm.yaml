@@ -5,34 +5,54 @@ mission_fsm_node:
     initial_state: PREFLIGHT
     quality_flag_threshold: 0.5
     daidalus_alert_amber: 1
+    tick_hz: 20.0
+    hysteresis_ticks_on: 3
+    hysteresis_ticks_off: 5
+    hysteresis_margin: 0.05
+    daidalus_escalate_ticks: 2
     acas_abort_from_advisory: false
+    daidalus_feed_timeout_sec: 2.0
+    gcs_heartbeat_timeout_sec: 2.0
+    c2_link_loss_sec: 2.0
+    battery_low_threshold: 0.15
+    battery_low_sustain_sec: 1.0
+    geofence_breach_sustain_sec: 0.5
 
 fsm:
   states:
     PREFLIGHT:
       entry_guards: {}
+      max_duration_sec: 5.0
     AUTOTAXI:
       entry_guards: {}
+      max_duration_sec: 5.0
     TAKEOFF:
       entry_guards:
         all: [taxi_clear]
+      max_duration_sec: 5.0
     CRUISE:
       entry_guards: {}
+      max_duration_sec: 5.0
     EVENT:
-      entry_guards:
-        any: [quality_degraded, daidalus_escalated]
+      entry_guards: {}
+      max_duration_sec: 5.0
     LANDING:
       entry_guards: {}
     GO_AROUND:
       entry_guards:
         all: [approach_not_stabilized]
     ABORT:
-      entry_guards:
-        any: [fdir_emergency, abort_command]
+      entry_guards: {}
     RTB:
       entry_guards: {}
 
   transitions:
+    - from: PREFLIGHT
+      to: ABORT
+      trigger: preflight_dwell_timeout
+      when:
+        all: [state_dwell_timeout]
+
     - from: PREFLIGHT
       to: AUTOTAXI
       trigger: to_autotaxi
@@ -40,10 +60,22 @@ fsm:
         all: [preflight_ok]
 
     - from: AUTOTAXI
+      to: ABORT
+      trigger: autotaxi_dwell_timeout
+      when:
+        all: [state_dwell_timeout]
+
+    - from: AUTOTAXI
       to: TAKEOFF
       trigger: to_takeoff
       when:
         all: [taxi_clear]
+
+    - from: TAKEOFF
+      to: ABORT
+      trigger: takeoff_dwell_timeout
+      when:
+        all: [state_dwell_timeout]
 
     - from: TAKEOFF
       to: CRUISE
@@ -56,6 +88,48 @@ fsm:
       trigger: cruise_to_abort
       when:
         any: [abort_command, fdir_emergency]
+
+    - from: CRUISE
+      to: RTB
+      trigger: cruise_gcs_lost_rtb
+      when:
+        all: [gcs_lost]
+
+    - from: CRUISE
+      to: EVENT
+      trigger: cruise_c2_lost_event
+      when:
+        all: [c2_lost]
+
+    - from: CRUISE
+      to: RTB
+      trigger: cruise_battery_low_rtb
+      when:
+        all: [battery_low]
+
+    - from: CRUISE
+      to: EVENT
+      trigger: cruise_geofence_breach
+      when:
+        all: [geofence_violation]
+
+    - from: CRUISE
+      to: EVENT
+      trigger: daidalus_feed_timeout
+      when:
+        all: [daidalus_feed_lost]
+
+    - from: CRUISE
+      to: EVENT
+      trigger: to_recovery
+      when:
+        all: [daidalus_recovery]
+
+    - from: CRUISE
+      to: EVENT
+      trigger: to_event_near_fastpath
+      when:
+        all: [daidalus_near]
 
     - from: CRUISE
       to: EVENT
@@ -75,6 +149,12 @@ fsm:
       when:
         all: [land_command]
 
+    - from: CRUISE
+      to: ABORT
+      trigger: cruise_dwell_timeout
+      when:
+        all: [state_dwell_timeout]
+
     - from: EVENT
       to: CRUISE
       trigger: event_to_cruise
@@ -92,6 +172,12 @@ fsm:
       trigger: event_to_rtb
       when:
         all: [rtb_during_event]
+
+    - from: EVENT
+      to: ABORT
+      trigger: event_dwell_timeout
+      when:
+        all: [state_dwell_timeout]
 
     - from: LANDING
       to: GO_AROUND

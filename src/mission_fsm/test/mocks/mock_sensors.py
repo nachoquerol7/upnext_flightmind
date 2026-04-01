@@ -1,4 +1,4 @@
-"""Mock sensores / enlace: batería, GCS heartbeat, C2, motor."""
+"""Mock sensores / enlace: batería, GCS heartbeat, C2, motor, geofence."""
 
 from __future__ import annotations
 
@@ -17,10 +17,13 @@ class MockSensors(Node):
         self._pub_gcs = self.create_publisher(Header, "/gcs_heartbeat", 10)
         self._pub_c2 = self.create_publisher(Bool, "/c2_link_status", 10)
         self._pub_motor = self.create_publisher(Float64MultiArray, "/motor_status", 10)
+        self._pub_geofence = self.create_publisher(Bool, "/geofence_breach", 10)
         self._received: Dict[str, List[Any]] = {}
         self._battery_percent = 0.9
         self._c2 = True
         self._motor = [0.0, 0.0, 0.0, 0.0]
+        self._gcs_heartbeat_enabled = True
+        self._geofence_breach = False
         self.create_timer(0.25, self._tick)
 
     def _tick(self) -> None:
@@ -30,14 +33,16 @@ class MockSensors(Node):
         b.present = True
         b.power_supply_status = BatteryState.POWER_SUPPLY_STATUS_DISCHARGING
         self._pub_batt.publish(b)
-        h = Header()
-        h.stamp = self.get_clock().now().to_msg()
-        h.frame_id = "gcs"
-        self._pub_gcs.publish(h)
+        if self._gcs_heartbeat_enabled:
+            h = Header()
+            h.stamp = self.get_clock().now().to_msg()
+            h.frame_id = "gcs"
+            self._pub_gcs.publish(h)
         self._pub_c2.publish(Bool(data=bool(self._c2)))
         m = Float64MultiArray()
         m.data = [float(x) for x in self._motor]
         self._pub_motor.publish(m)
+        self._pub_geofence.publish(Bool(data=bool(self._geofence_breach)))
 
     def inject(self, field: str, value: Any) -> None:
         if field == "battery_percent":
@@ -48,6 +53,12 @@ class MockSensors(Node):
             return
         if field == "motor_status":
             self._motor = [float(x) for x in value]
+            return
+        if field == "gcs_heartbeat_enabled":
+            self._gcs_heartbeat_enabled = bool(value)
+            return
+        if field == "geofence_breach":
+            self._geofence_breach = bool(value)
             return
         raise KeyError(f"unknown field: {field}")
 
