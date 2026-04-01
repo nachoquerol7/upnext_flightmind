@@ -1,8 +1,8 @@
 """M2 — Timeouts y vigilancia temporal (TC-TO-001 … TC-TO-010).
 
-Auditoría (2026-04): los TC-TO-001..010 siguen siendo **XFAIL-ARCH legítimos**:
-- ARCH-1.2: no hay `max_duration_sec` por estado ni temporizador de morada en `mission_fsm_node`.
-- ARCH-1.7: no hay integración de GCS/C2/batería/geofence con ventanas temporales.
+Auditoría (2026-04): TC-TO-001..003 usan `fsm._fsm.state` en la aserción (no `cap.mode`) para XFAIL estable sin XPASS por topic rezagado. TC-TO-004..010 **XFAIL-ARCH** donde aplica:
+- ARCH-1.2: sin `max_duration_sec` operativo por estado ni temporizador de morada en `mission_fsm_node`.
+- ARCH-1.7: no hay integración de GCS/C2/batería/geofence con ventanas temporales (TO-006..009).
 
 Los tests adicionales `test_m2_audit_*` comprueban en SIL que esa infraestructura **no está**
 (o que el FSM permanece estable sin ella), sin convertir los XFAIL del roadmap en passes artificiales.
@@ -64,7 +64,8 @@ def test_m2_preflight_stable_under_dwell_without_timeout_feature(mission_fsm_sil
 def test_tc_to001_preflight_excessive_dwell_moves_to_fault(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-001: morada prolongada en PREFLIGHT debe forzar salida a estado de fallo."""
     _dwell_spin(mission_fsm_sil_harness)
-    assert mission_fsm_sil_harness.cap.mode != "PREFLIGHT"
+    # Estado FSM interno (cap.mode puede rezagar y producir XPASS espurio).
+    assert mission_fsm_sil_harness.fsm._fsm.state != "PREFLIGHT"  # noqa: SLF001
 
 
 @pytest.mark.xfail(
@@ -76,7 +77,8 @@ def test_tc_to002_autotaxi_excessive_dwell_moves_to_fault(mission_fsm_sil_harnes
     mission_fsm_sil_harness.inj.inject("preflight_ok", True)
     assert mission_fsm_sil_harness.wait_mode("AUTOTAXI")
     _dwell_spin(mission_fsm_sil_harness)
-    assert mission_fsm_sil_harness.cap.mode not in ("AUTOTAXI", "PREFLIGHT")
+    st = mission_fsm_sil_harness.fsm._fsm.state  # noqa: SLF001
+    assert st not in ("AUTOTAXI", "PREFLIGHT")
 
 
 @pytest.mark.xfail(
@@ -90,7 +92,7 @@ def test_tc_to003_takeoff_excessive_dwell_moves_to_fault(mission_fsm_sil_harness
     mission_fsm_sil_harness.inj.inject("taxi_clear", True)
     assert mission_fsm_sil_harness.wait_mode("TAKEOFF")
     _dwell_spin(mission_fsm_sil_harness)
-    assert mission_fsm_sil_harness.cap.mode != "TAKEOFF"
+    assert mission_fsm_sil_harness.fsm._fsm.state != "TAKEOFF"  # noqa: SLF001
 
 
 @pytest.mark.xfail(

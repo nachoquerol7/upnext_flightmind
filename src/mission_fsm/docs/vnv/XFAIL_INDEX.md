@@ -11,7 +11,8 @@
 ## ARCH-1.2 — Timeouts de morada FSM
 **Estado:** ABIERTO
 **Tests bloqueados:** TC-TO-001, TC-TO-002, TC-TO-003, TC-TO-004, TC-TO-005, TC-TO-010
-**Auditoría M2 (2026-04):** Sin falsos XFAIL; el YAML no define `max_duration_sec` y `mission_fsm_node` no implementa temporizador de morada. La suite M2 incluye tests `test_m2_audit_*` que pasan y documentan el vacío arquitectónico.
+**Ajuste SIL (2026-04-01):** TC-TO-001..003 dejan de producir **XPASS** espurio: la aserción usa el estado interno del FSM (`fsm._fsm.state`), no el modo vía `/fsm/state` capturado, que podía rezagarse respecto al FSM.
+**Auditoría M2 (2026-04):** El YAML no define `max_duration_sec` y `mission_fsm_node` no implementa temporizador de morada. La suite M2 incluye tests `test_m2_audit_*` que documentan el vacío arquitectónico.
 **Descripción:** Sin max_duration_sec operativo por estado ni watchdog temporal de misión.
 **Impacto:** Posibilidad de quedar indefinidamente en estados sin progreso.
 **Responsable:** —
