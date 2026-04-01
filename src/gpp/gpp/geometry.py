@@ -45,10 +45,13 @@ def segment_hits_nfz(
     e1: float,
     nfz: Sequence[Polygon],
     *,
+    min_step_m: float = 10.0,
     steps: int = 24,
 ) -> bool:
-    for k in range(steps + 1):
-        t = k / steps
+    seg_len = math.hypot(n1 - n0, e1 - e0)
+    adaptive_steps = max(steps, int(seg_len / min_step_m))
+    for k in range(adaptive_steps + 1):
+        t = k / adaptive_steps
         n = n0 + t * (n1 - n0)
         e = e0 + t * (e1 - e0)
         for poly in nfz:

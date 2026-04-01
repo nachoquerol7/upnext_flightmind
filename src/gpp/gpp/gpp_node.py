@@ -103,10 +103,13 @@ class GppNode(Node):
 
     def _tick(self) -> None:
         bm = float(self.get_parameter("base_margin_m").get_parameter_value().double_value)
-        if self._terrain_m is not None and self._ceiling_m is not None:
-            fl, st = compute_assigned_fl(self._terrain_m, self._ceiling_m, self._quality, bm)
-            self._pub_status.publish(String(data=st))
-            self._pub_fl.publish(Float64(data=fl if st == "OK" else float("nan")))
+        if self._terrain_m is None or self._ceiling_m is None:
+            self._pub_status.publish(String(data="WAITING"))
+            return
+
+        fl, st = compute_assigned_fl(self._terrain_m, self._ceiling_m, self._quality, bm)
+        self._pub_status.publish(String(data=st))
+        self._pub_fl.publish(Float64(data=fl if st == "OK" else float("nan")))
 
         if self._goal is not None:
             start = self._own_n_e_h
@@ -114,11 +117,12 @@ class GppNode(Node):
             goal_se2 = (g[0], g[1], g[2])
             gn, ge, _ = goal_se2
             pad = 150.0
+            start_n, start_e, _ = self._own_n_e_h
             bounds = (
-                min(0.0, gn) - pad,
-                max(0.0, gn) + pad,
-                min(0.0, ge) - pad,
-                max(0.0, ge) + pad,
+                min(start_n, gn) - pad,
+                max(start_n, gn) + pad,
+                min(start_e, ge) - pad,
+                max(start_e, ge) + pad,
             )
             gt = [g[0], g[1], g[2]]
             path_states = self._rrt.plan_if_needed(

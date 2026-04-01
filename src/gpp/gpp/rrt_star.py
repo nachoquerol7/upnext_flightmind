@@ -83,6 +83,10 @@ class RRTStarPlanner:
         self.replan_calls += 1
         self._goal_key = gk
         path = self._plan(start, goal, nfz, bounds)
+        if len(path) < 2:
+            # No safe path found, return start only and keep cache coherent.
+            self._last_path = [start]
+            return [start]
         self._last_path = path
         return list(path)
 
@@ -179,7 +183,10 @@ class RRTStarPlanner:
                     informed = True
 
         if best_goal_idx is None:
-            return [start, goal]
+            # Fallback: direct path only if collision-free
+            if not _dubins_collision(start, goal, self.rho, nfz):
+                return [start, goal]
+            return [start]  # no safe path found
 
         chain: List[int] = []
         i: int | None = best_goal_idx

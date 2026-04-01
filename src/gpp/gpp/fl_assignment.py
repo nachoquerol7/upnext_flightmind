@@ -21,6 +21,8 @@ def compute_assigned_fl(
     """
     if quality_flag < 0.5:
         return float("nan"), "HOLD"
+    if base_margin_m < 0.0:
+        return float("nan"), "TERRAIN_INVALID"
     if math.isnan(terrain_max_m) or math.isinf(terrain_max_m):
         return float("nan"), "TERRAIN_INVALID"
     if ceiling_m <= 0.0:
