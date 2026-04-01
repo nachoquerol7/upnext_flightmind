@@ -4,6 +4,6 @@ Type=Application
 Name=SIL V&V Testbench
 Comment=Arranca ROS2 stack y abre el testbench
 Exec=bash -c 'cd "$(dirname "%k")/.." && bash testbench/launch.sh'
-Icon=utilities-terminal
+Icon=/home/ignacio-querol/upnext_uas_ws/testbench/icon.png
 Terminal=true
 Categories=Development;
