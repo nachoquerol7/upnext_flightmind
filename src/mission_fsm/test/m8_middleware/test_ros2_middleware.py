@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -110,18 +111,18 @@ def test_tc_mw_005_restart_node_republishes_state() -> None:
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
     cmd = ["bash", "-lc", "source /opt/ros/jazzy/setup.bash && source /home/ignacio-querol/upnext_uas_ws/install/setup.bash && ros2 run mission_fsm mission_fsm_node"]
-    p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, preexec_fn=os.setsid)
     try:
         time.sleep(1.0)
     finally:
-        p.terminate()
+        os.killpg(p.pid, signal.SIGTERM)
         p.wait(timeout=10)
-    p2 = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    p2 = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, preexec_fn=os.setsid)
     try:
         time.sleep(1.0)
         assert p2.poll() is None
     finally:
-        p2.terminate()
+        os.killpg(p2.pid, signal.SIGTERM)
         p2.wait(timeout=10)
 
 
@@ -135,7 +136,7 @@ def test_tc_mw_007_yaml_parameters_match_defaults() -> None:
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
     cmd = ["bash", "-lc", "source /opt/ros/jazzy/setup.bash && source /home/ignacio-querol/upnext_uas_ws/install/setup.bash && ros2 run mission_fsm mission_fsm_node"]
-    p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, preexec_fn=os.setsid)
     try:
         time.sleep(1.0)
         q = subprocess.check_output(
@@ -154,7 +155,7 @@ def test_tc_mw_007_yaml_parameters_match_defaults() -> None:
             env=env,
         )
     finally:
-        p.terminate()
+        os.killpg(p.pid, signal.SIGTERM)
         p.wait(timeout=10)
     assert "0.5" in q and "1" in a and "PREFLIGHT" in i
 

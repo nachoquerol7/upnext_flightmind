@@ -1,0 +1,141 @@
+mission_fsm_node:
+  ros__parameters:
+    config_file: ''
+    initial_state: PREFLIGHT
+    quality_flag_threshold: 0.5
+    daidalus_alert_amber: 1
+    c2_timeout_sec: 30
+    bvlos_mode: true
+fsm:
+  states:
+    PREFLIGHT:
+      entry_guards: {}
+    AUTOTAXI:
+      entry_guards: {}
+    TAKEOFF:
+      entry_guards:
+        all:
+        - taxi_clear
+    CRUISE:
+      entry_guards: {}
+    EVENT:
+      entry_guards:
+        any:
+        - quality_degraded
+        - daidalus_escalated
+    LANDING:
+      entry_guards: {}
+    GO_AROUND:
+      entry_guards:
+        all:
+        - approach_not_stabilized
+    ABORT:
+      entry_guards:
+        any:
+        - fdir_emergency
+        - abort_command
+    RTB:
+      entry_guards: {}
+  transitions:
+  - from: PREFLIGHT
+    to: AUTOTAXI
+    trigger: to_autotaxi
+    when:
+      all:
+      - preflight_ok
+  - from: AUTOTAXI
+    to: TAKEOFF
+    trigger: to_takeoff
+    when:
+      all:
+      - taxi_clear
+  - from: TAKEOFF
+    to: CRUISE
+    trigger: to_cruise
+    when:
+      all:
+      - takeoff_complete
+  - from: CRUISE
+    to: ABORT
+    trigger: cruise_to_abort
+    when:
+      all:
+      - abort_command
+  - from: CRUISE
+    to: EVENT
+    trigger: to_event
+    when:
+      any:
+      - quality_degraded
+      - daidalus_escalated
+  - from: CRUISE
+    to: RTB
+    trigger: cruise_to_rtb
+    when:
+      all:
+      - rtb_command
+  - from: CRUISE
+    to: LANDING
+    trigger: to_landing
+    when:
+      all:
+      - land_command
+  - from: EVENT
+    to: CRUISE
+    trigger: event_to_cruise
+    when:
+      all:
+      - event_cleared
+  - from: EVENT
+    to: ABORT
+    trigger: event_to_abort
+    when:
+      all:
+      - fdir_emergency
+  - from: EVENT
+    to: RTB
+    trigger: event_to_rtb
+    when:
+      all:
+      - rtb_during_event
+  - from: LANDING
+    to: GO_AROUND
+    trigger: landing_to_goaround
+    when:
+      all:
+      - approach_not_stabilized
+  - from: LANDING
+    to: AUTOTAXI
+    trigger: landing_complete
+    when:
+      all:
+      - touchdown
+  - from: GO_AROUND
+    to: LANDING
+    trigger: goaround_to_landing
+    when:
+      all:
+      - go_around_complete
+  - from: GO_AROUND
+    to: CRUISE
+    trigger: goaround_to_cruise
+    when:
+      all:
+      - missed_approach_climb
+  - from: ABORT
+    to: RTB
+    trigger: abort_to_rtb
+    when:
+      all: []
+  - from: RTB
+    to: LANDING
+    trigger: rtb_to_landing
+    when:
+      all:
+      - rtb_landing
+  - from: RTB
+    to: CRUISE
+    trigger: rtb_to_cruise
+    when:
+      all:
+      - rtb_cancel

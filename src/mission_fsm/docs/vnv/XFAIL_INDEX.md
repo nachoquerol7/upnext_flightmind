@@ -26,7 +26,7 @@
 
 ## ARCH-1.6 — Validación geofence pre-Nav2
 **Estado:** ABIERTO
-**Tests bloqueados:** TC-NAV-006
+**Tests bloqueados:** TC-NAV-006, TC-FAULT-005
 **Descripción:** No hay validador que rechace waypoints fuera de geofence antes de llamar a Nav2.
 **Impacto:** Planificación de rutas potencialmente inválidas para plataforma aérea.
 **Responsable:** —
@@ -34,7 +34,7 @@
 
 ## ARCH-1.7 — Supervisión externa (watchdog + enlaces)
 **Estado:** ABIERTO
-**Tests bloqueados:** TC-TO-006, TC-TO-007, TC-TO-008, TC-TO-009, TC-FDIR-007, TC-FDIR-008, TC-FDIR-016
+**Tests bloqueados:** TC-TO-006, TC-TO-007, TC-TO-008, TC-TO-009, TC-FDIR-007, TC-FDIR-008, TC-FDIR-016, TC-MW-001, TC-FAULT-008
 **Descripción:** No existe nodo watchdog integrado ni monitor temporal de GCS/C2/batería/geofence en mission_fsm.
 **Impacto:** Degradación de seguridad ante caída de nodos o pérdida de enlaces críticos.
 **Responsable:** —
@@ -50,9 +50,17 @@
 
 ## ARCH-1.9 — Persistencia de waypoint de interrupción
 **Estado:** ABIERTO
-**Tests bloqueados:** TC-NAV-009
+**Tests bloqueados:** TC-NAV-009, TC-FAULT-001
 **Descripción:** El gestor de misión no persiste waypoint actual para reanudación tras interrupción.
 **Impacto:** Reanudación no determinista tras EVENT/ABORT en misiones largas.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-1.10 — Black box logging / replay
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-E2E-009, TC-E2E-010
+**Descripción:** No existe subsistema de black-box con registro persistente y catálogo de replay para misiones.
+**Impacto:** Menor trazabilidad post-vuelo y diagnóstico limitado en incidentes.
 **Responsable:** —
 **Fecha objetivo:** —
 
@@ -93,6 +101,14 @@
 **Tests bloqueados:** TC-NAV-011
 **Descripción:** Falta interfaz para restricciones UTM dinámicas antes/durante planificación.
 **Impacto:** No se pueden validar restricciones de espacio aéreo en tiempo de misión.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-FDIR-SEV — Tabla de severidad de fallos FDIR
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-FAULT-012
+**Descripción:** No hay tabla/versionado de severidad para cascada de fallos en FDIR.
+**Impacto:** Escalado de emergencia no determinista para fallos múltiples simultáneos.
 **Responsable:** —
 **Fecha objetivo:** —
 

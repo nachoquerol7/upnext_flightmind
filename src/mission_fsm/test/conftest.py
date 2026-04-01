@@ -24,6 +24,7 @@ if str(_MOCKS) not in sys.path:
 
 import fsm_input_injector  # noqa: E402
 
+from mission_fsm.fsm import default_inputs
 from mission_fsm.mission_fsm_node import MissionFsmNode
 
 
@@ -119,6 +120,13 @@ def mission_fsm_sil_harness(ros_context: None) -> Generator[SimpleNamespace, Non
     ex.add_node(fsm)
     ex.add_node(inj)
     ex.add_node(cap)
+    # Reset deterministic start to avoid transient-local latched samples from previous tests.
+    fsm._fsm.reset("PREFLIGHT")  # noqa: SLF001
+    fsm._inputs = default_inputs()  # noqa: SLF001
+    spin_until(ex, lambda: cap.mode == "PREFLIGHT", timeout_sec=3.0)
+    cap.mode = "PREFLIGHT"
+    cap.trig = ""
+    cap.triggers.clear()
 
     def wait_mode(expected: str, *, timeout_sec: float = 3.0) -> bool:
         return spin_until(ex, lambda: cap.mode == expected, timeout_sec=timeout_sec)
