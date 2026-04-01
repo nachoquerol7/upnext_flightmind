@@ -18,7 +18,6 @@ def generate_launch_description() -> LaunchDescription:
                 name="acas_node",
                 output="screen",
                 parameters=[cfg],
-                prefix="chrt -f 80 ",
             ),
         ]
     )

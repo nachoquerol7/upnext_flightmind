@@ -37,6 +37,12 @@ def _reach_event_via_quality(h: SimpleNamespace) -> None:
     assert h.wait_mode("EVENT")
 
 
+def _drain_executor(h: SimpleNamespace, iterations: int = 120) -> None:
+    """Vacía mensajes pendientes para que el capture reciba todos los active_trigger."""
+    for _ in range(iterations):
+        h.ex.spin_once(timeout_sec=0.02)
+
+
 @pytest.fixture
 def mission_fsm_sil_with_fastlio(mission_fsm_sil_harness: SimpleNamespace) -> SimpleNamespace:
     """Harness + mock FastLIO2 (mismo executor)."""
@@ -105,7 +111,9 @@ def test_tc_fsm_007_cruise_to_landing(mission_fsm_sil_harness: SimpleNamespace) 
     """TC-FSM-007: land_command → LANDING."""
     _reach_cruise(mission_fsm_sil_harness)
     mission_fsm_sil_harness.inj.inject("land_command", True)
-    assert mission_fsm_sil_harness.wait_mode("LANDING") and "to_landing" in mission_fsm_sil_harness.cap.triggers
+    assert mission_fsm_sil_harness.wait_mode("LANDING")
+    _drain_executor(mission_fsm_sil_harness)
+    assert "to_landing" in mission_fsm_sil_harness.cap.triggers
 
 
 def test_tc_fsm_008_event_to_cruise(mission_fsm_sil_harness: SimpleNamespace) -> None:
@@ -176,7 +184,9 @@ def test_tc_fsm_015_go_around_to_cruise(mission_fsm_sil_harness: SimpleNamespace
     mission_fsm_sil_harness.inj.inject("approach_not_stabilized", True)
     assert mission_fsm_sil_harness.wait_mode("GO_AROUND")
     mission_fsm_sil_harness.inj.inject("missed_approach_climb", True)
-    assert mission_fsm_sil_harness.wait_mode("CRUISE") and "goaround_to_cruise" in mission_fsm_sil_harness.cap.triggers
+    assert mission_fsm_sil_harness.wait_mode("CRUISE")
+    _drain_executor(mission_fsm_sil_harness)
+    assert "goaround_to_cruise" in mission_fsm_sil_harness.cap.triggers
 
 
 def test_tc_fsm_016_abort_to_rtb(mission_fsm_sil_harness: SimpleNamespace) -> None:
@@ -193,7 +203,9 @@ def test_tc_fsm_017_rtb_to_landing(mission_fsm_sil_harness: SimpleNamespace) -> 
     mission_fsm_sil_harness.inj.inject("rtb_command", True)
     assert mission_fsm_sil_harness.wait_mode("RTB")
     mission_fsm_sil_harness.inj.inject("rtb_landing", True)
-    assert mission_fsm_sil_harness.wait_mode("LANDING") and "rtb_to_landing" in mission_fsm_sil_harness.cap.triggers
+    assert mission_fsm_sil_harness.wait_mode("LANDING")
+    _drain_executor(mission_fsm_sil_harness)
+    assert "rtb_to_landing" in mission_fsm_sil_harness.cap.triggers
 
 
 def test_tc_fsm_018_rtb_to_cruise(mission_fsm_sil_harness: SimpleNamespace) -> None:
@@ -227,7 +239,7 @@ def test_tc_fsm_021_preflight_holds_without_preflight_ok(mission_fsm_sil_harness
     """TC-FSM-021: sin preflight_ok permanece en PREFLIGHT."""
     for _ in range(60):
         mission_fsm_sil_harness.ex.spin_once(timeout_sec=0.05)
-    assert mission_fsm_sil_harness.cap.mode == "PREFLIGHT"
+    assert mission_fsm_sil_harness.fsm._fsm.state == "PREFLIGHT"  # noqa: SLF001 — cap.mode puede rezagarse con QoS volatile
 
 
 def test_tc_fsm_022_autotaxi_holds_without_taxi_clear(mission_fsm_sil_harness: SimpleNamespace) -> None:
@@ -236,7 +248,7 @@ def test_tc_fsm_022_autotaxi_holds_without_taxi_clear(mission_fsm_sil_harness: S
     assert mission_fsm_sil_harness.wait_mode("AUTOTAXI")
     for _ in range(60):
         mission_fsm_sil_harness.ex.spin_once(timeout_sec=0.05)
-    assert mission_fsm_sil_harness.cap.mode == "AUTOTAXI"
+    assert mission_fsm_sil_harness.fsm._fsm.state == "AUTOTAXI"  # noqa: SLF001
 
 
 @pytest.mark.xfail(reason="XFAIL-ARCH-1.1: sin parámetro ni lógica de histéresis temporal en quality_flag", strict=True)

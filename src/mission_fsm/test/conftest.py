@@ -13,7 +13,7 @@ import yaml
 from flightmind_msgs.msg import FSMState
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
-from std_msgs.msg import String
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 
 import rclpy
 
@@ -40,23 +40,19 @@ class _FsmModeCapture(Node):
         self.mode = ""
         self.trig = ""
         self.triggers: list[str] = []
-        self.create_subscription(FSMState, "/fsm/state", self._on_state, 10)
-        self.create_subscription(String, "/fsm/current_mode", self._on_mode, 10)
-        self.create_subscription(String, "/fsm/active_trigger", self._on_trig, 10)
+        # Volatile + cola amplia: evita histórico de otra ejecución; depth 50 reduce pérdidas a 20 Hz.
+        cap_qos = QoSProfile(
+            depth=100,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.VOLATILE,
+        )
+        self.create_subscription(FSMState, "/fsm/state", self._on_state, cap_qos)
 
     def _on_state(self, msg: FSMState) -> None:
         self.mode = msg.current_mode
         self.trig = msg.active_trigger
         if msg.active_trigger:
             self.triggers.append(msg.active_trigger)
-
-    def _on_mode(self, msg: String) -> None:
-        self.mode = msg.data
-
-    def _on_trig(self, msg: String) -> None:
-        self.trig = msg.data
-        if msg.data:
-            self.triggers.append(msg.data)
 
 
 def spin_until(ex: MultiThreadedExecutor, pred: Callable[[], bool], *, timeout_sec: float = 3.0) -> bool:
@@ -123,8 +119,8 @@ def mission_fsm_sil_harness(ros_context: None) -> Generator[SimpleNamespace, Non
     # Reset deterministic start to avoid transient-local latched samples from previous tests.
     fsm._fsm.reset("PREFLIGHT")  # noqa: SLF001
     fsm._inputs = default_inputs()  # noqa: SLF001
-    spin_until(ex, lambda: cap.mode == "PREFLIGHT", timeout_sec=3.0)
-    cap.mode = "PREFLIGHT"
+    spin_until(ex, lambda: fsm._fsm.state == "PREFLIGHT", timeout_sec=3.0)
+    cap.mode = fsm._fsm.state
     cap.trig = ""
     cap.triggers.clear()
 

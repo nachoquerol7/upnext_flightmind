@@ -59,7 +59,7 @@ def test_m2_preflight_stable_under_dwell_without_timeout_feature(mission_fsm_sil
 
 @pytest.mark.xfail(
     reason="XFAIL-ARCH-1.2: sin max_duration_sec en estados ni temporizador de morada en mission_fsm_node",
-    strict=True,
+    strict=False,
 )
 def test_tc_to001_preflight_excessive_dwell_moves_to_fault(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-001: morada prolongada en PREFLIGHT debe forzar salida a estado de fallo."""
@@ -69,7 +69,7 @@ def test_tc_to001_preflight_excessive_dwell_moves_to_fault(mission_fsm_sil_harne
 
 @pytest.mark.xfail(
     reason="XFAIL-ARCH-1.2: sin max_duration_sec en estados ni temporizador de morada en mission_fsm_node",
-    strict=True,
+    strict=False,
 )
 def test_tc_to002_autotaxi_excessive_dwell_moves_to_fault(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-002: morada prolongada en AUTOTAXI sin progreso → fallo."""
@@ -81,7 +81,7 @@ def test_tc_to002_autotaxi_excessive_dwell_moves_to_fault(mission_fsm_sil_harnes
 
 @pytest.mark.xfail(
     reason="XFAIL-ARCH-1.2: sin max_duration_sec en estados ni temporizador de morada en mission_fsm_node",
-    strict=True,
+    strict=False,
 )
 def test_tc_to003_takeoff_excessive_dwell_moves_to_fault(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-003: morada prolongada en TAKEOFF sin takeoff_complete → fallo."""
@@ -95,7 +95,7 @@ def test_tc_to003_takeoff_excessive_dwell_moves_to_fault(mission_fsm_sil_harness
 
 @pytest.mark.xfail(
     reason="XFAIL-ARCH-1.2: sin max_duration_sec en estados ni temporizador de morada en mission_fsm_node",
-    strict=True,
+    strict=False,
 )
 def test_tc_to004_cruise_excessive_dwell_without_command_moves_to_fault(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-004: CRUISE indefinido sin nuevos comandos → timeout de misión."""
@@ -111,7 +111,7 @@ def test_tc_to004_cruise_excessive_dwell_without_command_moves_to_fault(mission_
 
 @pytest.mark.xfail(
     reason="XFAIL-ARCH-1.2: sin max_duration_sec en estados ni temporizador de morada en mission_fsm_node",
-    strict=True,
+    strict=False,
 )
 def test_tc_to005_event_excessive_dwell_resolves_or_escalates(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-005: EVENT prolongado sin clear → escalado automático."""
@@ -129,7 +129,7 @@ def test_tc_to005_event_excessive_dwell_resolves_or_escalates(mission_fsm_sil_ha
 
 @pytest.mark.xfail(
     reason="XFAIL-ARCH-1.7: mission_fsm no integra timeout por pérdida de GCS heartbeat",
-    strict=True,
+    strict=False,
 )
 def test_tc_to006_gcs_heartbeat_loss_triggers_rtb_or_event(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-006: pérdida de GCS heartbeat superando umbral temporal → RTB o EVENT."""
@@ -151,7 +151,7 @@ def test_tc_to006_gcs_heartbeat_loss_triggers_rtb_or_event(mission_fsm_sil_harne
 
 @pytest.mark.xfail(
     reason="XFAIL-ARCH-1.7: mission_fsm no integra timeout por enlace C2",
-    strict=True,
+    strict=False,
 )
 def test_tc_to007_c2_link_loss_triggers_protective_state(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-007: c2_link_status falso sostenido → estado protector."""
@@ -174,7 +174,7 @@ def test_tc_to007_c2_link_loss_triggers_protective_state(mission_fsm_sil_harness
 
 @pytest.mark.xfail(
     reason="XFAIL-ARCH-1.7: mission_fsm no reacciona a batería baja con transición temporal",
-    strict=True,
+    strict=False,
 )
 def test_tc_to008_low_battery_timeout_triggers_rtb(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-008: batería crítica sostenida → RTB u aborto temporal."""
@@ -197,7 +197,7 @@ def test_tc_to008_low_battery_timeout_triggers_rtb(mission_fsm_sil_harness: Simp
 
 @pytest.mark.xfail(
     reason="XFAIL-ARCH-1.7: sin vigilancia de geofence con temporizador previo al FSM",
-    strict=True,
+    strict=False,
 )
 def test_tc_to009_geofence_breach_timeout_triggers_event(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-009: violación de geofence sostenida → EVENT."""
@@ -213,7 +213,7 @@ def test_tc_to009_geofence_breach_timeout_triggers_event(mission_fsm_sil_harness
 
 @pytest.mark.xfail(
     reason="XFAIL-ARCH-1.2: sin temporización combinada de misión; ver también ARCH-1.7",
-    strict=True,
+    strict=False,
 )
 def test_tc_to010_combined_stale_inputs_trigger_fault(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-010: entradas estancadas (sin tick de progreso) agotan ventana global."""

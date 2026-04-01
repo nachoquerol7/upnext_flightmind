@@ -4,6 +4,7 @@ mission_fsm_node:
     initial_state: PREFLIGHT
     quality_flag_threshold: 0.5
     daidalus_alert_amber: 1
+    acas_abort_from_advisory: true
     go_around_max_attempts: 3
     takeoff_max_duration_sec: 60
 fsm:

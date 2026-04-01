@@ -5,6 +5,7 @@ mission_fsm_node:
     initial_state: PREFLIGHT
     quality_flag_threshold: 0.5
     daidalus_alert_amber: 1
+    acas_abort_from_advisory: false
 
 fsm:
   states:

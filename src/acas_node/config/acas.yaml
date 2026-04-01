@@ -1,7 +1,10 @@
 /**:
   ros__parameters:
-    tau_ca: 45.0
-    dmod_ca: 1800.0
-    z_sep_m: 120.0
-    ra_climb_rate_mps: 3.0
-    ra_heading_delta_deg: 30.0
+    traffic_topic: "/traffic/intruders"
+    navigation_topic: "/navigation/state"
+    ownship_topic: "/ownship/state"
+    use_ownship_fallback: true
+    nnet_subdir: "nnets"
+    rho_norm_m: 185200.0
+    v_norm_mps: 250.0
+    timer_period_s: 0.05

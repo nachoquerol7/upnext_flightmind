@@ -6,8 +6,9 @@ import os
 from typing import Any, Callable, Dict, Tuple
 
 import rclpy
-from flightmind_msgs.msg import FSMState
+from flightmind_msgs.msg import ACASAdvisory, FSMState
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from std_msgs.msg import Bool, Float64, Int32, String
 
@@ -39,14 +40,15 @@ _BOOL_TOPICS: Tuple[str, ...] = (
 
 
 class MissionFsmNode(Node):
-    def __init__(self) -> None:
-        super().__init__("mission_fsm_node")
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__("mission_fsm_node", **kwargs)
 
         self.declare_parameter("config_file", "")
         self.declare_parameter("initial_state", "PREFLIGHT")
         self.declare_parameter("quality_flag_threshold", 0.5)
         self.declare_parameter("daidalus_alert_amber", 1)
         self.declare_parameter("tick_hz", 20.0)
+        self.declare_parameter("acas_abort_from_advisory", False)
 
         cfg = self.get_parameter("config_file").get_parameter_value().string_value.strip()
         if cfg and os.path.isfile(cfg):
@@ -68,8 +70,16 @@ class MissionFsmNode(Node):
             self.get_parameter("daidalus_alert_amber").get_parameter_value().integer_value
         )
 
+        acas_yaml = ros_params.get("acas_abort_from_advisory", False)
+        if isinstance(acas_yaml, str):
+            acas_yaml = acas_yaml.lower() in ("true", "1", "yes")
+        self.set_parameters(
+            [Parameter("acas_abort_from_advisory", Parameter.Type.BOOL, bool(acas_yaml))]
+        )
+
         self._fsm = MissionFsm.from_fsm_yaml(root)
         self._inputs: Dict[str, Any] = default_inputs()
+        self._acas_ra_active = False
 
         fsm_state_qos = QoSProfile(
             depth=1,
@@ -85,6 +95,8 @@ class MissionFsmNode(Node):
         self.create_subscription(Int32, "/fsm/in/daidalus_alert", self._mk_int("daidalus_alert"), 10)
         for name in _BOOL_TOPICS:
             self.create_subscription(Bool, f"/fsm/in/{name}", self._mk_bool(name), 10)
+
+        self.create_subscription(ACASAdvisory, "/acas/advisory", self._on_acas_advisory, 10)
 
         hz = float(self.get_parameter("tick_hz").get_parameter_value().double_value)
         period = 1.0 / hz if hz > 1e-3 else 0.05
@@ -110,8 +122,15 @@ class MissionFsmNode(Node):
 
         return cb
 
+    def _on_acas_advisory(self, msg: ACASAdvisory) -> None:
+        self._acas_ra_active = bool(msg.ra_active)
+
     def _on_tick(self) -> None:
-        state, trig = self._fsm.step(self._inputs)
+        merged: Dict[str, Any] = dict(self._inputs)
+        use_acas_abort = bool(self.get_parameter("acas_abort_from_advisory").value)
+        if use_acas_abort and self._acas_ra_active and self._fsm.state == "CRUISE":
+            merged["abort_command"] = True
+        state, trig = self._fsm.step(merged)
         msg = FSMState()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.current_mode = state

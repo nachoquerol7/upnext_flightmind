@@ -240,7 +240,7 @@ def test_tc_loc010_quality_at_threshold_not_degraded(mission_fsm_sil_with_fastli
     mission_fsm_sil_with_fastlio.fastlio.inject("quality_flag", 0.5)
     for _ in range(50):
         mission_fsm_sil_with_fastlio.ex.spin_once(timeout_sec=0.05)
-    assert mission_fsm_sil_with_fastlio.cap.mode == "CRUISE"
+    assert mission_fsm_sil_with_fastlio.fsm._fsm.state == "CRUISE"  # noqa: SLF001 — cap.mode puede rezagarse
 
 
 def test_tc_loc011_quality_slightly_below_threshold_goes_event(mission_fsm_sil_with_fastlio: SimpleNamespace) -> None:
