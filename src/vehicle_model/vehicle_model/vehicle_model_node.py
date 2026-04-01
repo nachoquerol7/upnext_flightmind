@@ -6,11 +6,13 @@ import os
 from typing import Any, List
 
 import rclpy
+from example_interfaces.srv import SetBool
+from flightmind_msgs.msg import VehicleModelState
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile
 from std_msgs.msg import Float64MultiArray, MultiArrayDimension
 
-from vehicle_model.model import VehicleModel, load_yaml_dict, model_params_from_ros_dict
+from vehicle_model.model import VehicleModel, TrajectorySegment, load_yaml_dict, model_params_from_ros_dict
 
 
 # Layout of data[] in /vehicle_model/state (document for consumers)
@@ -101,6 +103,28 @@ class VehicleModelNode(Node):
 
     def _publish_once(self) -> None:
         self._pub.publish(self._layout_msg())
+        vec = self._model.state_vector()
+        vm = VehicleModelState()
+        vm.header.stamp = self.get_clock().now().to_msg()
+        vm.header.frame_id = "vehicle"
+        vm.v_min_ms = float(vec[0])
+        vm.v_max_ms = float(vec[1])
+        vm.turn_radius_min_m = float(vec[2])
+        vm.climb_rate_max_mps = float(vec[3])
+        vm.descent_rate_max_mps = float(vec[4])
+        vm.glide_ratio = float(vec[5])
+        vm.current_weight_kg = float(vec[6])
+        vm.elapsed_mission_h = float(self.get_parameter("mission_elapsed_time_h").value)
+        self._pub_vm.publish(vm)
+
+    def _is_feasible_cb(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        """VM-004: simplified SIL — nominal manoeuvre accepted."""
+        spd = 0.5 * (float(self._model.v_min_ms) + float(self._model.v_max_ms))
+        seg = TrajectorySegment(speed_mps=spd, climb_rate_mps=0.0)
+        ok = self._model.is_feasible([seg])
+        response.success = ok and bool(request.data)
+        response.message = "feasible" if response.success else "infeasible"
+        return response
 
     def _on_timer(self) -> None:
         elapsed = float(self.get_parameter("mission_elapsed_time_h").value)
