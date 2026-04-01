@@ -1,0 +1,12 @@
+# FDIR severity / action table (FDIR-003..020, ARCH-FDIR-SEV)
+faults:
+  IMU_FAILED: { severity: CRITICAL, action: ABORT }
+  GPS_FAILED: { severity: HIGH, action: RTB }
+  BARO_FAILED: { severity: HIGH, action: RTB }
+  LIDAR_FAILED: { severity: MEDIUM, action: DEGRADE }
+  BATTERY_LOW: { severity: MEDIUM, action: RTB }
+  BATTERY_CRITICAL: { severity: HIGH, action: RTB }
+  C2_LOST: { severity: HIGH, action: RTB }
+  GCS_LOST: { severity: MEDIUM, action: RTB }
+  MOTOR_DEGRADED: { severity: HIGH, action: RTB }
+  THERMAL_CRITICAL: { severity: CRITICAL, action: ABORT }

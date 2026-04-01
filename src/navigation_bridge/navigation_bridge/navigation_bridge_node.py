@@ -10,7 +10,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 
 from flightmind_msgs.msg import NavigationState
-from std_msgs.msg import Float64
+from std_msgs.msg import Bool, Float64
 
 try:
     from px4_msgs.msg import VehicleOdometry
@@ -44,7 +44,12 @@ class NavigationBridgeNode(Node):
         self.create_subscription(VehicleOdometry, "/fmu/out/vehicle_odometry", self._on_odom, qos)
         self._pub_q = self.create_publisher(Float64, "/nav/quality_flag", 10)
         self._pub_nav = self.create_publisher(NavigationState, "/navigation/state", 10)
+        self._pub_nav_hb = self.create_publisher(Bool, "/navigation/heartbeat", 10)
         self._timer = self.create_timer(1.0 / 50.0, self._tick)
+        self.create_timer(1.0, self._publish_nav_heartbeat)
+
+    def _publish_nav_heartbeat(self) -> None:
+        self._pub_nav_hb.publish(Bool(data=True))
 
     def _on_odom(self, msg: VehicleOdometry) -> None:
         self._last_odom = msg

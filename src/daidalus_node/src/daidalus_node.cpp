@@ -1,3 +1,4 @@
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -5,6 +6,7 @@
 #include "daidalus_node/synthetic_daa.hpp"
 #include <flightmind_msgs/msg/traffic_report.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <std_msgs/msg/int32.hpp>
 
@@ -28,6 +30,7 @@ public:
     pub_bands_ = create_publisher<Float64MultiArray>("/daidalus/bands_summary", 10);
     pub_alert_ = create_publisher<Int32>("/daidalus/alert_level", 10);
     pub_ra_ = create_publisher<Float64MultiArray>("/daidalus/resolution_advisory", 10);
+    pub_hb_ = create_publisher<std_msgs::msg::Bool>("/daidalus/heartbeat", 10);
 
     sub_own_ = create_subscription<Float64MultiArray>(
       "/ownship/state", 10,
@@ -40,6 +43,10 @@ public:
     timer_ = create_wall_timer(
       std::chrono::milliseconds(100),
       std::bind(&DaidalusNode::tick, this));
+
+    hb_timer_ = create_wall_timer(
+      std::chrono::seconds(1),
+      std::bind(&DaidalusNode::publish_heartbeat, this));
 
     RCLCPP_INFO(
       get_logger(),
@@ -67,16 +74,23 @@ private:
     intruders_.clear();
     for (const auto &i : msg->intruders) {
       daidalus_node::IntruderState s;
-      s.id = i.id;
-      s.n = i.n_m;
-      s.e = i.e_m;
-      s.z = i.z_ned_m;
-      s.vn = i.vn_mps;
-      s.ve = i.ve_mps;
-      s.vd = i.vd_mps;
+      s.id = static_cast<uint32_t>(std::hash<std::string>{}(i.intruder_id));
+      s.n = i.position_ned[0];
+      s.e = i.position_ned[1];
+      s.z = i.position_ned[2];
+      s.vn = i.velocity_ned[0];
+      s.ve = i.velocity_ned[1];
+      s.vd = i.velocity_ned[2];
       intruders_.push_back(s);
     }
     have_traffic_ = true;
+  }
+
+  void publish_heartbeat()
+  {
+    std_msgs::msg::Bool m;
+    m.data = true;
+    pub_hb_->publish(m);
   }
 
   void tick()
@@ -126,9 +140,11 @@ private:
   rclcpp::Publisher<Float64MultiArray>::SharedPtr pub_bands_;
   rclcpp::Publisher<Int32>::SharedPtr pub_alert_;
   rclcpp::Publisher<Float64MultiArray>::SharedPtr pub_ra_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_hb_;
   rclcpp::Subscription<Float64MultiArray>::SharedPtr sub_own_;
   rclcpp::Subscription<flightmind_msgs::msg::TrafficReport>::SharedPtr sub_traffic_;
   rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr hb_timer_;
 };
 
 int main(int argc, char **argv)

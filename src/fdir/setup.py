@@ -24,6 +24,9 @@ setup(
     entry_points={
         "console_scripts": [
             "fdir_node = fdir.fdir_node:main",
+            "battery_monitor_node = fdir.battery_monitor_node:main",
+            "fdir_c2_monitor_node = fdir.c2_monitor_node:main",
+            "fdir_watchdog_node = fdir.watchdog_node:main",
         ],
     },
 )

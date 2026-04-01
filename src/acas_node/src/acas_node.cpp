@@ -11,6 +11,7 @@
 #include <flightmind_msgs/msg/navigation_state.hpp>
 #include <flightmind_msgs/msg/traffic_report.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 
 namespace acas_node {
@@ -127,6 +128,13 @@ public:
   }
 
 private:
+  void publish_acas_heartbeat()
+  {
+    std_msgs::msg::Bool m;
+    m.data = true;
+    hb_pub_->publish(m);
+  }
+
   void on_ownship(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
   {
     if (msg->data.size() < 6U) {
@@ -285,6 +293,8 @@ private:
   }
 
   rclcpp::Publisher<flightmind_msgs::msg::ACASAdvisory>::SharedPtr pub_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr hb_pub_;
+  rclcpp::TimerBase::SharedPtr hb_timer_;
   rclcpp::Subscription<flightmind_msgs::msg::NavigationState>::SharedPtr sub_nav_;
   rclcpp::Subscription<flightmind_msgs::msg::TrafficReport>::SharedPtr sub_traffic_;
   rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr sub_own_;

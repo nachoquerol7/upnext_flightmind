@@ -155,11 +155,17 @@ class MissionFsmNode(Node):
 
         self.create_subscription(ACASAdvisory, "/acas/advisory", self._on_acas_advisory, 10)
 
+        self._fsm_heartbeat_pub = self.create_publisher(Bool, "/fsm/heartbeat", 10)
+        self.create_timer(1.0, self._publish_fsm_heartbeat)
+
         hz = float(self.get_parameter("tick_hz").get_parameter_value().double_value)
         period = 1.0 / hz if hz > 1e-3 else 0.05
         self.create_timer(period, self._on_tick)
 
         self.get_logger().info(f"mission_fsm: loaded {path}, initial={self._fsm.state}")
+
+    def _publish_fsm_heartbeat(self) -> None:
+        self._fsm_heartbeat_pub.publish(Bool(data=True))
 
     def _mk_float(self, key: str) -> Callable[[Float64], None]:
         def cb(msg: Float64) -> None:
