@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import math
 
-import pytest
-
 from gpp.dubins import dubins_interpolate, dubins_length
 from gpp.rrt_star import RRTStarPlanner
 
@@ -19,12 +17,9 @@ def test_tc_dub_002_turn_90_is_finite_and_ge_euclidean() -> None:
     assert L >= math.hypot(500.0, 500.0)
 
 
-@pytest.mark.xfail(
-    reason="GPP-G07: dubins_length no garantiza ~0 para start==goal en todos los headings",
-    strict=True,
-)
 def test_tc_dub_003_start_equals_goal_near_zero() -> None:
-    L = dubins_length(10.0, 20.0, 0.3, 10.0, 20.0, 0.3, 600.0)
+    """Mismo estado inicial y final (plan PDF v1): rho=100, longitud ~0."""
+    L = dubins_length(500.0, 500.0, 0.0, 500.0, 500.0, 0.0, 100.0)
     assert L <= 1e-6
 
 

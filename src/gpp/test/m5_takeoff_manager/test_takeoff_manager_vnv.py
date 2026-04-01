@@ -44,11 +44,14 @@ def test_tc_to_005_abort_is_terminal_until_reset() -> None:
 
 
 def test_tc_to_006_reset_resets_phase_and_command() -> None:
-    m = TakeoffManager()
+    m = TakeoffManager(TakeoffConfig(cruise_alt_agl_m=100.0, vr_mps=28.0))
     m.update(20.0, 10.0, 0.0, 0.0)
+    assert m.phase == "ABORT"
     m.reset()
     assert m.phase == "GROUND"
     assert m.commanded_climb_mps == 0.0
+    assert m.update(27.0, 3000.0, 0.0, 0.0) == "ROTATE"
+    assert m.update(30.0, 2800.0, 5.0, 0.0) == "CLIMB"
 
 
 def test_tc_to_007_climb_command_clamped_to_max() -> None:

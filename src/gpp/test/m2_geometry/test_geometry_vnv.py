@@ -65,5 +65,6 @@ def test_tc_geo_011_ignore_invalid_two_vertex_polygon() -> None:
 
 
 def test_tc_geo_012_malformed_json_raises() -> None:
+    """Parseo directo: excepción. Comportamiento del nodo ROS: ver `test_tc_geo_012_gpp_node_survives_malformed_geofences_json`."""
     with pytest.raises(json.JSONDecodeError):
         parse_geofences_json("{not-json")

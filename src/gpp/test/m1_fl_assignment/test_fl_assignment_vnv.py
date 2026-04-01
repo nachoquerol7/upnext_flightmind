@@ -75,9 +75,10 @@ def test_tc_fl_011_terrain_inf_invalid() -> None:
 
 
 def test_tc_fl_012_large_margin_clamps_to_ceiling() -> None:
-    fl, st = compute_assigned_fl(1000.0, 1100.0, 0.9, 3000.0)
+    """Plan PDF v1: terrain=0, ceiling=500, base_margin grande → clamp al techo FL."""
+    fl, st = compute_assigned_fl(0.0, 500.0, 0.9, 1000.0)
     assert st == "OK"
-    ceiling_fl = (1100.0 * M_TO_FT) / 100.0
+    ceiling_fl = (500.0 * M_TO_FT) / 100.0
     assert fl == pytest.approx(ceiling_fl, abs=1e-6)
 
 

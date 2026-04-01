@@ -9,6 +9,8 @@ import rclpy
 from rclpy.qos import QoSReliabilityPolicy
 from std_msgs.msg import Float64, Float64MultiArray, String
 
+from gpp.fl_assignment import compute_assigned_fl
+
 
 def _publish_nominal_inputs(rt: SimpleNamespace) -> None:
     rt.pubs.terrain.publish(Float64(data=1000.0))
@@ -90,17 +92,39 @@ def test_tc_node_008_bounds_include_start_far_from_origin(gpp_runtime: SimpleNam
 
 @pytest.mark.ros
 def test_tc_node_009_base_margin_parameter_affects_fl(gpp_runtime: SimpleNamespace) -> None:
+    """Plan PDF v1: terrain=500, ceiling=8000, base_margin_m=100 — FL coincide con compute_assigned_fl."""
     gpp_runtime.node.set_parameters([rclpy.parameter.Parameter("base_margin_m", value=100.0)])
-    _publish_nominal_inputs(gpp_runtime)
-    assert gpp_runtime.wait_until(lambda: gpp_runtime.cap.status == "OK", timeout_sec=1.5)
-    assert gpp_runtime.cap.fl is not None
-    assert gpp_runtime.cap.fl > (1000.0 * 3.280839895013123 + 300.0) / 100.0
+    gpp_runtime.pubs.terrain.publish(Float64(data=500.0))
+    gpp_runtime.pubs.ceiling.publish(Float64(data=8000.0))
+    gpp_runtime.pubs.quality.publish(Float64(data=0.9))
+    gpp_runtime.pubs.ownship.publish(Float64MultiArray(data=[0.0, 0.0, 0.0, 20.0, 0.0, 0.0]))
+    expected, st = compute_assigned_fl(500.0, 8000.0, 0.9, 100.0)
+    assert st == "OK"
+    assert gpp_runtime.wait_until(lambda: gpp_runtime.cap.status == "OK" and gpp_runtime.cap.fl is not None, timeout_sec=1.5)
+    assert gpp_runtime.cap.fl == pytest.approx(expected, abs=1e-3)
 
 
 @pytest.mark.ros
 def test_tc_node_010_qos_reliability_document_current(gpp_runtime: SimpleNamespace) -> None:
+    """RELIABILITY=RELIABLE. Depth=10 en `gpp_node.py` (`create_publisher(..., 10)`); `get_publishers_info_by_topic` puede reportar depth=0."""
     infos_fl = gpp_runtime.node.get_publishers_info_by_topic("/gpp/assigned_fl")
     infos_st = gpp_runtime.node.get_publishers_info_by_topic("/gpp/status")
     assert infos_fl and infos_st
     assert infos_fl[0].qos_profile.reliability == QoSReliabilityPolicy.RELIABLE
     assert infos_st[0].qos_profile.reliability == QoSReliabilityPolicy.RELIABLE
+
+
+@pytest.mark.xfail(
+    reason="GPP-G10: _on_geo no atrapa JSONDecodeError; publicar geofences malformado rompe el callback del executor",
+    strict=True,
+)
+@pytest.mark.ros
+def test_tc_geo_012_gpp_node_survives_malformed_geofences_json(gpp_runtime: SimpleNamespace) -> None:
+    """Complemento TC-GEO-012 (plan PDF): JSON inválido en /airspace/geofences no tumba el nodo."""
+    _publish_nominal_inputs(gpp_runtime)
+    assert gpp_runtime.cap.status == "OK"
+    gpp_runtime.pubs.geo.publish(String(data="{not-json"))
+    for _ in range(80):
+        gpp_runtime.ex.spin_once(timeout_sec=0.02)
+    gpp_runtime.pubs.geo.publish(String(data=json.dumps({"polygons": []})))
+    assert gpp_runtime.wait_until(lambda: gpp_runtime.cap.status == "OK", timeout_sec=1.5)
