@@ -16,8 +16,10 @@
     <aside id="sidebar">
       <h1 class="logo">SIL V&amp;V Testbench</h1>
       <div id="sidebar-body"></div>
-      <div class="toolbar">
+      <div class="toolbar toolbar-col">
         <button id="btn-run" class="primary" data-requires-ros disabled>Run TC</button>
+        <button id="btn-run-all" type="button" data-requires-ros disabled title="Ejecuta todos los TC del módulo seleccionado (500ms entre TC)">Run All Module</button>
+        <button id="btn-export" type="button">Export Results</button>
         <button id="btn-reset" type="button">Reset</button>
         <button id="btn-stop-stack" type="button" title="Desconecta el cliente WebSocket">Stop stack</button>
       </div>

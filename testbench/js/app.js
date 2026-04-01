@@ -290,25 +290,25 @@ Veredicto automático: (evaluación en curso en el panel de resultados).
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   }
 
-  async function runTc() {
-    if (!activeTc || !bridge.connected) return;
-    if (activePanel) activePanel.onTCStart(activeTc);
-    setBadge(activeTc.id, "run");
-    logLine(`BEGIN ${activeTc.id} ${activeTc.name || activeTc.title || ""}`);
-    const def = activeTc.definition || (window.getTcDefinition && window.getTcDefinition(activeTc.id));
-    const res = await runner.run(activeTc);
+  function tcDef(id) {
+    return window.getTcDefinition && window.getTcDefinition(id);
+  }
+
+  /**
+   * @param {{ id: string, definition?: object }} tc
+   * @param {{ pass: boolean, evidence?: string, detail?: string, durationMs?: number, stepsOk?: number, stepsTotal?: number }} res
+   */
+  function applyRunResult(tc, res, showInResultsPanel) {
+    const def = tc.definition || tcDef(tc.id);
     const xfail = def && def.xfail ? def.xfail : null;
     let badge = res.pass ? "pass" : "fail";
     if (xfail && !res.pass) badge = "xfail";
-    setBadge(activeTc.id, badge);
-    logLine(`END ${activeTc.id} → ${res.pass ? "PASS" : "FAIL"} (${res.detail})`);
-
+    setBadge(tc.id, badge);
     const stepsTotal = res.stepsTotal != null ? res.stepsTotal : 0;
     const stepsLabel =
       stepsTotal > 0 ? `${res.stepsOk != null ? res.stepsOk : 0}/${stepsTotal} OK` : "N/A (0 pasos)";
-
     const payload = {
-      tcId: activeTc.id,
+      tcId: tc.id,
       pass: res.pass,
       evidence: res.evidence,
       detail: res.detail,
@@ -317,36 +317,138 @@ Veredicto automático: (evaluación en curso en el panel de resultados).
       timestamp: formatLocalTs(),
       xfail,
     };
-    tcResults.set(activeTc.id, payload);
-    if (resultsPanel) resultsPanel.show(payload);
-    if (activePanel) activePanel.onTCEnd(res);
+    tcResults.set(tc.id, payload);
+    if (showInResultsPanel && resultsPanel && activeTc && tc.id === activeTc.id) {
+      resultsPanel.show(payload);
+    }
+    return { def, payload };
+  }
 
-    if (llmAnalyst && llmAnalyst.enabled) {
-      const verdict = res.pass ? "PASS" : "FAIL";
-      if (!res.pass) {
-        await llmAnalyst.analyze(
-          `TC ${activeTc.id} ha FALLADO.
+  let executionBusy = false;
+
+  async function runTc() {
+    if (!activeTc || !bridge.connected || executionBusy) return;
+    executionBusy = true;
+    try {
+      if (activePanel) activePanel.onTCStart(activeTc);
+      setBadge(activeTc.id, "run");
+      logLine(`BEGIN ${activeTc.id} ${activeTc.name || activeTc.title || ""}`);
+      const res = await runner.run(activeTc);
+      logLine(`END ${activeTc.id} → ${res.pass ? "PASS" : "FAIL"} (${res.detail})`);
+      const { def } = applyRunResult(activeTc, res, true);
+      if (activePanel) activePanel.onTCEnd(res);
+
+      if (llmAnalyst && llmAnalyst.enabled) {
+        const verdict = res.pass ? "PASS" : "FAIL";
+        if (!res.pass) {
+          await llmAnalyst.analyze(
+            `TC ${activeTc.id} ha FALLADO.
 Esperado: ${def ? def.oracle : "—"}.
 Recibido / detalle: ${res.detail || res.evidence || "—"}.
 Gap relacionado: ${def && def.xfail ? def.xfail : "ninguno conocido"}.
 ¿Cuál es la causa más probable y cómo se solucionaría?`,
-        );
-      } else {
-        await llmAnalyst.analyze(
-          `TC ${activeTc.id} ha terminado con ${verdict}.
+          );
+        } else {
+          await llmAnalyst.analyze(
+            `TC ${activeTc.id} ha terminado con ${verdict}.
 Evidencia: ${res.evidence || res.detail || "—"}.
 Oráculo: ${def ? def.oracle : "—"}.
 ¿El comportamiento observado es coherente con un sistema nominal?`,
-        );
-      }
-      if (activeTc.id.startsWith("TC-FAULT")) {
-        await llmAnalyst.analyze(
-          `Inyección de fallo en TC ${activeTc.id}.
+          );
+        }
+        if (activeTc.id.startsWith("TC-FAULT")) {
+          await llmAnalyst.analyze(
+            `Inyección de fallo en TC ${activeTc.id}.
 Estado del sistema: FSM=${state.fsmState && state.fsmState.current_mode}, QF=${state.quality}, alerts DAA=${state.daidalusLevel}, FDIR emergencia=${state.fdirEmergency}.
 Respuesta del runner: ${verdict}. Detalle: ${res.detail || "—"}.
 ¿El sistema ha respondido correctamente según los requisitos SR-FDIR-01?`,
-        );
+          );
+        }
       }
+    } finally {
+      executionBusy = false;
+    }
+  }
+
+  function groupResultsByModule() {
+    /** @type {Record<string, object[]>} */
+    const out = {};
+    for (const [id, row] of tcResults) {
+      const d = tcDef(id);
+      const m = (d && d.module) || "UNK";
+      if (!out[m]) out[m] = [];
+      out[m].push({ id, ...row });
+    }
+    return out;
+  }
+
+  function exportResults() {
+    const defs = window.TC_DEFINITIONS || {};
+    const totalDefs = Object.keys(defs).length;
+    const report = {
+      timestamp: new Date().toISOString(),
+      stack: "FlightMind v1.0",
+      summary: {
+        total: tcResults.size,
+        passed: 0,
+        failed: 0,
+        xfailed: 0,
+        not_run: Math.max(0, totalDefs - tcResults.size),
+      },
+      modules: groupResultsByModule(),
+      details: Object.fromEntries(tcResults),
+    };
+    for (const p of tcResults.values()) {
+      if (p.pass) report.summary.passed += 1;
+      else if (p.xfail) report.summary.xfailed += 1;
+      else report.summary.failed += 1;
+    }
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `flightmind_vnv_results_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    logLine("Export JSON: flightmind_vnv_results_*.json");
+  }
+
+  async function runAllModule() {
+    if (!bridge.connected || executionBusy) return;
+    const mod = getModule(activeModuleId);
+    if (!mod || !mod.tcs.length) return;
+    executionBusy = true;
+    let passed = 0;
+    let failed = 0;
+    let xfailed = 0;
+    const total = mod.tcs.length;
+    try {
+      for (let i = 0; i < mod.tcs.length; i++) {
+        const tc = mod.tcs[i];
+        const idx = i + 1;
+        setBadge(tc.id, "run");
+        logLine(`Executing ${mod.id}... [${idx}/${total}] ${tc.id}`);
+        if (activePanel && tc.id === activeTc.id) activePanel.onTCStart(tc);
+        const res = await runner.run(tc);
+        const def = tc.definition || tcDef(tc.id);
+        const isXfail = Boolean(def && def.xfail && !res.pass);
+        const verdict = res.pass ? "PASS" : isXfail ? "XFAIL" : "FAIL";
+        if (res.pass) passed += 1;
+        else if (isXfail) xfailed += 1;
+        else failed += 1;
+        applyRunResult(tc, res, true);
+        logLine(`Executing ${mod.id}... [${idx}/${total}] ${tc.id} ${verdict} (${Math.round(res.durationMs || 0)}ms)`);
+        if (activePanel && tc.id === activeTc.id) activePanel.onTCEnd(res);
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    } finally {
+      executionBusy = false;
+    }
+    if (llmAnalyst && llmAnalyst.enabled) {
+      await llmAnalyst.analyze(
+        `Módulo ${mod.title} completado: ${passed} passed, ${xfailed} xfailed, ${failed} failed.
+Gaps arquitecturales abiertos relacionados: ARCH-1.2, ARCH-1.7.
+Dame un resumen ejecutivo de 2 frases del estado de este subsistema.`,
+      );
     }
   }
 
@@ -422,6 +524,8 @@ Respuesta del runner: ${verdict}. Detalle: ${res.detail || "—"}.
     mountPanelForActiveTc();
     wireRos();
     document.getElementById("btn-run").addEventListener("click", runTc);
+    document.getElementById("btn-run-all")?.addEventListener("click", runAllModule);
+    document.getElementById("btn-export")?.addEventListener("click", exportResults);
     document.getElementById("btn-reset").addEventListener("click", resetBench);
     document.getElementById("btn-stop-stack").addEventListener("click", stopStackClient);
     requestAnimationFrame(tick);
