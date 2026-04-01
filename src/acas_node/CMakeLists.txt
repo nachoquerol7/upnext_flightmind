@@ -34,4 +34,9 @@ if(TARGET test_nnet_loader)
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 endif()
 
+ament_add_gtest(test_acas_neural test/test_acas_neural.cpp)
+if(TARGET test_acas_neural)
+  target_link_libraries(test_acas_neural acas_nnet)
+endif()
+
 ament_package()

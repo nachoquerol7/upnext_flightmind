@@ -1,6 +1,9 @@
 #include "acas_node/nnet_loader.hpp"
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <algorithm>
+#include <array>
+#include <cstdint>
 #include <cstdio>
 #include <cmath>
 #include <memory>
@@ -13,6 +16,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
+#include <std_msgs/msg/int32.hpp>
 
 namespace acas_node {
 
@@ -76,6 +80,24 @@ double tcpa_horiz_s(
   return -rho / rdot;
 }
 
+void softmax5(std::array<float, 5> * s)
+{
+  float m = (*s)[0];
+  for (size_t i = 1; i < 5; ++i) {
+    m = std::max(m, (*s)[i]);
+  }
+  float sum = 0.0F;
+  for (size_t i = 0; i < 5; ++i) {
+    (*s)[i] = std::exp((*s)[i] - m);
+    sum += (*s)[i];
+  }
+  if (sum > 1e-12F) {
+    for (size_t i = 0; i < 5; ++i) {
+      (*s)[i] /= sum;
+    }
+  }
+}
+
 }  // namespace
 
 class AcasNode : public rclcpp::Node
@@ -87,13 +109,23 @@ public:
     traffic_topic_ = declare_parameter<std::string>("traffic_topic", "/traffic/intruders");
     navigation_topic_ = declare_parameter<std::string>("navigation_topic", "/navigation/state");
     ownship_topic_ = declare_parameter<std::string>("ownship_topic", "/ownship/state");
-    nnet_subdir_ = declare_parameter<std::string>("nnet_subdir", "acas_xu_nnets");
-    rho_norm_m_ = declare_parameter<double>("rho_norm_m", 185200.0);
-    v_norm_mps_ = declare_parameter<double>("v_norm_mps", 250.0);
+    nnet_subdir_ = declare_parameter<std::string>("nnet_subdir", "nnets");
+    rho_norm_m_ = declare_parameter<double>("rho_norm_m", 60760.0);
+    v_norm_mps_ = declare_parameter<double>("v_norm_mps", 617.0);
+    tau_max_s_ = declare_parameter<double>("tau_max_s", 8.0);
     timer_period_s_ = declare_parameter<double>("timer_period_s", 0.05);
     use_ownship_fallback_ = declare_parameter<bool>("use_ownship_fallback", true);
 
     pub_ = create_publisher<flightmind_msgs::msg::ACASAdvisory>("/acas/advisory", 10);
+    hb_pub_ = create_publisher<std_msgs::msg::Bool>("/acas/heartbeat", 10);
+    abort_pub_ = create_publisher<std_msgs::msg::Bool>("/fsm/in/abort_command", 10);
+    hb_timer_ = create_wall_timer(
+      std::chrono::seconds(1),
+      std::bind(&AcasNode::publish_acas_heartbeat, this));
+
+    sub_daa_alert_ = create_subscription<std_msgs::msg::Int32>(
+      "/daidalus/alert_level", 10,
+      std::bind(&AcasNode::on_daa_alert, this, std::placeholders::_1));
 
     sub_nav_ = create_subscription<flightmind_msgs::msg::NavigationState>(
       navigation_topic_, 10,
@@ -135,6 +167,18 @@ private:
     hb_pub_->publish(m);
   }
 
+  void publish_abort_command(bool active)
+  {
+    std_msgs::msg::Bool m;
+    m.data = active;
+    abort_pub_->publish(m);
+  }
+
+  void on_daa_alert(const std_msgs::msg::Int32::SharedPtr msg)
+  {
+    daa_alert_level_ = msg->data;
+  }
+
   void on_ownship(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
   {
     if (msg->data.size() < 6U) {
@@ -169,6 +213,12 @@ private:
     }
     if (!last_traffic_ || last_traffic_->intruders.empty()) {
       publish_coc(0, 0.0, 1e6, 0.0, 0.0, 0.0);
+      publish_abort_command(false);
+      return;
+    }
+    if (daa_alert_level_ < 3) {
+      publish_coc(0, 0.0, 1e6, 0.0, 0.0, 0.0);
+      publish_abort_command(false);
       return;
     }
 
@@ -209,9 +259,11 @@ private:
     if (!std::isfinite(tau_s) || tau_s > 1e6) {
       tau_s = 8.0;
     }
-    tau_s = std::max(0.0, std::min(8.0, tau_s));
+    tau_s = std::max(0.0, std::min(tau_max_s_, tau_s));
 
-    const int tau_idx = static_cast<int>(std::lround(tau_s));
+    const double tw = tau_max_s_ / 8.0;
+    int tau_idx = static_cast<int>(tau_s / std::max(1e-6, tw));
+    tau_idx = std::max(0, std::min(8, tau_idx));
     const int net_i = std::max(0, std::min(44, tau_idx * 5 + prev_adv_));
     if (!nets_[static_cast<size_t>(net_i)].loaded()) {
       publish_coc(0, rho_m, tau_s, theta, psi, rho_m);
@@ -227,7 +279,8 @@ private:
     const float vi_n = static_cast<float>(std::min(1.0, std::max(0.0, v_int / v_norm_mps_)));
 
     std::array<float, 5> in = {rho_n, th_n, ps_n, vo_n, vi_n};
-    const auto scores = nets_[static_cast<size_t>(net_i)].evaluate(in);
+    std::array<float, 5> scores = nets_[static_cast<size_t>(net_i)].evaluate(in);
+    softmax5(&scores);
     int best_adv = 0;
     float best_s = scores[0];
     for (int a = 1; a < 5; ++a) {
@@ -271,6 +324,7 @@ private:
     out.time_to_cpa_s = tau_s;
     out.horizontal_miss_dist_m = rho_m;
     pub_->publish(out);
+    publish_abort_command(best_adv != 0);
   }
 
   void publish_coc(
@@ -290,11 +344,14 @@ private:
     (void)psi;
     (void)rho_m;
     pub_->publish(out);
+    publish_abort_command(false);
   }
 
   rclcpp::Publisher<flightmind_msgs::msg::ACASAdvisory>::SharedPtr pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr hb_pub_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr abort_pub_;
   rclcpp::TimerBase::SharedPtr hb_timer_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_daa_alert_;
   rclcpp::Subscription<flightmind_msgs::msg::NavigationState>::SharedPtr sub_nav_;
   rclcpp::Subscription<flightmind_msgs::msg::TrafficReport>::SharedPtr sub_traffic_;
   rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr sub_own_;
@@ -304,10 +361,12 @@ private:
   std::string navigation_topic_;
   std::string ownship_topic_;
   std::string nnet_subdir_;
-  double rho_norm_m_{185200.0};
-  double v_norm_mps_{250.0};
+  double rho_norm_m_{60760.0};
+  double v_norm_mps_{617.0};
+  double tau_max_s_{8.0};
   double timer_period_s_{0.05};
   bool use_ownship_fallback_{true};
+  int32_t daa_alert_level_{0};
 
   flightmind_msgs::msg::NavigationState::SharedPtr last_nav_;
   flightmind_msgs::msg::TrafficReport::SharedPtr last_traffic_;
