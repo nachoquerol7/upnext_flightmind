@@ -11,6 +11,7 @@
 ## ARCH-1.2 — Timeouts de morada FSM
 **Estado:** ABIERTO
 **Tests bloqueados:** TC-TO-001, TC-TO-002, TC-TO-003, TC-TO-004, TC-TO-005, TC-TO-010
+**Auditoría M2 (2026-04):** Sin falsos XFAIL; el YAML no define `max_duration_sec` y `mission_fsm_node` no implementa temporizador de morada. La suite M2 incluye tests `test_m2_audit_*` que pasan y documentan el vacío arquitectónico.
 **Descripción:** Sin max_duration_sec operativo por estado ni watchdog temporal de misión.
 **Impacto:** Posibilidad de quedar indefinidamente en estados sin progreso.
 **Responsable:** —
@@ -35,6 +36,7 @@
 ## ARCH-1.7 — Supervisión externa (watchdog + enlaces)
 **Estado:** ABIERTO
 **Tests bloqueados:** TC-TO-006, TC-TO-007, TC-TO-008, TC-TO-009, TC-FDIR-007, TC-FDIR-008, TC-FDIR-016, TC-MW-001, TC-FAULT-008
+**Auditoría M2 (2026-04):** TC-TO-006..009 permanecen XFAIL legítimos (sin integración temporal GCS/C2/batería/geofence en el nodo).
 **Descripción:** No existe nodo watchdog integrado ni monitor temporal de GCS/C2/batería/geofence en mission_fsm.
 **Impacto:** Degradación de seguridad ante caída de nodos o pérdida de enlaces críticos.
 **Responsable:** —

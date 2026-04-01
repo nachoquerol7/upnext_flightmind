@@ -1,12 +1,22 @@
-"""M2 — Timeouts y vigilancia temporal (TC-TO-001 … TC-TO-010)."""
+"""M2 — Timeouts y vigilancia temporal (TC-TO-001 … TC-TO-010).
+
+Auditoría (2026-04): los TC-TO-001..010 siguen siendo **XFAIL-ARCH legítimos**:
+- ARCH-1.2: no hay `max_duration_sec` por estado ni temporizador de morada en `mission_fsm_node`.
+- ARCH-1.7: no hay integración de GCS/C2/batería/geofence con ventanas temporales.
+
+Los tests adicionales `test_m2_audit_*` comprueban en SIL que esa infraestructura **no está**
+(o que el FSM permanece estable sin ella), sin convertir los XFAIL del roadmap en passes artificiales.
+"""
 
 from __future__ import annotations
 
+import ast
 import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import yaml
 
 _MOCKS = Path(__file__).resolve().parents[1] / "mocks"
 if str(_MOCKS) not in sys.path:
@@ -18,6 +28,33 @@ import mock_sensors  # noqa: E402
 def _dwell_spin(h: SimpleNamespace, iterations: int = 120) -> None:
     for _ in range(iterations):
         h.ex.spin_once(timeout_sec=0.05)
+
+
+@pytest.mark.no_ros
+def test_m2_audit_yaml_states_have_no_max_duration_sec() -> None:
+    """Sin soporte YAML de morada por estado (ARCH-1.2)."""
+    cfg = Path(__file__).resolve().parents[2] / "config" / "mission_fsm.yaml"
+    root = yaml.safe_load(cfg.read_text(encoding="utf-8"))
+    states = root.get("fsm", {}).get("states", {})
+    for name, body in states.items():
+        if isinstance(body, dict) and "max_duration_sec" in body:
+            pytest.fail(f"unexpected max_duration_sec under state {name!r}")
+
+
+@pytest.mark.no_ros
+def test_m2_audit_mission_fsm_node_has_no_dwell_timeout_logic() -> None:
+    """El nodo no implementa temporizador de morada (ARCH-1.2)."""
+    src = Path(__file__).resolve().parents[2] / "mission_fsm" / "mission_fsm_node.py"
+    tree = ast.parse(src.read_text(encoding="utf-8"))
+    text = ast.unparse(tree).lower()
+    assert "max_duration" not in text
+    assert "dwell" not in text
+
+
+def test_m2_preflight_stable_under_dwell_without_timeout_feature(mission_fsm_sil_harness: SimpleNamespace) -> None:
+    """Sin temporizador, PREFLIGHT permanece sin estímulos (comportamiento observable hoy)."""
+    _dwell_spin(mission_fsm_sil_harness, 40)
+    assert mission_fsm_sil_harness.cap.mode == "PREFLIGHT"
 
 
 @pytest.mark.xfail(
