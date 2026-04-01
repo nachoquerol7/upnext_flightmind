@@ -12,6 +12,7 @@
   <depend>ament_index_python</depend>
   <exec_depend>python3-yaml</exec_depend>
   <test_depend>python3-pytest</test_depend>
+  <test_depend>python3-psutil</test_depend>
   <test_depend>nav_msgs</test_depend>
   <test_depend>geometry_msgs</test_depend>
   <test_depend>sensor_msgs</test_depend>
