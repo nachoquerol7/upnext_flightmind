@@ -763,24 +763,20 @@ h2.section-title {
   font-size: 10px;
   color: #9ab6cc;
 }
-.llm-key-input {
-  margin-bottom: 8px;
+.llm-proxy-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
-.llm-key-input input {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  background: #0a1628;
-  border: 1px solid #2e5672;
-  color: #e0e8f0;
-  padding: 6px 8px;
-  border-radius: 4px;
-  margin-bottom: 6px;
-  font: inherit;
+.llm-proxy-offline {
+  background: #37474f;
+  color: #b0bec5;
 }
-.llm-key-input button {
-  font-size: 10px;
-  padding: 4px 10px;
+.llm-proxy-online {
+  background: #1b5e20;
+  color: #c8e6c9;
 }
 .llm-output {
   min-height: 64px;

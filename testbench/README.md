@@ -22,6 +22,33 @@ Cada **TC** del sidebar monta un **panel visual** distinto (FSM, mapa, radar DAI
 
 Para detener los nodos ROS, cierra la terminal donde corre `launch.sh` (o Ctrl+C). En el testbench, **Stop stack** solo cierra el cliente WebSocket en el navegador; si el bridge se cae solo, el log muestra: *Stack detenido. Ejecuta launch.sh para reiniciar.*
 
+## LLM Analyst (opcional)
+
+El analista IA requiere un **proxy local** que guarda tu API key de Anthropic. La clave **no** llega al navegador ni al repositorio.
+
+### Activar
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+bash /ruta/a/upnext_uas_ws/testbench/launch.sh
+```
+
+También puedes copiar `testbench/.env.example` a `testbench/.env`, rellenar la clave y ejecutar `launch.sh` (el script carga `testbench/.env` si existe).
+
+### Sin LLM
+
+```bash
+bash /ruta/a/upnext_uas_ws/testbench/launch.sh
+```
+
+El testbench funciona igual; el panel LLM muestra **Proxy offline** hasta que arranque el proxy en `http://localhost:3001`.
+
+### Solo proxy (manual)
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... node testbench/llm_proxy.js
+```
+
 ## Requisitos
 
 - ROS 2 (Humble o Jazzy)

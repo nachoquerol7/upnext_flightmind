@@ -15,5 +15,10 @@ venv/
 .vscode/
 *.swp
 
+# Secrets / LLM (testbench)
+.env
+testbench/.env
+*sk-ant*
+
 # ICAROUS build tree (sources stay in submodule + UpdateModules)
 third_party/icarous/Modules/build/

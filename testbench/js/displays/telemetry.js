@@ -27,18 +27,14 @@ const TelemetryPanel = {
           <div class="llm-panel">
             <div class="llm-header">
               <span class="llm-title">Analista IA</span>
+              <span id="llm-proxy-status" class="llm-proxy-badge llm-proxy-offline" title="Proxy en localhost:3001">Proxy offline</span>
               <label class="llm-toggle-wrap">
                 <input type="checkbox" id="llm-toggle" />
                 <span>Activar</span>
               </label>
             </div>
-            <div class="llm-key-input" id="llm-key-section">
-              <input type="password" placeholder="Anthropic API key" id="llm-api-key" autocomplete="off" />
-              <button type="button" id="llm-save-key">Guardar</button>
-              <p class="hint">La clave se guarda solo en localStorage. No sale del navegador salvo a la API Anthropic si activas el analista.</p>
-            </div>
             <div class="llm-output" id="llm-output">
-              <p class="placeholder">Activa el analista y ejecuta un TC para ver análisis en tiempo real.</p>
+              <p class="placeholder">Arranca el proxy (ANTHROPIC_API_KEY + launch.sh o node testbench/llm_proxy.js), activa el analista y ejecuta un TC.</p>
             </div>
             <div class="llm-history-wrap">
               <div class="llm-history-title">Últimos análisis</div>

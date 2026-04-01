@@ -1,16 +1,24 @@
 /**
- * Analista LLM (Anthropic) con streaming desde el navegador.
- * Requiere cabecera anthropic-dangerous-direct-browser-access (uso consciente CORS/exposición de clave).
+ * Analista LLM vía proxy local (testbench/llm_proxy.js).
+ * La API key de Anthropic no sale del proceso Node del proxy.
  */
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "anthropic_api_key";
+  const PROXY_ANALYZE_URL = "http://localhost:3001/analyze";
+
+  /** Comprueba si el proxy responde (CORS preflight). */
+  async function checkProxy() {
+    try {
+      const r = await fetch(PROXY_ANALYZE_URL, { method: "OPTIONS" });
+      return r.ok || r.status === 204;
+    } catch {
+      return false;
+    }
+  }
 
   class LLMAnalyst {
     constructor() {
-      this.apiKey = localStorage.getItem(STORAGE_KEY) || "";
-      this.model = "claude-sonnet-4-20250514";
       this.enabled = false;
       /** @type {Record<string, unknown>} */
       this.context = {};
@@ -25,6 +33,11 @@
       this._streaming = false;
       /** @type {Promise<void>} */
       this._analyzeChain = Promise.resolve();
+      try {
+        localStorage.removeItem("anthropic_api_key");
+      } catch (_) {
+        /* ignore */
+      }
     }
 
     /**
@@ -35,17 +48,6 @@
       this._outputEl = outputEl;
       this._historyEl = historyEl;
       this.refreshHistoryPanel();
-    }
-
-    setApiKey(key) {
-      this.apiKey = (key || "").trim();
-      if (this.apiKey) localStorage.setItem(STORAGE_KEY, this.apiKey);
-      else localStorage.removeItem(STORAGE_KEY);
-    }
-
-    loadKeyFromStorage() {
-      this.apiKey = localStorage.getItem(STORAGE_KEY) || "";
-      return this.apiKey;
     }
 
     setEnabled(on) {
@@ -120,33 +122,26 @@
     }
 
     async _doAnalyze(event) {
-      if (!this.enabled || !this.apiKey) return;
-      const body = {
-        model: this.model,
-        max_tokens: 300,
-        stream: true,
-        system: `Eres un ingeniero de sistemas experto en V&V de UAS autónomos analizando el stack FlightMind en tiempo real. 
-El sistema tiene: Mission FSM (9 estados), GPP (Informed-RRT* + Dubins), FDIR (4 detectores), DAIDALUS (DAA), ACAS Xu (emergencia), navigation_bridge.
-Responde en español. Sé conciso (máx 3 frases). Enfócate en si el comportamiento es correcto, qué significa y si hay algo que el evaluador deba notar.`,
-        messages: [{ role: "user", content: event }],
-      };
+      if (!this.enabled) return;
+      const proxyUp = await checkProxy();
+      if (!proxyUp) {
+        this.onStreamStart();
+        this.onToken("[Proxy offline] Arranca testbench con ANTHROPIC_API_KEY o ejecuta node testbench/llm_proxy.js");
+        this.onStreamEnd();
+        return;
+      }
 
       try {
         this.onStreamStart();
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
+        const response = await fetch(PROXY_ANALYZE_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": this.apiKey,
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true",
-          },
-          body: JSON.stringify(body),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: event }),
         });
 
         if (!response.ok) {
           const errText = await response.text();
-          this.onToken(`[Error API ${response.status}] ${errText.slice(0, 200)}`);
+          this.onToken(`[Error proxy ${response.status}] ${errText.slice(0, 200)}`);
           return;
         }
 
@@ -197,4 +192,5 @@ Responde en español. Sé conciso (máx 3 frases). Enfócate en si el comportami
   }
 
   window.LLMAnalyst = LLMAnalyst;
+  window.checkLlmProxy = checkProxy;
 })();

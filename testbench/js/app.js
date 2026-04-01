@@ -484,19 +484,20 @@ Dame un resumen ejecutivo de 2 frases del estado de este subsistema.`,
     const llmHist = document.getElementById("llm-history");
     llmAnalyst.bindUi(llmOut, llmHist);
 
-    function syncLlmKeyUi() {
-      const hasKey = !!(llmAnalyst && llmAnalyst.loadKeyFromStorage());
-      const sec = document.getElementById("llm-key-section");
-      if (sec) sec.style.display = hasKey ? "none" : "block";
+    async function refreshLlmProxyBadge() {
+      const el = document.getElementById("llm-proxy-status");
+      if (!el || typeof window.checkLlmProxy !== "function") return;
+      const ok = await window.checkLlmProxy();
+      el.textContent = ok ? "LLM activo" : "Proxy offline";
+      el.classList.toggle("llm-proxy-online", ok);
+      el.classList.toggle("llm-proxy-offline", !ok);
     }
-    syncLlmKeyUi();
-    document.getElementById("llm-save-key")?.addEventListener("click", () => {
-      const inp = document.getElementById("llm-api-key");
-      if (inp && llmAnalyst) llmAnalyst.setApiKey(inp.value);
-      syncLlmKeyUi();
-    });
+    refreshLlmProxyBadge();
+    setInterval(refreshLlmProxyBadge, 8000);
+
     document.getElementById("llm-toggle")?.addEventListener("change", (e) => {
       if (llmAnalyst) llmAnalyst.setEnabled(/** @type {HTMLInputElement} */ (e.target).checked);
+      refreshLlmProxyBadge();
     });
 
     const tcHost = document.getElementById("tc-description-host");
