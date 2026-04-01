@@ -1,5 +1,7 @@
 # UpNext UAS workspace
 
+[![FlightMind CI](https://github.com/nachoquerol7/upnext_flightmind/actions/workflows/ci.yml/badge.svg)](https://github.com/nachoquerol7/upnext_flightmind/actions/workflows/ci.yml)
+
 Workspace personal para el hilo **UpNext**: simulación y stack de autonomía con **PX4** como autopiloto. La navegación GNSS-denied y el resto de perception quedan **fuera de alcance** hasta que se vuelvan a priorizar.
 
 ## Roadmap modular (Fase 0 en curso)

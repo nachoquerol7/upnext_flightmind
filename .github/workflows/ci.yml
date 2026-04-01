@@ -1,0 +1,46 @@
+name: FlightMind CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup ROS 2 Jazzy
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: jazzy
+
+      - name: Install dependencies
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          cd ${{ github.workspace }}
+          sudo apt-get update -qq
+          sudo apt-get install -y python3-colcon-common-extensions python3-rosdep
+          sudo rosdep init || true
+          rosdep update
+          rosdep install --from-paths src --ignore-src -r -y
+          pip install --break-system-packages pytest pytest-cov
+
+      - name: Build
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          cd ${{ github.workspace }}
+          colcon build --symlink-install --packages-select \
+            flightmind_msgs flightmind_common mission_fsm fdir trajectory_gen local_replanner vehicle_model acas_node daidalus_node navigation_bridge \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+      - name: Test (colcon)
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          source ${{ github.workspace }}/install/setup.bash
+          cd ${{ github.workspace }}
+          colcon test --packages-select flightmind_common mission_fsm trajectory_gen local_replanner vehicle_model acas_node --event-handlers console_direct+
+          colcon test-result --verbose
