@@ -25,6 +25,16 @@
 **Responsable:** —
 **Fecha objetivo:** —
 
+## ARCH-1.4 — Transición CRUISE→ABORT por fdir_emergency
+**Estado:** CERRADO
+**Fecha cierre:** 2026-04-01
+**Tests bloqueados:** —
+**Descripción:** La transición `cruise_to_abort` solo exigía `abort_command`; faltaba `fdir_emergency` como disparador directo desde CRUISE.
+**Cierre:** `mission_fsm.yaml`: `when: any: [abort_command, fdir_emergency]` en la transición CRUISE→ABORT.
+**Impacto:** —
+**Responsable:** —
+**Fecha objetivo:** —
+
 ## ARCH-1.6 — Validación geofence pre-Nav2
 **Estado:** ABIERTO
 **Tests bloqueados:** TC-NAV-006, TC-FAULT-005
