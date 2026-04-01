@@ -1,0 +1,9 @@
+/**:
+  ros__parameters:
+    lookahead_time_s: 180.0
+    alerting_time_s: 55.0
+    dmod_m: 2200.0
+    zthr_ft: 450.0
+    turn_rate_degps: 3.0
+    red_time_s: 25.0
+    use_daidalus_lib: false

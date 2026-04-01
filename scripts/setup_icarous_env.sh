@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Source from workspace root:  source scripts/setup_icarous_env.sh
-_UPNEXT_WS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export ICAROUS_HOME="${_UPNEXT_WS}/third_party/icarous"
-export LD_LIBRARY_PATH="${ICAROUS_HOME}/Modules/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-echo "ICAROUS_HOME=${ICAROUS_HOME}"
+# ICAROUS + cFS legacy path — archived (Fase 0). Do not use for new work.
+# To run old demos: source archive/icarous_cfs_legacy/scripts/setup_icarous_env.sh
+# Primary stack: px4-flightmind (flightmind_planner) + ROS 2 DAIDALUS wrapper.
+echo "[upnext_uas_ws] setup_icarous_env.sh is deprecated. See archive/icarous_cfs_legacy/README.md" >&2
+exit 1

@@ -1,6 +1,14 @@
 # UpNext UAS workspace
 
-Repositorio **independiente** de Autonav: simulación y stack para el hilo UpNext, con **PX4** como autopiloto. La navegación GNSS-denied y el resto de perception quedan **fuera de alcance** hasta que las volváis a priorizar.
+Workspace personal para el hilo **UpNext**: simulación y stack de autonomía con **PX4** como autopiloto. La navegación GNSS-denied y el resto de perception quedan **fuera de alcance** hasta que se vuelvan a priorizar.
+
+## Roadmap modular (Fase 0 en curso)
+
+- Plan por fases: **`docs/AUTONOMY_ROADMAP.md`**
+- Dependencias base: **`docs/DEPENDENCIES_PHASE0.md`**, script **`scripts/install_deps_phase0.sh`**
+- Paquetes esqueleto (colcon): `vehicle_model`, `mission_fsm`, `fdir`, `gpp`, `daidalus_node`, `polycarp_node`, `local_replanner`, `trajectory_gen`, `acas_node`, `uas_stack_tests`
+- Línea **ICAROUS+cFS** archivada: **`archive/icarous_cfs_legacy/`** (los scripts que usaban `setup_icarous_env` viven ahí). En **`scripts/`**, `setup_icarous_env.sh` está **deprecado** (sale con error a propósito).
+- Verificación rápida: **`scripts/verify_upnext.sh`** (build + smoke `vehicle_model_node`).
 
 ## Contenido
 
@@ -10,6 +18,8 @@ Repositorio **independiente** de Autonav: simulación y stack para el hilo UpNex
 | `src/upnext_icarous_bridge` | Nodo Python: comprueba `ICAROUS_HOME` / `Modules/lib`. |
 | `src/upnext_icarous_daa` | Nodo C++ **`daa_traffic_monitor_node`**: enlaza `libTrafficMonitor` (DAIDALUS) con topics **PX4** `vehicle_global_position` + `vehicle_local_position`; intruso sintético NED opcional; publica `~/daa/bands_summary`. |
 | `src/upnext_airspace` | **GeoJSON** de zonas restringidas (`config/`), **`airspace_viz_node`** (RViz `MarkerArray` en `map`, alineado NED PX4), **`airspace_monitor_node`** (bool + id si `lat/lon/alt` dentro de polígono). |
+| `src/acas_node` | **ACAS Xu** tabular: `/ownship/state` + `/traffic/intruders` → `/acas/*` y `/fmu/in/trajectory_setpoint` solo con RA activa. Launch con `chrt -f 80` (véase `src/acas_node/README.md`, permisos RT). |
+| `src/uas_stack_tests` | **Fase 9:** `ros2 launch uas_stack_tests full_stack.launch.py` (shim FMU + feeds + stack completo), escenarios `scenario_*`, `daa_dashboard`, matriz `docs/VV_MATRIX.md`. |
 | `third_party/icarous` | Submódulo **NASA ICAROUS** (DAIDALUS, PolyCARP, módulos Core). |
 
 ## Clonar
@@ -28,17 +38,17 @@ cd third_party/icarous && bash UpdateModules.sh && cd ../..
 
 `UpdateModules.sh` descarga dependencias NASA (cFE, etc.) necesarias para compilar ICAROUS según su documentación.
 
-## ICAROUS (compilación rápida)
+## ICAROUS (legado / solo si necesitas replicar cFS)
 
-Ver `third_party/icarous/docs/compiling.md`. Resumen:
+Para **nuevo desarrollo** usar **Flightmind** (`px4-flightmind`) y el roadmap en `docs/AUTONOMY_ROADMAP.md`. Para compilar el árbol antiguo, ver `third_party/icarous/docs/compiling.md` y **`archive/icarous_cfs_legacy/scripts/setup_icarous_env.sh`** (no uses `scripts/setup_icarous_env.sh`).
 
 ```bash
-source scripts/setup_icarous_env.sh
+source archive/icarous_cfs_legacy/scripts/setup_icarous_env.sh
 cd third_party/icarous && bash UpdateModules.sh
 cd Modules && mkdir -p build && cd build && cmake .. && make -j"$(nproc)"
 ```
 
-Tras compilar, `Modules/lib` contiene las `.so` (ACCoRD/DAIDALUS, TrafficMonitor, etc.). `source scripts/setup_icarous_env.sh` exporta `ICAROUS_HOME` y `LD_LIBRARY_PATH` (opcional; el binario `daa_traffic_monitor_node` lleva `RPATH` a `Modules/lib`).
+Tras compilar, `Modules/lib` contiene las `.so` (ACCoRD/DAIDALUS, TrafficMonitor, etc.). `source archive/icarous_cfs_legacy/scripts/setup_icarous_env.sh` exporta `ICAROUS_HOME` y `LD_LIBRARY_PATH` (opcional; el binario `daa_traffic_monitor_node` lleva `RPATH` a `Modules/lib`).
 
 ## ROS 2
 
@@ -62,6 +72,42 @@ Con **uXRCE/Micro XRCE-DDS** en marcha (PX4 publicando en ROS 2):
 # Solo el monitor DAA (sin lanzar PX4 desde aquí)
 ros2 launch upnext_icarous_daa daa_traffic_monitor.launch.py
 ```
+
+Prueba rápida **sin PX4**: publicador mínimo de posición + el mismo launch (ver logs `DAA: conflicts=…`):
+
+```bash
+source install/setup.bash   # y antes: ROS + underlay con px4_msgs
+scripts/smoke_daa_traffic_monitor.sh
+```
+
+También: `ros2 run upnext_icarous_daa fake_px4_for_daa_test` en un terminal y el `ros2 launch …` en otro.
+
+**Demo visual para RViz (ownship / intruso / texto DAA)** — útil para enseñar o grabar un vídeo:
+
+```bash
+ros2 launch upnext_icarous_daa daa_smoke_demo.launch.py
+```
+
+Abre **RViz2** con rejilla y `MarkerArray` en `/daa_demo/viz_markers` (Fixed Frame `map`): **no es un simulador de vuelo**, son esferas/flechas de la lógica DAA. Para **la ventana de Gazebo con el modelo 3D** (PX4 SITL), mismo launch con:
+
+```bash
+ros2 launch upnext_icarous_daa daa_smoke_demo.launch.py use_gazebo:=true
+```
+
+(Requiere **PX4-Autopilot** clonado, p. ej. en `~/PX4-Autopilot`, y Gazebo Harmonic según la doc PX4; opcional `vehicle:=gz_x500` para multicóptero.)
+
+Incluye **título y subtítulo** encima de la escena (namespace `daa_title` en el mismo topic). Sin RViz: `use_rviz:=false`. Textos: parámetros `title_line1`, `title_line2`, `title_enable` en `daa_demo_viz`.
+
+**Panel 3D (malla):** por defecto se muestra un plano semitransparente bajo el título (`share/upnext_icarous_daa/meshes/logo_plane.stl`). Sustituye por tu STL con `logo_mesh_uri:=file:///ruta/absoluta/logo.stl`, o ajusta `logo_scale_*`, `logo_z_below_title_m`, `logo_mesh_enable:=false` para ocultarlo. Ver `meshes/README.txt` en el paquete.
+
+- **Vídeo para mandar a alguien**: graba la pantalla con OBS, SimpleScreenRecorder o la herramienta de captura del escritorio (Wayland/X11).
+- **Datos para reproducir después** (otro terminal, con el demo en marcha):
+
+```bash
+scripts/record_daa_smoke_demo.sh ~/Videos/daa_demo_cap
+```
+
+Replay: `ros2 bag play ~/Videos/daa_demo_micap` y en RViz el mismo display (o `ros2 launch …` solo con `use_rviz:=true` y en otro proceso el play del bag — ajusta según necesites TF/tiempo).
 
 PX4 SITL + DAA en un solo launch:
 
@@ -99,6 +145,22 @@ source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 ros2 launch upnext_bringup px4_sitl.launch.py
 ```
+
+Con el simulador en marcha el modelo **no despega solo**, salvo que uses el launch **en vuelo**:
+
+```bash
+ros2 launch upnext_icarous_daa daa_smoke_flying.launch.py
+```
+
+(Por defecto espera ~40 s antes del despegue; si PX4 compila largo, `takeoff_delay_sec:=90`. Si ya está compilado, `takeoff_delay_sec:=20`.)
+
+Arm + despegue manual por MAVLink:
+
+```bash
+ros2 run upnext_icarous_daa px4_sitl_takeoff
+```
+
+(O QGroundControl.) Si no conecta: `ros2 run upnext_icarous_daa px4_sitl_takeoff -- --connection udpout:127.0.0.1:14550`.
 
 Solo puente ICAROUS (sin PX4): `ros2 run upnext_icarous_bridge icarous_bridge_node`
 

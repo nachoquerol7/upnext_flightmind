@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""Set PX4 mode to OFFBOARD via MAVLink (SITL helper)."""
+from __future__ import annotations
+
+import argparse
+import sys
+import time
+
+from pymavlink import mavutil
+
+
+def _candidate_endpoints(primary: str) -> list[str]:
+    order: list[str] = []
+    for uri in (
+        primary,
+        "udp:127.0.0.1:14550",
+        "udpin:127.0.0.1:14550",
+        "udpout:127.0.0.1:14550",
+        "udp:127.0.0.1:18570",
+        "udpin:127.0.0.1:18570",
+        "udpout:127.0.0.1:18570",
+    ):
+        if uri not in order:
+            order.append(uri)
+    return order
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument(
+        "--connection",
+        default="udp:127.0.0.1:14550",
+        help="Primary MAVLink endpoint (fallbacks are probed automatically).",
+    )
+    ap.add_argument("--wait-sec", type=float, default=45.0, help="Heartbeat wait timeout.")
+    args = ap.parse_args()
+
+    deadline = time.time() + args.wait_sec
+    m = None
+    for uri in _candidate_endpoints(args.connection):
+        if time.time() >= deadline:
+            break
+        try:
+            cand = mavutil.mavlink_connection(uri)
+        except Exception:
+            continue
+        print(f"Waiting heartbeat on {uri}...", flush=True)
+        hb = cand.wait_heartbeat(timeout=3.0)
+        if hb is not None:
+            m = cand
+            print(f"Heartbeat OK on {uri}: sys={m.target_system} comp={m.target_component}", flush=True)
+            break
+        try:
+            cand.close()
+        except Exception:
+            pass
+
+    if m is None:
+        print("No MAVLink heartbeat for OFFBOARD switch.", file=sys.stderr)
+        return 1
+
+    m.mav.command_long_send(
+        m.target_system,
+        m.target_component,
+        mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+        0,
+        float(mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED),
+        6.0,  # PX4 custom main mode OFFBOARD
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    )
+    end = time.time() + 8.0
+    while time.time() < end:
+        ack = m.recv_match(type="COMMAND_ACK", blocking=True, timeout=1.0)
+        if ack and ack.command == mavutil.mavlink.MAV_CMD_DO_SET_MODE:
+            print(f"OFFBOARD ACK: {int(ack.result)}", flush=True)
+            return 0 if int(ack.result) == 0 else 2
+
+    print("OFFBOARD ACK timeout.", file=sys.stderr)
+    return 3
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>uas_stack_tests</name>
+  <version>0.0.1</version>
+  <description>Integración E2E, escenarios SIL, dashboard DAA y matriz V&V (Fase 9).</description>
+  <maintainer email="ignacio@example.com">ignacio</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>flightmind_msgs</depend>
+  <depend>px4_msgs</depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>vehicle_model</exec_depend>
+  <exec_depend>mission_fsm</exec_depend>
+  <exec_depend>fdir</exec_depend>
+  <exec_depend>gpp</exec_depend>
+  <exec_depend>daidalus_node</exec_depend>
+  <exec_depend>polycarp_node</exec_depend>
+  <exec_depend>local_replanner</exec_depend>
+  <exec_depend>trajectory_gen</exec_depend>
+  <exec_depend>acas_node</exec_depend>
+  <test_depend>python3-pytest</test_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

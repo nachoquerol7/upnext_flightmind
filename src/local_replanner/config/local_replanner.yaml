@@ -1,0 +1,13 @@
+/**:
+  ros__parameters:
+    w1: 1.0
+    w2: 1.0
+    w3: 0.5
+    qf_threshold: 0.65
+    track_deviation_threshold_m: 80.0
+    terrain_max_m: 500.0
+    replan_dt_s: 0.5
+    ref_lat_deg: 40.0
+    ref_lon_deg: -3.0
+    ref_n_m: 0.0
+    ref_e_m: 0.0

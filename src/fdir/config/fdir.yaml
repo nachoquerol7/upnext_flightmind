@@ -1,0 +1,46 @@
+# FDIR policies and emergency zones (overridable via ROS parameters / config_file).
+#
+# ROS I/O (fdir_node):
+#   Subscribes: /nav/quality_flag, /fsm/current_mode, /fmu/out/vehicle_imu,
+#     /fmu/out/vehicle_status, /fmu/out/vehicle_attitude_setpoint (FW throttle ~ thrust_body[0]),
+#     /fdir/in/c2_heartbeat (std_msgs/Bool — any message refreshes C2 link time).
+#   Publishes: /fdir/active_fault, /fdir/policy_action, /fdir/emergency_landing_target (JSON).
+#   Vehicle lat/lon/alt AMSL: ROS parameters (refresh on tick); override for glide reachability.
+fdir_node:
+  ros__parameters:
+    config_file: ""
+    # Navigation quality (0..1), higher is better
+    nav_mild_below: 0.65
+    nav_severe_below: 0.35
+    nav_critical_below: 0.15
+    # Motor loss: thrust vs vertical accel mismatch window (seconds)
+    motor_loss_window_s: 2.0
+    motor_loss_throttle_min: 0.35
+    motor_loss_vertical_accel_max_m_s2: -1.5
+    # IMU: derive linear accel from delta_velocity / dt (FRD body, m/s^2)
+    # Sensor / link
+    sensor_timeout_nav_quality_s: 3.0
+    c2_heartbeat_timeout_s: 1.5
+    link_loss_hold_s: 30.0
+    link_loss_rtb_s: 30.0
+    link_loss_land_s: 120.0
+    # Glide reachability: horizontal reach ~ glide_ratio * altitude_amsl_m
+    glide_ratio: 18.0
+    # Vehicle approximate position for zone ranking (set from external nav in node)
+    vehicle_lat: 40.0
+    vehicle_lon: -3.0
+    vehicle_altitude_amsl_m: 2000.0
+
+emergency_landing_zones:
+  - lat: 40.05
+    lon: -3.02
+    longitud_pista: 900
+    calidad: 0.95
+  - lat: 40.5
+    lon: -3.5
+    longitud_pista: 1200
+    calidad: 0.85
+  - lat: 41.2
+    lon: -2.0
+    longitud_pista: 800
+    calidad: 0.7

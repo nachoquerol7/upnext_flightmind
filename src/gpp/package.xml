@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gpp</name>
+  <version>0.0.1</version>
+  <description>Global path planner: FL assignment, informed RRT*, takeoff phases.</description>
+  <maintainer email="ignacio@example.com">ignacio</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <test_depend>python3-pytest</test_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

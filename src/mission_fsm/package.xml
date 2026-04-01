@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>mission_fsm</name>
+  <version>0.0.1</version>
+  <description>Mission FSM: YAML states/guards/transitions, /fsm/current_mode and /fsm/active_trigger.</description>
+  <maintainer email="ignacio@example.com">ignacio</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>ament_index_python</depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>nav_msgs</test_depend>
+  <test_depend>geometry_msgs</test_depend>
+  <test_depend>sensor_msgs</test_depend>
+  <!-- pytest-ros: no paquete ament estándar en Jazzy; fixtures en conftest.py -->
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

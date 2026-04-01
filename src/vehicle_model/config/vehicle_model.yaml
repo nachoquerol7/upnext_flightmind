@@ -1,0 +1,16 @@
+# Vehicle envelope (fixed-wing proxy). Used by vehicle_model_node and tests.
+vehicle_model_node:
+  ros__parameters:
+    config_file: ""
+    # If config_file empty, these defaults apply (can override via params):
+    v_min_ms: 30.0
+    v_max_ms: 57.0
+    turn_radius_min_m: 600.0
+    climb_rate_max_ms: 8.0
+    descent_rate_max_ms: 5.0
+    glide_ratio: 18.0
+    mtow_kg: 750.0
+    fuel_mass_initial_kg: 120.0
+    fuel_burn_kgh: 50.0
+    # As fuel reserve drops, minimum IAS is raised (operational SOP proxy).
+    v_min_reserve_gain_ms: 5.0

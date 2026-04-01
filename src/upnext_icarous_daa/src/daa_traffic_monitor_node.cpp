@@ -40,8 +40,8 @@ public:
   : Node("daa_traffic_monitor")
   {
     this->declare_parameter<std::string>("daa_config_file", "");
-    this->declare_parameter<std::string>("topic_global", "/fmu/out/vehicle_global_position");
-    this->declare_parameter<std::string>("topic_local", "/fmu/out/vehicle_local_position");
+    this->declare_parameter<std::string>("topic_global", "fmu/out/vehicle_global_position");
+    this->declare_parameter<std::string>("topic_local", "fmu/out/vehicle_local_position_v1");
     this->declare_parameter<bool>("intruder_enable", true);
     this->declare_parameter<double>("intruder_n_m", 80.0);
     this->declare_parameter<double>("intruder_e_m", 0.0);

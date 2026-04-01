@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Terreno SRTM → PNG generado por:
+    ros2 run upnext_bringup fetch_dem_heightmap -- --prefix daa_dem_srtm
+  Ajusta <size> x y z si cambias --half-side-m o el recorte (z ≈ height_range_m del JSON).
+  El PNG debe copiarse junto a este .sdf en Tools/simulation/gz/worlds/ (px4_sitl.launch.py).
+-->
+<sdf version="1.9">
+  <world name="daa_dem_srtm">
+    <physics type="ode">
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+    </physics>
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type="adiabatic"/>
+    <scene>
+      <grid>true</grid>
+      <ambient>0.5 0.62 0.88 1</ambient>
+      <background>0.4 0.55 0.78 1</background>
+      <shadows>true</shadows>
+      <sky>
+        <clouds>
+          <speed>6</speed>
+        </clouds>
+      </sky>
+    </scene>
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>47.3769</latitude_deg>
+      <longitude_deg>8.5417</longitude_deg>
+      <elevation>450</elevation>
+    </spherical_coordinates>
+    <model name="srtm_terrain">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name="link">
+        <collision name="terrain_collision">
+          <geometry>
+            <heightmap>
+              <uri>daa_dem_srtm_heightmap.png</uri>
+              <!-- 2.5 km × 2.5 km horizontal; z = rango vertical (daa_dem_srtm_meta.json) -->
+              <size>2500 2500 230</size>
+              <pos>0 0 0</pos>
+              <sampling>1</sampling>
+            </heightmap>
+          </geometry>
+        </collision>
+        <visual name="terrain_visual">
+          <geometry>
+            <heightmap>
+              <uri>daa_dem_srtm_heightmap.png</uri>
+              <size>2500 2500 230</size>
+              <pos>0 0 0</pos>
+              <sampling>1</sampling>
+            </heightmap>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>

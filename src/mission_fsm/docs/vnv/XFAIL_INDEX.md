@@ -1,0 +1,105 @@
+# Índice XFAIL-ARCH (gaps de arquitectura)
+
+## ARCH-1.1 — Histéresis y fast-path de alertas
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-FSM-023, TC-DAI-004
+**Descripción:** El stack no implementa histéresis temporal ni fast-path diferenciado para alerta DAIDALUS NEAR.
+**Impacto:** Oscilaciones y latencia de reacción no controlada en escenarios de alerta.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-1.2 — Timeouts de morada FSM
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-TO-001, TC-TO-002, TC-TO-003, TC-TO-004, TC-TO-005, TC-TO-010
+**Descripción:** Sin max_duration_sec operativo por estado ni watchdog temporal de misión.
+**Impacto:** Posibilidad de quedar indefinidamente en estados sin progreso.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-1.3 — Subestados EVENT
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-FSM-024
+**Descripción:** `/fsm/current_mode` no expone subestado operativo dentro de EVENT.
+**Impacto:** Menor observabilidad para operación y V&V avanzada.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-1.6 — Validación geofence pre-Nav2
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-NAV-006
+**Descripción:** No hay validador que rechace waypoints fuera de geofence antes de llamar a Nav2.
+**Impacto:** Planificación de rutas potencialmente inválidas para plataforma aérea.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-1.7 — Supervisión externa (watchdog + enlaces)
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-TO-006, TC-TO-007, TC-TO-008, TC-TO-009, TC-FDIR-007, TC-FDIR-008, TC-FDIR-016
+**Descripción:** No existe nodo watchdog integrado ni monitor temporal de GCS/C2/batería/geofence en mission_fsm.
+**Impacto:** Degradación de seguridad ante caída de nodos o pérdida de enlaces críticos.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-1.8 — Monitor de localización
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-LOC-003, TC-LOC-004, TC-LOC-012
+**Descripción:** Ausencia de monitor para timeout de odometría y discontinuidad de pose.
+**Impacto:** Fallos de localización no detectados de forma explícita.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-1.9 — Persistencia de waypoint de interrupción
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-NAV-009
+**Descripción:** El gestor de misión no persiste waypoint actual para reanudación tras interrupción.
+**Impacto:** Reanudación no determinista tras EVENT/ABORT en misiones largas.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-DAI-RECOVERY — Mapeo nivel RECOVERY
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-DAI-005
+**Descripción:** Nivel DAIDALUS RECOVERY (4) no tiene mapeo explícito en FSM.
+**Impacto:** Comportamiento ambiguo ante recuperación/conflicto severo.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-DAI-FEED — Timeout de feed DAIDALUS
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-DAI-008
+**Descripción:** No existe timeout de ausencia de topic DAIDALUS.
+**Impacto:** Pérdida de feed no escalada automáticamente.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-DAI-ADV — Integración/validación advisory
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-DAI-009, TC-DAI-010, TC-DAI-012
+**Descripción:** Falta consumo operativo y validación de advisory (incluyendo geofence/frescura).
+**Impacto:** Advisory recibido no se traduce en acciones seguras y verificables.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-NAV — Adaptador Nav2 para UAS
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-NAV-004, TC-NAV-005
+**Descripción:** No hay ActionServer `/navigate_to_pose` en mock/adapter ni adaptación de recovery behavior para plataforma aérea.
+**Impacto:** Integración Nav2 incompleta para SIL de UAS.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-UTM — Interfaz UTM dinámica
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-NAV-011
+**Descripción:** Falta interfaz para restricciones UTM dinámicas antes/durante planificación.
+**Impacto:** No se pueden validar restricciones de espacio aéreo en tiempo de misión.
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-BRIDGE — Topics de subsistema hacia /fsm/in/*
+**Estado:** ABIERTO
+**Tests bloqueados:** (indirecto en múltiples suites)
+**Descripción:** El puente real de topics de subsistema a entradas de FSM no está integrado; se duplica en mocks SIL.
+**Impacto:** Riesgo de divergencia entre SIL y despliegue integrado.
+**Responsable:** —
+**Fecha objetivo:** —

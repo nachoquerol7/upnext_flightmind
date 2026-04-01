@@ -1,0 +1,7 @@
+/**:
+  ros__parameters:
+    base_margin_m: 0.0
+    turn_radius_min_m: 600.0
+    vr_mps: 28.0
+    climb_rate_max_mps: 8.0
+    pitch_max_deg: 12.0

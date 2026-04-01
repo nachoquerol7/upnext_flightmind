@@ -3,7 +3,7 @@
 <package format="3">
   <name>upnext_bringup</name>
   <version>0.1.0</version>
-  <description>UpNext UAS stack: PX4 SITL bringup (default VTOL in Gazebo), separate from Autonav.</description>
+  <description>UpNext UAS stack: PX4 SITL bringup (default VTOL in Gazebo).</description>
   <maintainer email="ignacio-querol@todo.todo">ignacio-querol</maintainer>
   <license>Apache-2.0</license>
 
@@ -11,6 +11,9 @@
 
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-pil</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

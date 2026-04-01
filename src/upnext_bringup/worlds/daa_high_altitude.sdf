@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Vista tipo crucero ~20 000 ft: cielo con nubes y suelo verde/azul lejano (tierra + sensación de horizonte). -->
+<sdf version="1.9">
+  <world name="daa_high_altitude">
+    <physics type="ode">
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+    </physics>
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type="adiabatic"/>
+    <scene>
+      <!-- Rejilla: referencia para ver desplazamiento / paralaje sobre el suelo -->
+      <grid>true</grid>
+      <ambient>0.55 0.68 0.92 1</ambient>
+      <background>0.35 0.55 0.85 1</background>
+      <shadows>true</shadows>
+      <sky>
+        <clouds>
+          <speed>8</speed>
+        </clouds>
+      </sky>
+    </scene>
+    <!-- Suelo amplio: lee como tierra/agua vistos desde altura; colisión para aterrizaje SITL. -->
+    <model name="earth_surface">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>1 1</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode/>
+            </friction>
+            <bounce/>
+            <contact/>
+          </surface>
+        </collision>
+        <visual name="terrain">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>8000 8000</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.15 0.42 0.18 1</ambient>
+            <diffuse>0.22 0.52 0.24 1</diffuse>
+            <specular>0.05 0.08 0.06 1</specular>
+          </material>
+        </visual>
+        <visual name="coastal_blue">
+          <pose>2500 -1200 0.02 0 0 0</pose>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>3500 4000</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.08 0.22 0.42 1</ambient>
+            <diffuse>0.12 0.35 0.55 1</diffuse>
+            <specular>0.2 0.25 0.3 1</specular>
+          </material>
+        </visual>
+        <pose>0 0 0 0 0 0</pose>
+        <enable_wind>false</enable_wind>
+      </link>
+      <pose>0 0 0 0 0 0</pose>
+      <self_collide>false</self_collide>
+    </model>
+    <!-- Cruces tipo “carretera” para notar movimiento respecto al suelo -->
+    <model name="ground_markings">
+      <static>true</static>
+      <link name="link">
+        <visual name="road_ns">
+          <pose>0 0 0.08 0 0 0</pose>
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <box>
+              <size>9000 120 0.12</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.12 0.1 0.08 1</ambient>
+            <diffuse>0.18 0.16 0.12 1</diffuse>
+          </material>
+        </visual>
+        <visual name="road_ew">
+          <pose>0 0 0.08 0 0 0</pose>
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <box>
+              <size>120 9000 0.12</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.12 0.1 0.08 1</ambient>
+            <diffuse>0.18 0.16 0.12 1</diffuse>
+          </material>
+        </visual>
+        <pose>0 0 0 0 0 0</pose>
+      </link>
+    </model>
+    <light name="sunUTC" type="directional">
+      <pose>0 0 8000 0 0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <intensity>1.05</intensity>
+      <direction>0.15 0.2 -0.97</direction>
+      <diffuse>0.95 0.95 0.92 1</diffuse>
+      <specular>0.35 0.35 0.32 1</specular>
+      <attenuation>
+        <range>20000</range>
+        <linear>0</linear>
+        <constant>1</constant>
+        <quadratic>0</quadratic>
+      </attenuation>
+    </light>
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>47.397971057728974</latitude_deg>
+      <longitude_deg>8.546163739800146</longitude_deg>
+      <elevation>0</elevation>
+    </spherical_coordinates>
+  </world>
+</sdf>

@@ -33,7 +33,27 @@ set_target_properties(daa_traffic_monitor_node PROPERTIES
 )
 
 install(TARGETS daa_traffic_monitor_node DESTINATION lib/${PROJECT_NAME})
+install(
+  PROGRAMS
+    scripts/fake_px4_for_daa_test
+    scripts/daa_demo_viz
+    scripts/px4_sitl_takeoff
+    scripts/px4_sitl_set_offboard
+  DESTINATION lib/${PROJECT_NAME}
+)
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY meshes DESTINATION share/${PROJECT_NAME})
+
+if(BUILD_TESTING)
+  # Primer test de integración: fake PX4 + TrafficMonitor (sin Gazebo)
+  ament_add_test(
+    test_daa_fake_stack
+    COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/test/test_daa_fake_stack.sh"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../.."
+    TIMEOUT 180
+    GENERATE_RESULT_FOR_RETURN_CODE_ZERO
+  )
+endif()
 
 ament_package()

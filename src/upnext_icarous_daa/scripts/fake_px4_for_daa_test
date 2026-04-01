@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Publish minimal VehicleGlobalPosition + VehicleLocalPosition for DAA smoke tests (no PX4)."""
+import rclpy
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from px4_msgs.msg import VehicleGlobalPosition, VehicleLocalPosition
+
+
+class FakePx4(Node):
+    def __init__(self):
+        super().__init__("fake_px4_for_daa_test")
+        # Relativo al namespace del nodo → no chocar con otra instancia del demo en global /fmu/out
+        self.pub_g = self.create_publisher(
+            VehicleGlobalPosition, "fmu/out/vehicle_global_position", 10
+        )
+        self.pub_l = self.create_publisher(
+            VehicleLocalPosition, "fmu/out/vehicle_local_position_v1", 10
+        )
+        self.timer = self.create_timer(1.0 / 20.0, self.tick)
+        self._us = 0
+
+    def tick(self):
+        self._us += 50_000
+        g = VehicleGlobalPosition()
+        g.timestamp = self._us
+        g.timestamp_sample = self._us
+        g.lat = 40.59
+        g.lon = -74.04
+        g.alt = 4572.0
+        g.lat_lon_valid = True
+        g.alt_valid = True
+
+        l = VehicleLocalPosition()
+        l.timestamp = self._us
+        l.timestamp_sample = self._us
+        l.xy_valid = True
+        l.z_valid = True
+        l.v_xy_valid = True
+        l.v_z_valid = True
+        l.x = 0.0
+        l.y = 0.0
+        l.z = -50.0
+        l.vx = 20.0
+        l.vy = 0.0
+        l.vz = 0.0
+        l.heading = 0.0
+        l.heading_good_for_control = True
+
+        self.pub_g.publish(g)
+        self.pub_l.publish(l)
+
+
+def main():
+    rclpy.init()
+    node = FakePx4()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    finally:
+        node.destroy_node()
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
+        except Exception:
+            pass
+
+
+if __name__ == "__main__":
+    main()

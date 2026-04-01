@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""Arm y opcional despegue en PX4 SITL (MAVLink UDP). Requiere simulador en marcha."""
+from __future__ import annotations
+
+import argparse
+import sys
+import time
+
+from pymavlink import mavutil
+
+
+def _candidate_endpoints(primary: str) -> list[str]:
+    order: list[str] = []
+    # Algunos PX4 SITL publican mejor hacia sockets "udp"/"udpin" que "udpout".
+    for u in (
+        primary,
+        'udp:127.0.0.1:14550',
+        'udpin:127.0.0.1:14550',
+        'udpout:127.0.0.1:14550',
+        'udp:127.0.0.1:18570',
+        'udpin:127.0.0.1:18570',
+        'udpout:127.0.0.1:18570',
+    ):
+        if u not in order:
+            order.append(u)
+    return order
+
+
+def main() -> int:
+    p = argparse.ArgumentParser()
+    p.add_argument(
+        '--connection',
+        default='udp:127.0.0.1:14550',
+        help='Endpoint MAVLink PX4 SITL. Si falla, se prueban varios udp/udpin/udpout.',
+    )
+    p.add_argument('--alt', type=float, default=15.0, help='Altitud despegue [m]')
+    p.add_argument(
+        '--arm-only',
+        action='store_true',
+        help='Solo arma (sin enviar NAV_TAKEOFF).',
+    )
+    p.add_argument(
+        '--force-arm-on-denied',
+        action='store_true',
+        default=True,
+        help='Si ARM normal es denegado en SITL, reintenta con force-arm MAVLink.',
+    )
+    p.add_argument('--arm-timeout', type=float, default=30.0)
+    p.add_argument(
+        '--heartbeat-wait-sec',
+        type=float,
+        default=90.0,
+        help='Tiempo total esperando heartbeat (compilación PX4 lenta).',
+    )
+    args = p.parse_args()
+
+    print(f'Conectando: {args.connection}', flush=True)
+    deadline = time.time() + args.heartbeat_wait_sec
+    m = None
+    used = None
+    while time.time() < deadline and m is None:
+        for uri in _candidate_endpoints(args.connection):
+            if time.time() >= deadline:
+                break
+            try:
+                cand = mavutil.mavlink_connection(uri)
+            except Exception:
+                continue
+            print(f'Esperando heartbeat en {uri}…', flush=True)
+            hb = cand.wait_heartbeat(timeout=2.5)
+            if hb is not None:
+                m = cand
+                used = uri
+                break
+            try:
+                cand.close()
+            except Exception:
+                pass
+    if m is None or used is None:
+        print(
+            'Sin heartbeat en endpoints MAVLink: deja arrancar Gazebo/PX4 y reintenta.',
+            file=sys.stderr,
+        )
+        return 1
+    print(
+        f'Heartbeat: system={m.target_system} component={m.target_component}',
+        flush=True,
+    )
+
+    def _arm(force: bool = False):
+        m.mav.command_long_send(
+            m.target_system,
+            m.target_component,
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+            0,
+            1.0,
+            21196.0 if force else 0.0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        )
+        t0 = time.time()
+        while time.time() - t0 < args.arm_timeout:
+            ack = m.recv_match(type='COMMAND_ACK', blocking=True, timeout=1)
+            if ack and ack.command == mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM:
+                return int(ack.result)
+        return None
+
+    arm_result = _arm(force=False)
+    if arm_result is None:
+        print('Timeout esperando ARM; puede que ya estuviera armado.', flush=True)
+    else:
+        print(f'ARM ACK: {arm_result}', flush=True)
+        if arm_result != 0 and args.force_arm_on_denied:
+            print('ARM denegado: reintentando force-arm (solo SITL).', flush=True)
+            arm_result_force = _arm(force=True)
+            if arm_result_force is not None:
+                print(f'ARM FORCE ACK: {arm_result_force}', flush=True)
+            else:
+                print('Timeout esperando ARM FORCE ACK.', flush=True)
+
+    if args.arm_only:
+        print('ARM only: sin NAV_TAKEOFF.', flush=True)
+        return 0
+
+    time.sleep(0.5)
+
+    m.mav.command_long_send(
+        m.target_system,
+        m.target_component,
+        mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        args.alt,
+    )
+    print(f'Enviado NAV_TAKEOFF alt={args.alt} m', flush=True)
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

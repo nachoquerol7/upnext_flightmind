@@ -1,0 +1,690 @@
+#!/usr/bin/env python3
+"""
+Visualiza ownship + intruso sintético (coherente con daa_traffic_monitor), geocerca,
+trayectoria global nominal y trayectoria de evasión cuando hay conflicto DAA.
+
+Además: línea vertical al “suelo” (z=0 en map), estela de posiciones para ver avance,
+y polilínea densa / tipo spline sobre la ruta a seguir.
+
+Frame `map`: x=norte, y=este, z=arriba (NED horizontal + z invertido).
+"""
+from __future__ import annotations
+
+import math
+import os
+
+import rclpy
+from ament_index_python.packages import get_package_share_directory
+from geometry_msgs.msg import Point
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy
+from std_msgs.msg import Float64MultiArray
+from visualization_msgs.msg import Marker, MarkerArray
+
+from px4_msgs.msg import VehicleGlobalPosition, VehicleLocalPosition
+
+
+def ned_to_rviz(n: float, e: float, d: float) -> Point:
+    """NED (m) -> RViz `map` (x norte, y este, z arriba)."""
+    return Point(x=float(n), y=float(e), z=float(-d))
+
+
+def _densify_polyline(pts: list[Point], n_per_seg: int) -> list[Point]:
+    """Inserta puntos entre vértices consecutivos (trayectoria más suave en RViz)."""
+    if len(pts) < 2 or n_per_seg < 1:
+        return list(pts)
+    out: list[Point] = []
+    for i in range(len(pts) - 1):
+        a, b = pts[i], pts[i + 1]
+        for k in range(n_per_seg):
+            t = k / n_per_seg
+            out.append(
+                Point(
+                    x=a.x + (b.x - a.x) * t,
+                    y=a.y + (b.y - a.y) * t,
+                    z=a.z + (b.z - a.z) * t,
+                )
+            )
+    out.append(pts[-1])
+    return out
+
+
+def _parse_polygon_ned(s: str) -> list[tuple[float, float]]:
+    """'n1,e1,n2,e2,...' -> [(n,e), ...]; vacío -> rectángulo por defecto."""
+    s = (s or '').strip()
+    if not s:
+        return [(-120.0, -120.0), (220.0, -120.0), (220.0, 180.0), (-120.0, 180.0)]
+    parts = [float(x) for x in s.replace(',', ' ').split()]
+    out: list[tuple[float, float]] = []
+    for i in range(0, len(parts) - 1, 2):
+        out.append((parts[i], parts[i + 1]))
+    return out if len(out) >= 3 else [
+        (-120.0, -120.0),
+        (220.0, -120.0),
+        (220.0, 180.0),
+        (-120.0, 180.0),
+    ]
+
+
+class DaaDemoViz(Node):
+    def __init__(self) -> None:
+        super().__init__('daa_demo_viz')
+
+        self.declare_parameter('frame_id', 'map')
+        self.declare_parameter('bands_topic', '/daa_traffic_monitor/daa/bands_summary')
+        self.declare_parameter('topic_global', 'fmu/out/vehicle_global_position')
+        self.declare_parameter('topic_local', 'fmu/out/vehicle_local_position_v1')
+        self.declare_parameter('viz_topic', '/daa_demo/viz_markers')
+        self.declare_parameter('intruder_enable', True)
+        self.declare_parameter('intruder_n_m', 80.0)
+        self.declare_parameter('intruder_e_m', 0.0)
+        self.declare_parameter('rate_hz', 20.0)
+        self.declare_parameter('title_enable', True)
+        self.declare_parameter(
+            'title_line1',
+            'UpNext UAS  ·  ICAROUS / DAIDALUS',
+        )
+        self.declare_parameter(
+            'title_line2',
+            'Demo: tráfico sintético y resumen DAA',
+        )
+        self.declare_parameter('title_z_offset_m', 58.0)
+        self.declare_parameter('title_sub_z_gap_m', 7.0)
+        self.declare_parameter('logo_mesh_enable', True)
+        self.declare_parameter('logo_mesh_uri', '')
+        self.declare_parameter('logo_scale_x', 56.0)
+        self.declare_parameter('logo_scale_y', 14.0)
+        self.declare_parameter('logo_scale_z', 1.0)
+        self.declare_parameter('logo_z_below_title_m', 11.0)
+
+        self.declare_parameter('geofence_enable', True)
+        self.declare_parameter('geofence_polygon_ned', '')
+        self.declare_parameter('geofence_z_m', 1.0)
+        self.declare_parameter('path_goal_ahead_m', 130.0)
+        self.declare_parameter('path_avoid_lateral_m', 40.0)
+        self.declare_parameter('path_mission_width', 0.45)
+        self.declare_parameter('path_avoid_width', 1.35)
+        self.declare_parameter('use_drone_cylinders', True)
+        self.declare_parameter('drone_radius_m', 5.0)
+        self.declare_parameter('drone_height_m', 3.5)
+        self.declare_parameter('label_drone_names', True)
+        # Referencia “sobre el terreno” y trayectoria explícita
+        self.declare_parameter('ground_plumb_enable', True)
+        self.declare_parameter('ground_plane_z', 0.0)
+        self.declare_parameter('trail_enable', True)
+        self.declare_parameter('trail_max_points', 90)
+        self.declare_parameter('path_densify_segments', 22)
+
+        self._frame = self.get_parameter('frame_id').get_parameter_value().string_value
+        self._viz_topic = self.get_parameter('viz_topic').get_parameter_value().string_value
+        if not self._viz_topic.startswith('/'):
+            self._viz_topic = '/' + self._viz_topic
+        self._intruder_enable = self.get_parameter('intruder_enable').value
+        self._dn = float(self.get_parameter('intruder_n_m').value)
+        self._de = float(self.get_parameter('intruder_e_m').value)
+        self._title_enable = self.get_parameter('title_enable').value
+        self._title1 = self.get_parameter('title_line1').get_parameter_value().string_value
+        self._title2 = self.get_parameter('title_line2').get_parameter_value().string_value
+        self._title_z = float(self.get_parameter('title_z_offset_m').value)
+        self._title_gap = float(self.get_parameter('title_sub_z_gap_m').value)
+        self._logo_sx = float(self.get_parameter('logo_scale_x').value)
+        self._logo_sy = float(self.get_parameter('logo_scale_y').value)
+        self._logo_sz = float(self.get_parameter('logo_scale_z').value)
+        self._logo_z_bt = float(self.get_parameter('logo_z_below_title_m').value)
+
+        self._geofence_enable = self.get_parameter('geofence_enable').value
+        poly_s = self.get_parameter('geofence_polygon_ned').get_parameter_value().string_value
+        self._geofence_poly = _parse_polygon_ned(poly_s)
+        self._geofence_z = float(self.get_parameter('geofence_z_m').value)
+        self._path_ahead = float(self.get_parameter('path_goal_ahead_m').value)
+        self._path_lat = float(self.get_parameter('path_avoid_lateral_m').value)
+        self._w_mission = float(self.get_parameter('path_mission_width').value)
+        self._w_avoid = float(self.get_parameter('path_avoid_width').value)
+        self._use_cyl = self.get_parameter('use_drone_cylinders').value
+        self._dr_r = float(self.get_parameter('drone_radius_m').value)
+        self._dr_h = float(self.get_parameter('drone_height_m').value)
+        self._label_names = self.get_parameter('label_drone_names').value
+        self._plumb = self.get_parameter('ground_plumb_enable').value
+        self._ground_z = float(self.get_parameter('ground_plane_z').value)
+        self._trail_en = self.get_parameter('trail_enable').value
+        self._trail_max = max(8, int(self.get_parameter('trail_max_points').value))
+        self._dens = max(4, int(self.get_parameter('path_densify_segments').value))
+        self._trail_hist: list[Point] = []
+
+        self._logo_uri = ''
+        if self.get_parameter('logo_mesh_enable').value:
+            uri = self.get_parameter('logo_mesh_uri').get_parameter_value().string_value.strip()
+            if uri:
+                self._logo_uri = uri
+            else:
+                try:
+                    pkg = get_package_share_directory('upnext_icarous_daa')
+                    path = os.path.join(pkg, 'meshes', 'logo_plane.stl')
+                    if os.path.isfile(path):
+                        self._logo_uri = f'file://{path}'
+                    else:
+                        self.get_logger().warn(f'logo: STL no encontrado en {path}')
+                except Exception as exc:  # noqa: BLE001
+                    self.get_logger().warn(f'logo: {exc}')
+
+        self._pub = self.create_publisher(MarkerArray, self._viz_topic, 10)
+
+        qos_sensor = QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT)
+        tg = self.get_parameter('topic_global').get_parameter_value().string_value
+        tl = self.get_parameter('topic_local').get_parameter_value().string_value
+        self.create_subscription(VehicleGlobalPosition, tg, self._on_global, qos_sensor)
+        self.create_subscription(VehicleLocalPosition, tl, self._on_local, qos_sensor)
+        bt = self.get_parameter('bands_topic').get_parameter_value().string_value
+        self.create_subscription(Float64MultiArray, bt, self._on_bands, 10)
+
+        self._have_g = False
+        self._have_l = False
+        self._bands_txt = 'DAA: esperando datos…'
+        self._conflicts = 0
+        self._lx = self._ly = self._lz = 0.0
+        self._vn = self._ve = self._vd = 0.0
+
+        hz = max(1.0, float(self.get_parameter('rate_hz').value))
+        self.create_timer(1.0 / hz, self._publish)
+        extra = f' logo_mesh={bool(self._logo_uri)}' if self._logo_uri else ''
+        self.get_logger().info(
+            f'daa_demo_viz: {self._viz_topic} frame={self._frame}{extra} geofence={self._geofence_enable}'
+        )
+
+    def _on_global(self, m: VehicleGlobalPosition) -> None:
+        if m.lat_lon_valid:
+            self._have_g = True
+
+    def _on_local(self, m: VehicleLocalPosition) -> None:
+        if not m.v_xy_valid:
+            return
+        self._vn = float(m.vx)
+        self._ve = float(m.vy)
+        self._vd = float(m.vz)
+        if m.xy_valid and m.z_valid:
+            self._lx = float(m.x)
+            self._ly = float(m.y)
+            self._lz = float(m.z)
+        self._have_l = True
+
+    def _on_bands(self, msg: Float64MultiArray) -> None:
+        if len(msg.data) < 3:
+            return
+        self._conflicts = int(msg.data[0])
+        mh = float(msg.data[1])
+        mv = float(msg.data[2])
+        self._bands_txt = f'DAA: conflictos={self._conflicts}  minH={mh:.1f}m  minV={mv:.1f}m'
+
+    def _horiz_dir(self) -> tuple[float, float]:
+        spd = math.hypot(self._vn, self._ve)
+        if spd > 0.3:
+            return self._vn / spd, self._ve / spd
+        return 1.0, 0.0
+
+    def _goal_point(self, o: Point) -> Point:
+        hn, he = self._horiz_dir()
+        gn = self._lx + hn * self._path_ahead
+        ge = self._ly + he * self._path_ahead
+        return ned_to_rviz(gn, ge, self._lz)
+
+    def _publish(self) -> None:
+        if not (self._have_g and self._have_l):
+            return
+
+        now = self.get_clock().now()
+        ma = MarkerArray()
+        mid = 0
+
+        o = ned_to_rviz(self._lx, self._ly, self._lz)
+        if self._intruder_enable:
+            mid_n = self._lx + self._dn * 0.5
+            mid_e = self._ly + self._de * 0.5
+        else:
+            mid_n, mid_e = self._lx, self._ly
+        tbase = ned_to_rviz(mid_n, mid_e, self._lz)
+
+        if self._geofence_enable:
+            gf = Marker()
+            gf.header.frame_id = self._frame
+            gf.header.stamp = now.to_msg()
+            gf.ns = 'daa_geofence'
+            gf.id = 0
+            gf.type = Marker.LINE_STRIP
+            gf.action = Marker.ADD
+            gf.scale.x = 1.8
+            gf.color.r = 0.15
+            gf.color.g = 0.85
+            gf.color.b = 0.35
+            gf.color.a = 0.92
+            zg = float(self._geofence_z)
+            for pn, pe in self._geofence_poly:
+                p = Point(x=float(pn), y=float(pe), z=zg)
+                gf.points.append(p)
+            if self._geofence_poly:
+                p0 = self._geofence_poly[0]
+                gf.points.append(Point(x=float(p0[0]), y=float(p0[1]), z=zg))
+            ma.markers.append(gf)
+
+            cap = Marker()
+            cap.header.frame_id = self._frame
+            cap.header.stamp = now.to_msg()
+            cap.ns = 'daa_geofence'
+            cap.id = 1
+            cap.type = Marker.TEXT_VIEW_FACING
+            cap.action = Marker.ADD
+            cap.pose.position.x = tbase.x + 30.0
+            cap.pose.position.y = tbase.y
+            cap.pose.position.z = zg + 6.0
+            cap.pose.orientation.w = 1.0
+            cap.scale.z = 3.8
+            cap.color.r = 0.2
+            cap.color.g = 0.95
+            cap.color.b = 0.45
+            cap.color.a = 1.0
+            cap.text = 'Geocerca operativa (demo)'
+            ma.markers.append(cap)
+
+        goal = self._goal_point(o)
+        spd = math.hypot(self._vn, self._ve)
+
+        # Estela: historial de posiciones (movimiento respecto al “mapa / tierra”)
+        if self._trail_en:
+            self._trail_hist.append(
+                Point(x=float(o.x), y=float(o.y), z=float(o.z))
+            )
+            if len(self._trail_hist) > self._trail_max:
+                self._trail_hist = self._trail_hist[-self._trail_max :]
+            if len(self._trail_hist) >= 2:
+                tr = Marker()
+                tr.header.frame_id = self._frame
+                tr.header.stamp = now.to_msg()
+                tr.ns = 'daa_trail'
+                tr.id = 0
+                tr.type = Marker.LINE_STRIP
+                tr.action = Marker.ADD
+                tr.scale.x = 1.1
+                tr.color.r = 1.0
+                tr.color.g = 0.55
+                tr.color.b = 0.12
+                tr.color.a = 0.88
+                tr.points.extend(self._trail_hist)
+                ma.markers.append(tr)
+
+        # Línea vertical al plano z=ground (proyección sobre el terreno de referencia)
+        if self._plumb and o.z > self._ground_z + 0.5:
+            g0 = Point(x=float(o.x), y=float(o.y), z=float(self._ground_z))
+            plumb = Marker()
+            plumb.header.frame_id = self._frame
+            plumb.header.stamp = now.to_msg()
+            plumb.ns = 'daa_ground'
+            plumb.id = 0
+            plumb.type = Marker.LINE_STRIP
+            plumb.action = Marker.ADD
+            plumb.scale.x = 0.45
+            plumb.color.r = 0.95
+            plumb.color.g = 0.95
+            plumb.color.b = 1.0
+            plumb.color.a = 0.65
+            plumb.points.append(o)
+            plumb.points.append(g0)
+            ma.markers.append(plumb)
+            gp = Marker()
+            gp.header.frame_id = self._frame
+            gp.header.stamp = now.to_msg()
+            gp.ns = 'daa_ground'
+            gp.id = 1
+            gp.type = Marker.SPHERE
+            gp.action = Marker.ADD
+            gp.pose.position = g0
+            gp.pose.orientation.w = 1.0
+            gp.scale.x = gp.scale.y = gp.scale.z = 4.0
+            gp.color.r = 0.4
+            gp.color.g = 0.85
+            gp.color.b = 0.35
+            gp.color.a = 0.5
+            ma.markers.append(gp)
+
+        if self._conflicts > 0:
+            msn = Marker()
+            msn.header.frame_id = self._frame
+            msn.header.stamp = now.to_msg()
+            msn.ns = 'daa_path'
+            msn.id = 0
+            msn.type = Marker.LINE_STRIP
+            msn.action = Marker.ADD
+            msn.scale.x = self._w_mission * 0.85
+            msn.color.r = 0.55
+            msn.color.g = 0.55
+            msn.color.b = 0.58
+            msn.color.a = 0.5
+            msn.points.extend(_densify_polyline([o, goal], max(6, self._dens // 3)))
+            ma.markers.append(msn)
+
+        hn, he = self._horiz_dir()
+        pn, pe = -he, hn
+        lat = self._path_lat
+        if self._conflicts > 0 and spd > 0.05:
+            p1n = self._lx + pn * lat
+            p1e = self._ly + pe * lat
+            p1 = ned_to_rviz(p1n, p1e, self._lz)
+            g_n = self._lx + hn * self._path_ahead
+            g_e = self._ly + he * self._path_ahead
+            p2n = g_n + pn * lat * 0.4
+            p2e = g_e + pe * lat * 0.4
+            p2 = ned_to_rviz(p2n, p2e, self._lz)
+            av = Marker()
+            av.header.frame_id = self._frame
+            av.header.stamp = now.to_msg()
+            av.ns = 'daa_path'
+            av.id = 1
+            av.type = Marker.LINE_STRIP
+            av.action = Marker.ADD
+            av.scale.x = self._w_avoid
+            av.color.r = 0.15
+            av.color.g = 0.95
+            av.color.b = 0.95
+            av.color.a = 1.0
+            chain = _densify_polyline([o, p1, p2, goal], max(6, self._dens // 4))
+            av.points.extend(chain)
+            ma.markers.append(av)
+        else:
+            pl = Marker()
+            pl.header.frame_id = self._frame
+            pl.header.stamp = now.to_msg()
+            pl.ns = 'daa_path'
+            pl.id = 2
+            pl.type = Marker.LINE_STRIP
+            pl.action = Marker.ADD
+            pl.scale.x = max(self._w_mission, 1.1)
+            pl.color.r = 0.25
+            pl.color.g = 0.95
+            pl.color.b = 0.35
+            pl.color.a = 0.98
+            pl.points.extend(_densify_polyline([o, goal], self._dens))
+            ma.markers.append(pl)
+
+        pg = Marker()
+        pg.header.frame_id = self._frame
+        pg.header.stamp = now.to_msg()
+        pg.ns = 'daa_path'
+        pg.id = 3
+        pg.type = Marker.TEXT_VIEW_FACING
+        pg.action = Marker.ADD
+        mx = (o.x + goal.x) * 0.5
+        my = (o.y + goal.y) * 0.5
+        pg.pose.position.x = mx
+        pg.pose.position.y = my
+        pg.pose.position.z = o.z + 12.0
+        pg.pose.orientation.w = 1.0
+        pg.scale.z = 3.0
+        pg.color.r = 0.9
+        pg.color.g = 0.9
+        pg.color.b = 0.95
+        pg.color.a = 1.0
+        if self._conflicts > 0:
+            pg.text = 'Ruta global: evasión lateral (DAA activo)'
+        else:
+            pg.text = 'Ruta global / misión (sin conflicto DAA)'
+        ma.markers.append(pg)
+
+        if self._use_cyl:
+            body_o = Marker()
+            body_o.header.frame_id = self._frame
+            body_o.header.stamp = now.to_msg()
+            body_o.ns = 'daa_demo'
+            body_o.id = mid
+            mid += 1
+            body_o.type = Marker.CYLINDER
+            body_o.action = Marker.ADD
+            body_o.pose.position = o
+            body_o.pose.orientation.w = 1.0
+            body_o.scale.x = body_o.scale.y = self._dr_r * 2.0
+            body_o.scale.z = self._dr_h
+            body_o.color.r = 0.15
+            body_o.color.g = 0.55
+            body_o.color.b = 1.0
+            body_o.color.a = 0.92
+            ma.markers.append(body_o)
+        else:
+            sp_o = Marker()
+            sp_o.header.frame_id = self._frame
+            sp_o.header.stamp = now.to_msg()
+            sp_o.ns = 'daa_demo'
+            sp_o.id = mid
+            mid += 1
+            sp_o.type = Marker.SPHERE
+            sp_o.action = Marker.ADD
+            sp_o.pose.position = o
+            sp_o.pose.orientation.w = 1.0
+            sp_o.scale.x = sp_o.scale.y = sp_o.scale.z = 6.0
+            sp_o.color.r = 0.2
+            sp_o.color.g = 0.6
+            sp_o.color.b = 1.0
+            sp_o.color.a = 0.9
+            ma.markers.append(sp_o)
+
+        if self._intruder_enable:
+            in_ = ned_to_rviz(self._lx + self._dn, self._ly + self._de, self._lz)
+            if self._use_cyl:
+                body_i = Marker()
+                body_i.header.frame_id = self._frame
+                body_i.header.stamp = now.to_msg()
+                body_i.ns = 'daa_demo'
+                body_i.id = mid
+                mid += 1
+                body_i.type = Marker.CYLINDER
+                body_i.action = Marker.ADD
+                body_i.pose.position = in_
+                body_i.pose.orientation.w = 1.0
+                body_i.scale.x = body_i.scale.y = self._dr_r * 2.0 * 0.95
+                body_i.scale.z = self._dr_h
+                body_i.color.r = 1.0
+                body_i.color.g = 0.4
+                body_i.color.b = 0.1
+                body_i.color.a = 0.92
+                ma.markers.append(body_i)
+            else:
+                sp_i = Marker()
+                sp_i.header.frame_id = self._frame
+                sp_i.header.stamp = now.to_msg()
+                sp_i.ns = 'daa_demo'
+                sp_i.id = mid
+                mid += 1
+                sp_i.type = Marker.SPHERE
+                sp_i.action = Marker.ADD
+                sp_i.pose.position = in_
+                sp_i.pose.orientation.w = 1.0
+                sp_i.scale.x = sp_i.scale.y = sp_i.scale.z = 6.0
+                sp_i.color.r = 1.0
+                sp_i.color.g = 0.35
+                sp_i.color.b = 0.1
+                sp_i.color.a = 0.9
+                ma.markers.append(sp_i)
+
+            line = Marker()
+            line.header.frame_id = self._frame
+            line.header.stamp = now.to_msg()
+            line.ns = 'daa_demo'
+            line.id = mid
+            mid += 1
+            line.type = Marker.LINE_STRIP
+            line.action = Marker.ADD
+            line.scale.x = 0.4
+            line.color.r = 0.9
+            line.color.g = 0.9
+            line.color.b = 0.2
+            line.color.a = 0.8
+            line.points.append(o)
+            line.points.append(in_)
+            ma.markers.append(line)
+
+        if spd > 0.5:
+            scale_len = min(40.0, max(15.0, spd * 3.0))
+            vn = self._vn / spd
+            ve = self._ve / spd
+            end = ned_to_rviz(
+                self._lx + vn * scale_len,
+                self._ly + ve * scale_len,
+                self._lz,
+            )
+            arr = Marker()
+            arr.header.frame_id = self._frame
+            arr.header.stamp = now.to_msg()
+            arr.ns = 'daa_demo'
+            arr.id = mid
+            mid += 1
+            arr.type = Marker.ARROW
+            arr.action = Marker.ADD
+            arr.points.append(o)
+            arr.points.append(end)
+            arr.scale.x = 0.6
+            arr.scale.y = 1.2
+            arr.scale.z = 1.5
+            arr.color.r = 0.2
+            arr.color.g = 0.95
+            arr.color.b = 0.3
+            arr.color.a = 1.0
+            ma.markers.append(arr)
+
+        if self._label_names:
+            lo = Marker()
+            lo.header.frame_id = self._frame
+            lo.header.stamp = now.to_msg()
+            lo.ns = 'daa_labels'
+            lo.id = 0
+            lo.type = Marker.TEXT_VIEW_FACING
+            lo.action = Marker.ADD
+            lo.pose.position.x = o.x
+            lo.pose.position.y = o.y
+            lo.pose.position.z = o.z + 14.0
+            lo.pose.orientation.w = 1.0
+            lo.scale.z = 3.2
+            lo.color.r = 0.7
+            lo.color.g = 0.85
+            lo.color.b = 1.0
+            lo.color.a = 1.0
+            lo.text = 'UAV (ownship)'
+            ma.markers.append(lo)
+            if self._intruder_enable:
+                li = Marker()
+                li.header.frame_id = self._frame
+                li.header.stamp = now.to_msg()
+                li.ns = 'daa_labels'
+                li.id = 1
+                li.type = Marker.TEXT_VIEW_FACING
+                li.action = Marker.ADD
+                in_ = ned_to_rviz(self._lx + self._dn, self._ly + self._de, self._lz)
+                li.pose.position.x = in_.x
+                li.pose.position.y = in_.y
+                li.pose.position.z = in_.z + 14.0
+                li.pose.orientation.w = 1.0
+                li.scale.z = 3.2
+                li.color.r = 1.0
+                li.color.g = 0.75
+                li.color.b = 0.55
+                li.color.a = 1.0
+                li.text = 'Tráfico (sintético)'
+                ma.markers.append(li)
+
+        txt = Marker()
+        txt.header.frame_id = self._frame
+        txt.header.stamp = now.to_msg()
+        txt.ns = 'daa_demo'
+        txt.id = mid
+        mid += 1
+        txt.type = Marker.TEXT_VIEW_FACING
+        txt.action = Marker.ADD
+        txt.pose.position = o
+        txt.pose.position.z += 25.0
+        txt.pose.orientation.w = 1.0
+        txt.scale.z = 4.0
+        txt.color.r = txt.color.g = txt.color.b = 1.0
+        txt.color.a = 1.0
+        txt.text = self._bands_txt
+        ma.markers.append(txt)
+
+        if self._title_enable and self._title1:
+            t1 = Marker()
+            t1.header.frame_id = self._frame
+            t1.header.stamp = now.to_msg()
+            t1.ns = 'daa_title'
+            t1.id = 0
+            t1.type = Marker.TEXT_VIEW_FACING
+            t1.action = Marker.ADD
+            t1.pose.position.x = tbase.x
+            t1.pose.position.y = tbase.y
+            t1.pose.position.z = tbase.z + self._title_z
+            t1.pose.orientation.w = 1.0
+            t1.scale.z = 5.5
+            t1.color.r = 0.98
+            t1.color.g = 0.82
+            t1.color.b = 0.22
+            t1.color.a = 1.0
+            t1.text = self._title1
+            ma.markers.append(t1)
+
+            if self._title2:
+                t2 = Marker()
+                t2.header.frame_id = self._frame
+                t2.header.stamp = now.to_msg()
+                t2.ns = 'daa_title'
+                t2.id = 1
+                t2.type = Marker.TEXT_VIEW_FACING
+                t2.action = Marker.ADD
+                t2.pose.position.x = tbase.x
+                t2.pose.position.y = tbase.y
+                t2.pose.position.z = tbase.z + self._title_z - self._title_gap
+                t2.pose.orientation.w = 1.0
+                t2.scale.z = 3.2
+                t2.color.r = 0.75
+                t2.color.g = 0.78
+                t2.color.b = 0.85
+                t2.color.a = 1.0
+                t2.text = self._title2
+                ma.markers.append(t2)
+
+        if self._logo_uri:
+            lg = Marker()
+            lg.header.frame_id = self._frame
+            lg.header.stamp = now.to_msg()
+            lg.ns = 'daa_logo'
+            lg.id = 0
+            lg.type = Marker.MESH_RESOURCE
+            lg.action = Marker.ADD
+            lg.mesh_resource = self._logo_uri
+            lg.mesh_use_embedded_materials = False
+            lg.pose.position.x = tbase.x
+            lg.pose.position.y = tbase.y
+            lg.pose.position.z = tbase.z + self._title_z - self._logo_z_bt
+            lg.pose.orientation.w = 1.0
+            lg.scale.x = self._logo_sx
+            lg.scale.y = self._logo_sy
+            lg.scale.z = self._logo_sz
+            lg.color.r = 0.2
+            lg.color.g = 0.24
+            lg.color.b = 0.32
+            lg.color.a = 0.42
+            ma.markers.append(lg)
+
+        self._pub.publish(ma)
+
+
+def main() -> None:
+    rclpy.init()
+    node = DaaDemoViz()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    finally:
+        node.destroy_node()
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
+        except Exception:
+            pass
+
+
+if __name__ == '__main__':
+    main()

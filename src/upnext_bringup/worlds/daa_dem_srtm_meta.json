@@ -1,0 +1,19 @@
+{
+  "source": "viewfinderpanoramas_dem1",
+  "tile": "N47E008",
+  "center_lat": 47.3769,
+  "center_lon": 8.5417,
+  "half_side_m": 1250.0,
+  "bbox_deg": {
+    "south": 47.36567111031261,
+    "north": 47.38812888968739,
+    "west": 8.525117982013613,
+    "east": 8.558282017986388
+  },
+  "elevation_msl_min": 402.0,
+  "elevation_msl_max": 632.0,
+  "height_range_m": 230.0,
+  "horizontal_size_m": 2500.0,
+  "out_pixels": 257,
+  "png_path": "daa_dem_srtm_heightmap.png"
+}
