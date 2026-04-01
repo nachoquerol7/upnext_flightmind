@@ -12,7 +12,7 @@ html, body {
 
 #app {
   display: grid;
-  grid-template-columns: 240px 1fr 220px;
+  grid-template-columns: 260px minmax(0, 1fr) 300px;
   grid-template-rows: 1fr 120px;
   height: 100vh;
   grid-template-areas:
@@ -32,7 +32,7 @@ html, body {
 #conn-status {
   position: fixed;
   top: 8px;
-  right: 228px;
+  right: 308px;
   z-index: 100;
   display: flex;
   align-items: center;
@@ -653,4 +653,178 @@ h2.section-title {
 .results-actions button {
   font-size: 10px;
   padding: 4px 10px;
+}
+
+/* Panel derecho apilado */
+.right-panel-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.rp-section {
+  border: 1px solid #1e3a52;
+  border-radius: 8px;
+  padding: 8px;
+  background: #0c1828;
+  min-width: 0;
+}
+.hz-badge {
+  float: right;
+  font-size: 9px;
+  color: #6a8aaa;
+  font-weight: 400;
+}
+.traffic {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.traffic.tr-green {
+  background: #00e676;
+  box-shadow: 0 0 6px #00e676;
+}
+.traffic.tr-red {
+  background: #ff5252;
+  box-shadow: 0 0 8px #ff5252;
+}
+.signal-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+.signal-row .label {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+.rp-tc-id {
+  font-weight: 800;
+  color: #4a9eff;
+  font-size: 11px;
+}
+.rp-tc-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #e0e8f0;
+}
+.rp-tc-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: #6a8aaa;
+  margin: 4px 0 2px;
+}
+.rp-tc-text {
+  margin: 0 0 4px;
+  line-height: 1.4;
+  font-size: 10px;
+  color: #b8d4f0;
+}
+.hint {
+  font-size: 10px;
+  color: #6a8aaa;
+  margin: 4px 0;
+  line-height: 1.35;
+}
+
+/* LLM */
+.llm-panel {
+  font-size: 11px;
+}
+.llm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+.llm-title {
+  font-weight: 700;
+  color: #4a9eff;
+}
+.llm-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 10px;
+  color: #9ab6cc;
+}
+.llm-key-input {
+  margin-bottom: 8px;
+}
+.llm-key-input input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #0a1628;
+  border: 1px solid #2e5672;
+  color: #e0e8f0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  font: inherit;
+}
+.llm-key-input button {
+  font-size: 10px;
+  padding: 4px 10px;
+}
+.llm-output {
+  min-height: 64px;
+  max-height: 140px;
+  overflow: auto;
+  background: #0a1628;
+  border: 1px solid #1e3a52;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+  line-height: 1.45;
+  color: #cfe6ff;
+}
+.llm-output .placeholder {
+  margin: 0;
+  color: #6a8aaa;
+  font-size: 10px;
+}
+.llm-stream-line {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.llm-cursor {
+  animation: llm-blink 0.9s step-end infinite;
+  color: #4a9eff;
+}
+@keyframes llm-blink {
+  50% { opacity: 0; }
+}
+.llm-history-wrap {
+  border-top: 1px solid #1e3a52;
+  padding-top: 8px;
+}
+.llm-history-title {
+  font-size: 10px;
+  color: #6a8aaa;
+  margin-bottom: 6px;
+}
+.llm-history {
+  max-height: 120px;
+  overflow: auto;
+  font-size: 10px;
+}
+.llm-history-item {
+  border-left: 2px solid #37474f;
+  padding: 4px 0 4px 8px;
+  margin-bottom: 6px;
+}
+.llm-history-item p {
+  margin: 0;
+  color: #9ab6cc;
+  line-height: 1.35;
+}
+.llm-h-idx {
+  font-size: 9px;
+  color: #4a9eff;
 }

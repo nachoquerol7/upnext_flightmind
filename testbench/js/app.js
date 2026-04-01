@@ -15,9 +15,14 @@
   let tcDescPanel = null;
   /** @type {ResultsPanel | null} */
   let resultsPanel = null;
+  /** @type {LLMAnalyst | null} */
+  let llmAnalyst = null;
 
   /** @type {Map<string, object>} */
   const tcResults = new Map();
+
+  /** @type {Record<string, number>} */
+  const topicLastMsg = {};
 
   const state = {
     fsmState: {},
@@ -98,6 +103,7 @@
   }
 
   let _subsArmed = false;
+  let _prevFsmMode = "";
 
   function wireRos() {
     bridge = new RosBridge("ws://localhost:9090");
@@ -134,22 +140,46 @@
     };
 
     sub("/fsm/state", "flightmind_msgs/FSMState", (msg) => {
+      markTopicRx("/fsm/state");
+      const nm = msg.current_mode || "";
+      const trigger = msg.active_trigger || "";
+      if (
+        llmAnalyst &&
+        llmAnalyst.enabled &&
+        activeTc &&
+        _prevFsmMode &&
+        nm !== _prevFsmMode
+      ) {
+        const def = activeTc.definition || (window.getTcDefinition && window.getTcDefinition(activeTc.id));
+        llmAnalyst.analyze(
+          `TC ${activeTc.id} en ejecución.
+Transición FSM detectada: ${_prevFsmMode} → ${nm} (trigger: ${trigger}, tiempo: observado en vivo).
+Oráculo esperaba: ${def ? def.oracle : "—"}.
+Veredicto automático: (evaluación en curso en el panel de resultados).
+¿Es correcto este comportamiento? ¿Hay algo que destacar?`,
+        );
+      }
+      _prevFsmMode = nm;
       state.fsmState = msg;
       dispatchPanel("/fsm/state", msg);
     });
     sub("/fsm/current_mode", "std_msgs/String", (msg) => {
+      markTopicRx("/fsm/current_mode");
       state.legacyMode = msg.data;
       dispatchPanel("/fsm/current_mode", msg);
     });
     sub("/nav/quality_flag", "std_msgs/Float64", (msg) => {
+      markTopicRx("/nav/quality_flag");
       state.quality = msg.data;
       dispatchPanel("/nav/quality_flag", msg);
     });
     sub("/daidalus/alert_level", "std_msgs/Int32", (msg) => {
+      markTopicRx("/daidalus/alert_level");
       state.daidalusLevel = msg.data;
       dispatchPanel("/daidalus/alert_level", msg);
     });
     sub("/fdir/emergency", "std_msgs/Bool", (msg) => {
+      markTopicRx("/fdir/emergency");
       state.fdirEmergency = msg.data;
       dispatchPanel("/fdir/emergency", msg);
     });
@@ -173,7 +203,7 @@
   }
 
   function refreshTelemetry() {
-    TelemetryPanel.update(state);
+    TelemetryPanel.update(state, hzMapFromTopics());
   }
 
   function tick() {
@@ -216,6 +246,7 @@
           block.classList.add("open");
           mountPanelForActiveTc();
           if (tcDescPanel) tcDescPanel.show(tc);
+          TelemetryPanel.updateTcSummary(tc);
           const last = tcResults.get(tc.id);
           if (last && resultsPanel) resultsPanel.show(last);
           else if (resultsPanel) resultsPanel.clear();
@@ -289,6 +320,34 @@
     tcResults.set(activeTc.id, payload);
     if (resultsPanel) resultsPanel.show(payload);
     if (activePanel) activePanel.onTCEnd(res);
+
+    if (llmAnalyst && llmAnalyst.enabled) {
+      const verdict = res.pass ? "PASS" : "FAIL";
+      if (!res.pass) {
+        await llmAnalyst.analyze(
+          `TC ${activeTc.id} ha FALLADO.
+Esperado: ${def ? def.oracle : "—"}.
+Recibido / detalle: ${res.detail || res.evidence || "—"}.
+Gap relacionado: ${def && def.xfail ? def.xfail : "ninguno conocido"}.
+¿Cuál es la causa más probable y cómo se solucionaría?`,
+        );
+      } else {
+        await llmAnalyst.analyze(
+          `TC ${activeTc.id} ha terminado con ${verdict}.
+Evidencia: ${res.evidence || res.detail || "—"}.
+Oráculo: ${def ? def.oracle : "—"}.
+¿El comportamiento observado es coherente con un sistema nominal?`,
+        );
+      }
+      if (activeTc.id.startsWith("TC-FAULT")) {
+        await llmAnalyst.analyze(
+          `Inyección de fallo en TC ${activeTc.id}.
+Estado del sistema: FSM=${state.fsmState && state.fsmState.current_mode}, QF=${state.quality}, alerts DAA=${state.daidalusLevel}, FDIR emergencia=${state.fdirEmergency}.
+Respuesta del runner: ${verdict}. Detalle: ${res.detail || "—"}.
+¿El sistema ha respondido correctamente según los requisitos SR-FDIR-01?`,
+        );
+      }
+    }
   }
 
   function resetBench() {
@@ -318,6 +377,26 @@
 
     TelemetryPanel.mount(document.getElementById("right-panel"));
 
+    llmAnalyst = new window.LLMAnalyst();
+    const llmOut = document.getElementById("llm-output");
+    const llmHist = document.getElementById("llm-history");
+    llmAnalyst.bindUi(llmOut, llmHist);
+
+    function syncLlmKeyUi() {
+      const hasKey = !!(llmAnalyst && llmAnalyst.loadKeyFromStorage());
+      const sec = document.getElementById("llm-key-section");
+      if (sec) sec.style.display = hasKey ? "none" : "block";
+    }
+    syncLlmKeyUi();
+    document.getElementById("llm-save-key")?.addEventListener("click", () => {
+      const inp = document.getElementById("llm-api-key");
+      if (inp && llmAnalyst) llmAnalyst.setApiKey(inp.value);
+      syncLlmKeyUi();
+    });
+    document.getElementById("llm-toggle")?.addEventListener("change", (e) => {
+      if (llmAnalyst) llmAnalyst.setEnabled(/** @type {HTMLInputElement} */ (e.target).checked);
+    });
+
     const tcHost = document.getElementById("tc-description-host");
     const resHost = document.getElementById("results-host");
     tcDescPanel = new window.TCDescriptionPanel(tcHost);
@@ -338,6 +417,7 @@
       activeTc = firstTc;
       document.querySelector(`[data-badge="${firstTc.id}"]`)?.closest(".tc-item")?.classList.add("active");
       tcDescPanel.show(firstTc);
+      TelemetryPanel.updateTcSummary(firstTc);
     }
     mountPanelForActiveTc();
     wireRos();
