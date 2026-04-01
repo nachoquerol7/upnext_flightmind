@@ -90,28 +90,28 @@ fsm:
         any: [abort_command, fdir_emergency]
 
     - from: CRUISE
+      to: ABORT
+      trigger: battery_abort
+      when:
+        all: [battery_critical]
+
+    - from: CRUISE
       to: RTB
       trigger: cruise_gcs_lost_rtb
       when:
         all: [gcs_lost]
 
     - from: CRUISE
-      to: EVENT
-      trigger: cruise_c2_lost_event
-      when:
-        all: [c2_lost]
-
-    - from: CRUISE
       to: RTB
-      trigger: cruise_battery_low_rtb
+      trigger: battery_rtb
       when:
-        all: [battery_low]
+        any: [battery_low, c2_lost]
 
     - from: CRUISE
       to: EVENT
-      trigger: cruise_geofence_breach
+      trigger: geofence_rtb
       when:
-        all: [geofence_violation]
+        all: [geofence_breach]
 
     - from: CRUISE
       to: EVENT

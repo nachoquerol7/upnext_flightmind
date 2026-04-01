@@ -10,6 +10,9 @@ from std_msgs.msg import Bool, Float64, Int32
 
 from mission_fsm.mission_fsm_node import _BOOL_TOPICS
 
+# Topics consumed by mission_fsm_node as merged safety atoms (not in _BOOL_TOPICS).
+_EXTRA_BOOL_ATOMS = ("battery_low", "battery_critical", "c2_lost", "geofence_breach")
+
 
 class FsmInputInjector(Node):
     """`inject(field, value)` publica un mensaje en el topic ROS correspondiente."""
@@ -18,6 +21,8 @@ class FsmInputInjector(Node):
         super().__init__("fsm_input_injector")
         self._pub_bool: Dict[str, Any] = {}
         for name in _BOOL_TOPICS:
+            self._pub_bool[name] = self.create_publisher(Bool, f"/fsm/in/{name}", 10)
+        for name in _EXTRA_BOOL_ATOMS:
             self._pub_bool[name] = self.create_publisher(Bool, f"/fsm/in/{name}", 10)
         self._pub_quality = self.create_publisher(Float64, "/fsm/in/quality_flag", 10)
         self._pub_daidalus = self.create_publisher(Int32, "/fsm/in/daidalus_alert", 10)

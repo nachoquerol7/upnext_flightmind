@@ -85,7 +85,9 @@ def default_inputs() -> Dict[str, Any]:
         "gcs_lost": False,
         "c2_lost": False,
         "battery_low": False,
+        "battery_critical": False,
         "geofence_violation": False,
+        "geofence_breach": False,
     }
 
 

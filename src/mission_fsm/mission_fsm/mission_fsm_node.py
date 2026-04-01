@@ -133,6 +133,13 @@ class MissionFsmNode(Node):
         self._last_geofence_ok: bool = True
         self._go_around_count = 0
         self._event_substate = ""
+        self._ext_atoms: Dict[str, bool] = {
+            "battery_low": False,
+            "battery_critical": False,
+            "c2_lost": False,
+            "geofence_breach": False,
+        }
+        self._ext_polycarp_geofence = False
 
         fsm_state_qos = QoSProfile(
             depth=1,
@@ -147,6 +154,10 @@ class MissionFsmNode(Node):
         self.create_subscription(Int32, "/fsm/in/daidalus_alert", self._on_daidalus_alert, 10)
         for name in _BOOL_TOPICS:
             self.create_subscription(Bool, f"/fsm/in/{name}", self._mk_bool(name), 10)
+
+        for k in self._ext_atoms:
+            self.create_subscription(Bool, f"/fsm/in/{k}", self._mk_ext_atom(k), 10)
+        self.create_subscription(Bool, "/polycarp/violation_imminent", self._on_polycarp_geofence, 10)
 
         self.create_subscription(Header, "/gcs_heartbeat", self._on_gcs_heartbeat, 10)
         self.create_subscription(Bool, "/c2_link_status", self._on_c2_link, 10)
@@ -183,6 +194,15 @@ class MissionFsmNode(Node):
             self._inputs[key] = bool(msg.data)
 
         return cb
+
+    def _mk_ext_atom(self, key: str) -> Callable[[Bool], None]:
+        def cb(msg: Bool) -> None:
+            self._ext_atoms[key] = bool(msg.data)
+
+        return cb
+
+    def _on_polycarp_geofence(self, msg: Bool) -> None:
+        self._ext_polycarp_geofence = bool(msg.data)
 
     def _on_gcs_heartbeat(self, _msg: Header) -> None:
         self._last_gcs_time = time.monotonic()
@@ -227,21 +247,30 @@ class MissionFsmNode(Node):
 
         c2_to = float(self.get_parameter("c2_link_loss_sec").value)
         if self._c2_false_since is not None and c2_to > 0.0:
-            self._inputs["c2_lost"] = (now - self._c2_false_since) > c2_to
+            sup_c2 = (now - self._c2_false_since) > c2_to
         else:
-            self._inputs["c2_lost"] = False
+            sup_c2 = False
+        self._inputs["c2_lost"] = bool(self._ext_atoms["c2_lost"]) or sup_c2
 
         bat_to = float(self.get_parameter("battery_low_sustain_sec").value)
         if self._battery_low_since is not None and bat_to > 0.0:
-            self._inputs["battery_low"] = (now - self._battery_low_since) > bat_to
+            sup_bl = (now - self._battery_low_since) > bat_to
         else:
-            self._inputs["battery_low"] = False
+            sup_bl = False
+        self._inputs["battery_low"] = bool(self._ext_atoms["battery_low"]) or sup_bl
+        self._inputs["battery_critical"] = bool(self._ext_atoms["battery_critical"])
 
         gf_to = float(self.get_parameter("geofence_breach_sustain_sec").value)
         if self._geofence_bad_since is not None and gf_to > 0.0:
             self._inputs["geofence_violation"] = (now - self._geofence_bad_since) > gf_to
         else:
             self._inputs["geofence_violation"] = False
+
+        self._inputs["geofence_breach"] = (
+            bool(self._ext_atoms["geofence_breach"])
+            or self._ext_polycarp_geofence
+            or bool(self._inputs["geofence_violation"])
+        )
 
         feed_to = float(self.get_parameter("daidalus_feed_timeout_sec").value)
         st = self._fsm.state
@@ -260,8 +289,7 @@ class MissionFsmNode(Node):
             "to_event_near_fastpath",
             "to_recovery",
             "daidalus_feed_timeout",
-            "cruise_c2_lost_event",
-            "cruise_geofence_breach",
+            "geofence_rtb",
         )
         if trig in traffic_triggers:
             return "TRAFFIC_CONFLICT"
