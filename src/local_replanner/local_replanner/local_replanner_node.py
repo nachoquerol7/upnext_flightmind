@@ -62,6 +62,8 @@ class LocalReplannerNode(Node):
 
         self._pub_fl = self.create_publisher(Float64, "/local_replanner/adjusted_fl", 10)
         self._pub_path = self.create_publisher(Path, "/local_replanner/adjusted_path", 10)
+        self._pub_path_exec = self.create_publisher(Path, "/local_replanner/path", 10)
+        self._pub_repl_status = self.create_publisher(Bool, "/local_replanner/status", 10)
         self._pub_trig = self.create_publisher(String, "/local_replanner/active_trigger", 10)
         self._pub_fdir = self.create_publisher(String, "/fdir/active_fault", 10)
 
@@ -72,6 +74,8 @@ class LocalReplannerNode(Node):
         self.create_subscription(Float64MultiArray, "/daidalus/resolution_advisory", self._on_ra, 10)
         self.create_subscription(Float64, "/gpp/assigned_fl", self._on_fl, 10)
         self.create_subscription(Path, "/gpp/global_path", self._on_path, 10)
+        self.create_subscription(Path, "/gpp/path", self._on_path, 10)
+        self.create_subscription(Bool, "/local_replanner/trigger", self._on_manual_trigger, 10)
         self.create_subscription(String, "/fdir/emergency_landing_target", self._on_emg, 10)
         self.create_subscription(Float64MultiArray, "/vehicle_model/state", self._on_vm, 10)
 
@@ -110,6 +114,10 @@ class LocalReplannerNode(Node):
 
     def _on_vm(self, msg: Float64MultiArray) -> None:
         self._vm_state = [float(x) for x in msg.data]
+
+    def _on_manual_trigger(self, msg: Bool) -> None:
+        if bool(msg.data):
+            self._daa_alert = max(self._daa_alert, 2)
 
     def _blank_path(self) -> Path:
         p = Path()
@@ -163,6 +171,7 @@ class LocalReplannerNode(Node):
         if trig is None:
             self._pub_path.publish(out_path)
             self._pub_fl.publish(Float64(data=base_fl))
+            self._pub_repl_status.publish(Bool(data=False))
             return
 
         if trig == "EMERGENCY":
@@ -221,6 +230,8 @@ class LocalReplannerNode(Node):
 
         self._pub_path.publish(out_path)
         self._pub_fl.publish(Float64(data=self._adjusted_fl))
+        self._pub_repl_status.publish(Bool(data=True))
+        self._pub_path_exec.publish(out_path)
 
 
 def main(args: Any = None) -> None:
