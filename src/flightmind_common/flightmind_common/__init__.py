@@ -1,0 +1,1 @@
+"""FlightMind shared Python utilities."""

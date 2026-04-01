@@ -17,6 +17,11 @@ from std_msgs.msg import Bool, Float64, Header, Int32, String
 from mission_fsm.fsm import MissionFsm, default_inputs, load_fsm_yaml_dict
 
 try:
+    from flightmind_common.event_logger import EventLogger
+except ImportError:  # pragma: no cover
+    EventLogger = None  # type: ignore[misc, assignment]
+
+try:
     from ament_index_python.packages import get_package_share_directory
 except ImportError:  # pragma: no cover
     get_package_share_directory = None  # type: ignore[misc, assignment]
@@ -61,6 +66,7 @@ class MissionFsmNode(Node):
         self.declare_parameter("battery_low_threshold", 0.15)
         self.declare_parameter("battery_low_sustain_sec", 1.0)
         self.declare_parameter("geofence_breach_sustain_sec", 0.5)
+        self.declare_parameter("event_log_dir", "")
 
         cfg = self.get_parameter("config_file").get_parameter_value().string_value.strip()
         if cfg and os.path.isfile(cfg):
@@ -140,6 +146,10 @@ class MissionFsmNode(Node):
             "geofence_breach": False,
         }
         self._ext_polycarp_geofence = False
+        log_dir = self.get_parameter("event_log_dir").get_parameter_value().string_value.strip()
+        self._evlog: Any = None
+        if log_dir and EventLogger is not None:
+            self._evlog = EventLogger(log_dir=log_dir, flush_interval_s=1.0)
 
         fsm_state_qos = QoSProfile(
             depth=1,
@@ -309,6 +319,9 @@ class MissionFsmNode(Node):
 
         prev = self._fsm.state
         state, trig = self._fsm.step(merged)
+
+        if self._evlog is not None and state != prev:
+            self._evlog.log_transition(prev, state, trig or "", merged)
 
         if state == "GO_AROUND" and prev == "LANDING":
             self._go_around_count += 1
