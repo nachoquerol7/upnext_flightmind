@@ -2,13 +2,14 @@
 <package format="3">
   <name>flightmind_msgs</name>
   <version>0.0.1</version>
-  <description>Traffic report messages for DAA / FDIR integration.</description>
+  <description>Contratos de interfaz entre bloques del stack Flightmind (UAS).</description>
   <maintainer email="ignacio@example.com">ignacio</maintainer>
   <license>Apache-2.0</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
   <build_depend>rosidl_default_generators</build_depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
   <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
   <member_of_group>rosidl_interface_packages</member_of_group>
   <export>
     <build_type>ament_cmake</build_type>

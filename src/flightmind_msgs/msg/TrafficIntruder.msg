@@ -1,8 +1,5 @@
-# Single traffic aircraft in PX4 local NED (metres, m/s). z_ned_m is down-positive.
-uint32 id
-float64 n_m
-float64 e_m
-float64 z_ned_m
-float64 vn_mps
-float64 ve_mps
-float64 vd_mps
+string intruder_id
+float64[3] position_ned       # [north_m, east_m, down_m]
+float64[3] velocity_ned       # [vn_ms, ve_ms, vd_ms]
+bool cooperative              # true si tiene ADS-B/transponder
+float64 timestamp_s
