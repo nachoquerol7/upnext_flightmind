@@ -5,8 +5,10 @@
  * El testbench llama a http://localhost:3001/analyze
  * La API key NUNCA llega al navegador ni al repo.
  */
+const fs = require("fs");
 const http = require("http");
 const https = require("https");
+const path = require("path");
 
 const PORT = 3001;
 const API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -15,6 +17,28 @@ if (!API_KEY) {
   console.error("[LLM Proxy] ERROR: ANTHROPIC_API_KEY no definida.");
   console.error("Uso: ANTHROPIC_API_KEY=sk-... node testbench/llm_proxy.js");
   process.exit(1);
+}
+
+const SNAPSHOT_PATH = path.join(__dirname, "docs", "LLM_REQUIREMENTS_SNAPSHOT.md");
+let requirementsSnapshot = "";
+try {
+  requirementsSnapshot = fs.readFileSync(SNAPSHOT_PATH, "utf8");
+  console.log(`[LLM Proxy] Requisitos cargados: ${SNAPSHOT_PATH} (${requirementsSnapshot.length} chars)`);
+} catch (e) {
+  console.warn("[LLM Proxy] AVISO: no se pudo leer LLM_REQUIREMENTS_SNAPSHOT.md:", e.message);
+}
+
+const SYSTEM_BASE = `Eres un ingeniero experto en V&V de sistemas UAS autónomos analizando el stack FlightMind en tiempo real.
+El sistema tiene: Mission FSM (9 estados), GPP (Informed-RRT* + Dubins), FDIR (4 detectores), DAIDALUS (DAA), ACAS Xu.
+Responde en español. Sé conciso (máx 3 frases). Enfócate en si el comportamiento es correcto y qué significa para el evaluador.
+Debes cruzar observaciones del testbench con los requisitos UpNext (SR/R) del snapshot siguiente cuando sea relevante.`;
+
+function buildSystemPrompt() {
+  if (!requirementsSnapshot.trim()) return SYSTEM_BASE;
+  return `${SYSTEM_BASE}
+
+--- SNAPSHOT REQUISITOS UPNEXT (certificación; prioridad sobre suposiciones) ---
+${requirementsSnapshot}`;
 }
 
 console.log(`[LLM Proxy] Arrancado en http://localhost:${PORT}`);
@@ -56,11 +80,9 @@ http
 
       const anthropicBody = JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 300,
+        max_tokens: 400,
         stream: true,
-        system: `Eres un ingeniero experto en V&V de sistemas UAS autónomos analizando el stack FlightMind en tiempo real.
-El sistema tiene: Mission FSM (9 estados), GPP (Informed-RRT* + Dubins), FDIR (4 detectores), DAIDALUS (DAA), ACAS Xu.
-Responde en español. Sé conciso (máx 3 frases). Enfócate en si el comportamiento es correcto y qué significa para el evaluador.`,
+        system: buildSystemPrompt(),
         messages: [{ role: "user", content: prompt }],
       });
 

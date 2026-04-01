@@ -1,4 +1,13 @@
-"""Mission FSM node: inputs on /fsm/in/*, state on /fsm/state and legacy topics."""
+"""Mission FSM node: inputs on /fsm/in/*, state on /fsm/state and legacy topics.
+
+Supervisión temporal (ARCH-1.2, ARCH-1.7):
+  - Morada por estado: ``max_duration_sec`` en YAML → ``state_dwell_timeout`` vía reloj monotónico en ``MissionFsm``.
+  - GCS ``/gcs_heartbeat``, C2 ``/c2_link_status``, batería ``/battery_state``, geocerca ``/geofence_breach`` +
+    ``/polycarp/violation_imminent`` con timeouts/umbrales en parámetros ROS.
+
+Histéresis calidad (ARCH-1.1):
+  - ``quality_flag`` vía ``hysteresis_ticks_on`` / ``hysteresis_ticks_off`` / ``hysteresis_margin`` en ``MissionFsm.step``.
+"""
 
 from __future__ import annotations
 
@@ -183,7 +192,21 @@ class MissionFsmNode(Node):
         period = 1.0 / hz if hz > 1e-3 else 0.05
         self.create_timer(period, self._on_tick)
 
-        self.get_logger().info(f"mission_fsm: loaded {path}, initial={self._fsm.state}")
+        dwell = self._fsm.max_duration_by_state
+        self.get_logger().info(
+            f"mission_fsm: loaded {path}, initial={self._fsm.state}, max_duration_sec={dwell!s}"
+        )
+        self.get_logger().info(
+            "supervision: gcs_to=%.1fs c2_loss=%.1fs bat_th=%.2f bat_sustain=%.1fs gf_sustain=%.1fs tick_hz=%.1f"
+            % (
+                float(self.get_parameter("gcs_heartbeat_timeout_sec").value),
+                float(self.get_parameter("c2_link_loss_sec").value),
+                float(self.get_parameter("battery_low_threshold").value),
+                float(self.get_parameter("battery_low_sustain_sec").value),
+                float(self.get_parameter("geofence_breach_sustain_sec").value),
+                float(self.get_parameter("tick_hz").value),
+            )
+        )
 
     def get_parameter_names(self) -> list[str]:
         """Return declared parameter names (SIL tests expect this helper name)."""
@@ -303,7 +326,6 @@ class MissionFsmNode(Node):
             "to_event_near_fastpath",
             "to_recovery",
             "daidalus_feed_timeout",
-            "geofence_rtb",
         )
         if trig in traffic_triggers:
             return "TRAFFIC_CONFLICT"

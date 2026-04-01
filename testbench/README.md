@@ -49,6 +49,8 @@ El testbench funciona igual; el panel LLM muestra **Proxy offline** hasta que ar
 ANTHROPIC_API_KEY=sk-ant-... node testbench/llm_proxy.js
 ```
 
+Al arrancar, el proxy lee **`testbench/docs/LLM_REQUIREMENTS_SNAPSHOT.md`** y lo inyecta en el *system prompt* de Anthropic para certificación cruzada TC ↔ SR.
+
 ## Requisitos
 
 - ROS 2 (Humble o Jazzy)

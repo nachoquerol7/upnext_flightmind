@@ -126,6 +126,11 @@ class MissionFsm:
     def state(self) -> str:
         return self._state
 
+    @property
+    def max_duration_by_state(self) -> Dict[str, float]:
+        """Límites de morada (s) por estado desde YAML; usado por state_dwell_timeout (ARCH-1.2)."""
+        return dict(self._max_duration_by_state)
+
     @classmethod
     def from_fsm_yaml(
         cls,

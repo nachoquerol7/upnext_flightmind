@@ -15,7 +15,7 @@ mission_fsm_node:
     gcs_heartbeat_timeout_sec: 2.0
     c2_link_loss_sec: 2.0
     battery_low_threshold: 0.15
-    battery_low_sustain_sec: 1.0
+    battery_low_sustain_sec: 2.0
     geofence_breach_sustain_sec: 0.5
 
 fsm:
@@ -87,7 +87,7 @@ fsm:
       to: ABORT
       trigger: cruise_to_abort
       when:
-        any: [abort_command, fdir_emergency]
+        any: [abort_command, fdir_emergency, battery_low, geofence_breach]
 
     - from: CRUISE
       to: ABORT
@@ -105,13 +105,7 @@ fsm:
       to: RTB
       trigger: battery_rtb
       when:
-        any: [battery_low, c2_lost]
-
-    - from: CRUISE
-      to: EVENT
-      trigger: geofence_rtb
-      when:
-        all: [geofence_breach]
+        all: [c2_lost]
 
     - from: CRUISE
       to: EVENT

@@ -157,7 +157,7 @@ def test_tc_to008_low_battery_timeout_triggers_rtb(mission_fsm_sil_harness: Simp
     mission_fsm_sil_harness.ex.add_node(sens)
     try:
         sens.inject("battery_percent", 0.05)
-        time.sleep(1.2)
+        time.sleep(2.6)
         _dwell_spin(mission_fsm_sil_harness, 80)
         st = mission_fsm_sil_harness.fsm._fsm.state  # noqa: SLF001
         assert st in ("RTB", "ABORT")
@@ -167,7 +167,7 @@ def test_tc_to008_low_battery_timeout_triggers_rtb(mission_fsm_sil_harness: Simp
 
 
 def test_tc_to009_geofence_breach_timeout_triggers_event(mission_fsm_sil_harness: SimpleNamespace) -> None:
-    """TC-TO-009: violación de geofence sostenida → EVENT."""
+    """TC-TO-009: violación de geofence sostenida → ABORT (cruise_to_abort incl. geofence_breach)."""
     mission_fsm_sil_harness.inj.inject("preflight_ok", True)
     assert mission_fsm_sil_harness.wait_mode("AUTOTAXI")
     mission_fsm_sil_harness.inj.inject("taxi_clear", True)
@@ -180,7 +180,8 @@ def test_tc_to009_geofence_breach_timeout_triggers_event(mission_fsm_sil_harness
         sens.inject("geofence_breach", True)
         time.sleep(0.6)
         _dwell_spin(mission_fsm_sil_harness, 80)
-        assert mission_fsm_sil_harness.fsm._fsm.state == "EVENT"  # noqa: SLF001
+        st = mission_fsm_sil_harness.fsm._fsm.state  # noqa: SLF001
+        assert st in ("ABORT", "RTB") and "cruise_to_abort" in mission_fsm_sil_harness.cap.triggers
     finally:
         mission_fsm_sil_harness.ex.remove_node(sens)
         sens.destroy_node()

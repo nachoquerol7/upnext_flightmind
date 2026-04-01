@@ -11,7 +11,7 @@ Matriz SR → TC para cierre MBSE (SR-VV-01). Los estados reflejan la suite `mis
 | SR-FSM-05 | FSM CRUISE→RTB con rtb_command | TC-FSM-005 | M1 | PASS |
 | SR-FSM-06 | FSM CRUISE→LANDING con land_command | TC-FSM-006 | M1 | PASS |
 | SR-FSM-07 | FSM EVENT→CRUISE con event_cleared | TC-FSM-007 | M1 | PASS |
-| SR-FSM-08 | FSM CRUISE→ABORT con abort_command o fdir_emergency | TC-FSM-008 | M1 | PASS |
+| SR-FSM-08 | FSM CRUISE→ABORT con abort_command, fdir_emergency, battery_low o geofence_breach | TC-FSM-008, TC-ATOM-001/004 | M1 | PASS |
 | SR-FSM-09 | Orden de evaluación abort vs EVENT (TC-FSM-019) | TC-FSM-019 | M1 | PASS |
 | SR-FSM-10 | Modo ABORT y transiciones subsiguientes | TC-FSM-020 | M1 | PASS |
 | SR-DAI-01 | Nivel DAIDALUS FAR reflejado en FSM/topic | TC-DAI-001 | M5 | PASS |
