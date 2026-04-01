@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SIL V&amp;V Testbench — ROS2</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="conn-status">
+    <span class="dot"></span>
+    <span class="txt">ROS2 disconnected</span>
+  </div>
+
+  <div id="app">
+    <aside id="sidebar">
+      <h1 class="logo">SIL V&amp;V Testbench</h1>
+      <div id="sidebar-body"></div>
+      <div class="toolbar">
+        <button id="btn-run" class="primary" data-requires-ros disabled>Run TC</button>
+        <button id="btn-reset" type="button">Reset</button>
+      </div>
+    </aside>
+
+    <main id="main">
+      <div id="main-display"></div>
+    </main>
+
+    <aside id="right-panel"></aside>
+
+    <section id="log" aria-label="log"></section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+  <script src="js/ros_bridge.js"></script>
+  <script src="js/tc_runner.js"></script>
+  <script src="js/displays/telemetry.js"></script>
+  <script src="js/displays/map2d.js"></script>
+  <script src="js/displays/altitude.js"></script>
+  <script src="js/displays/fsm_graph.js"></script>
+  <script src="js/displays/daidalus.js"></script>
+  <script src="js/displays/fdir_tree.js"></script>
+  <script src="js/displays/fault_tree.js"></script>
+  <script src="js/modules/m1_fsm.js"></script>
+  <script src="js/modules/m4_loc.js"></script>
+  <script src="js/modules/m5_dai.js"></script>
+  <script src="js/modules/m6_fdir.js"></script>
+  <script src="js/modules/m7_nav.js"></script>
+  <script src="js/modules/m9_e2e.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
