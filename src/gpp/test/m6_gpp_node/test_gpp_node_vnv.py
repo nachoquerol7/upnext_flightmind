@@ -114,10 +114,6 @@ def test_tc_node_010_qos_reliability_document_current(gpp_runtime: SimpleNamespa
     assert infos_st[0].qos_profile.reliability == QoSReliabilityPolicy.RELIABLE
 
 
-@pytest.mark.xfail(
-    reason="GPP-G10: _on_geo no atrapa JSONDecodeError; publicar geofences malformado rompe el callback del executor",
-    strict=True,
-)
 @pytest.mark.ros
 def test_tc_geo_012_gpp_node_survives_malformed_geofences_json(gpp_runtime: SimpleNamespace) -> None:
     """Complemento TC-GEO-012 (plan PDF): JSON inválido en /airspace/geofences no tumba el nodo."""

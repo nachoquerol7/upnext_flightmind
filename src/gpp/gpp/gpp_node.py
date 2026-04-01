@@ -88,7 +88,12 @@ class GppNode(Node):
 
     def _on_geo(self, msg: String) -> None:
         self._nfz_json = msg.data
-        self._nfz_polys = parse_geofences_json(msg.data)
+        try:
+            self._nfz_polys = parse_geofences_json(msg.data)
+        except Exception as exc:
+            self.get_logger().warn(
+                f"geofences JSON inválido ignorado: {str(exc)[:120]}"
+            )
 
     def _on_takeoff(self, msg: Float64MultiArray) -> None:
         d = list(msg.data) + [0.0] * 5

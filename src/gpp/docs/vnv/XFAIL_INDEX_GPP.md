@@ -11,6 +11,8 @@
 **Descripción:** La implementación actual de `dubins_length` puede devolver valores menores que la distancia euclidiana en algunos casos.
 
 ## GPP-G10 — Geofences JSON malformado en el nodo
-**Estado:** ABIERTO
-**Tests bloqueados:** TC-GEO-012 (parte ROS en `test_tc_geo_012_gpp_node_survives_malformed_geofences_json`)
-**Descripción:** `gpp_node._on_geo()` llama a `parse_geofences_json()` sin `try/except`; un `JSONDecodeError` puede propagarse y abortar el procesamiento del executor.
+**Estado:** CERRADO
+**Fecha cierre:** 2026-04-01
+**Tests bloqueados:** —
+**Descripción:** `gpp_node._on_geo()` llamaba a `parse_geofences_json()` sin manejar errores de parseo.
+**Cierre:** `try/except` en `_on_geo` con log de advertencia; se conserva `_nfz_json` pero no se actualizan polígonos ante JSON inválido.
