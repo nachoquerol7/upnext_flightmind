@@ -8,6 +8,8 @@ class RosBridge {
     /** @type {ROSLIB.Ros | null} */
     this.ros = null;
     this._connected = false;
+    /** Evita el mensaje de “stack detenido” al usar disconnect() manual. */
+    this._suppressClosedLog = false;
     /** @type {Array<(s: string) => void>} */
     this._statusCbs = [];
   }
@@ -35,6 +37,14 @@ class RosBridge {
     this.ros.on("close", () => {
       this._connected = false;
       this._emitStatus("closed");
+      if (
+        !this._suppressClosedLog &&
+        typeof window !== "undefined" &&
+        typeof window.testbenchLog === "function"
+      ) {
+        window.testbenchLog("Stack detenido. Ejecuta launch.sh para reiniciar.");
+      }
+      this._suppressClosedLog = false;
     });
   }
 
@@ -90,6 +100,18 @@ class RosBridge {
     });
     const m = new ROSLIB.Message(msg);
     pub.publish(m);
+  }
+
+  /** Cierra el WebSocket hacia rosbridge (no apaga nodos ROS). */
+  disconnect() {
+    this._suppressClosedLog = true;
+    if (this.ros) {
+      try {
+        this.ros.close();
+      } catch (_) {}
+    }
+    this._connected = false;
+    this.ros = null;
   }
 
   call_service(name, type, req, cb) {

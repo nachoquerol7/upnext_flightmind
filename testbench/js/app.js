@@ -240,7 +240,15 @@
     });
   }
 
+  function stopStackClient() {
+    if (!bridge) return;
+    bridge.disconnect();
+    logLine("Cliente WebSocket desconectado (Stop stack). Recarga la página para volver a conectar.");
+    setConnUi(false);
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
+    window.testbenchLog = logLine;
     TelemetryPanel.mount(document.getElementById("right-panel"));
     buildSidebar();
     activeModuleId = "M1";
@@ -248,6 +256,7 @@
     wireRos();
     document.getElementById("btn-run").addEventListener("click", runTc);
     document.getElementById("btn-reset").addEventListener("click", resetBench);
+    document.getElementById("btn-stop-stack").addEventListener("click", stopStackClient);
     requestAnimationFrame(tick);
   });
 })();

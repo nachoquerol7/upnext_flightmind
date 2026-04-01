@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=SIL V&V Testbench
+Comment=Arranca ROS2 stack y abre el testbench
+Exec=bash -c 'cd "$(dirname "%k")/.." && bash testbench/launch.sh'
+Icon=utilities-terminal
+Terminal=true
+Categories=Development;

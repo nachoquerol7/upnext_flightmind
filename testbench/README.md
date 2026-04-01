@@ -2,6 +2,23 @@
 
 Aplicación web **standalone** (HTML/CSS/JS + **roslibjs** por CDN) para demostración y depuración: se conecta al stack real vía **rosbridge** WebSocket y muestra señales en vivo.
 
+## Arranque automático (recomendado)
+
+Desde **cualquier directorio**:
+
+```bash
+bash /ruta/a/upnext_uas_ws/testbench/launch.sh
+```
+
+O haz **doble clic** en `testbench/testbench.desktop` (puede pedir marcar el ejecutable como de confianza). El script:
+
+1. Hace `source ~/upnext_uas_ws/install/setup.bash`
+2. Detiene instancias previas de rosbridge y `mission_fsm_node`
+3. Lanza **rosbridge** y **`mission_fsm_node`** en segundo plano
+4. Abre `testbench/index.html` en el navegador
+
+Para detener los nodos ROS, cierra la terminal donde corre `launch.sh` (o Ctrl+C). En el testbench, **Stop stack** solo cierra el cliente WebSocket en el navegador; si el bridge se cae solo, el log muestra: *Stack detenido. Ejecuta launch.sh para reiniciar.*
+
 ## Requisitos
 
 - ROS 2 (Humble o Jazzy)
