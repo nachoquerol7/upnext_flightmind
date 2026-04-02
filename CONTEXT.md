@@ -366,11 +366,11 @@ v_min_reserve_gain_ms: 5.0   # v_min increase as fuel depletes
 | gpp | 94 | 2 | 0 |
 | fdir | 22 | 0 | 0 |
 | acas_node | 2 | 0 | 0 |
-| navigation_bridge | 3 | 0 | 0 |
-| slz_detector | 1 | 0 | 0 |
+| navigation_bridge | 4 | 0 | 1 |
+| slz_detector | 10 | 0 | 0 |
 | trajectory_gen | 3 | 0 | 0 |
 | vehicle_model | 2 | 0 | 0 |
-| **Total** | **285** | **25** | **0** |
+| **Total** | **295** | **25** | **1** |
 
 ---
 
@@ -475,7 +475,6 @@ fix:    bug fix
 test:   test additions or fixes
 refactor: code restructure, no behaviour change
 arch:   architecture decision — must update CONTEXT.md
-a
 # When updating CONTEXT.md, note it in the commit message
 git commit -m "arch: move trajectory_gen to L2.5 — update CONTEXT.md"
 ```
