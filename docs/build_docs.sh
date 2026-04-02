@@ -1,31 +1,48 @@
-#!/usr/bin/env bash
-# Convert all Markdown under docs/ to PDFs under workspace dist/, mirroring paths.
+#!/bin/bash
+# build_docs.sh — Convert all Markdown docs to PDF
+# Usage: bash docs/build_docs.sh
+# Requires: pandoc + texlive (or wkhtmltopdf as fallback)
+
 set -euo pipefail
 
-DOCS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WS_ROOT="$(cd "${DOCS_ROOT}/.." && pwd)"
-DIST="${WS_ROOT}/dist"
+DOCS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+OUT_DIR="$DOCS_DIR/_pdf_output"
+mkdir -p "$OUT_DIR"
 
-if ! command -v pandoc >/dev/null 2>&1; then
-  echo "error: pandoc is required but not found in PATH" >&2
+if ! command -v pandoc &> /dev/null; then
+  echo "ERROR: pandoc not found. Install with: sudo apt install pandoc texlive-latex-base texlive-fonts-recommended"
   exit 1
 fi
 
-mkdir -p "${DIST}"
+echo "Building docs from $DOCS_DIR → $OUT_DIR"
+echo ""
 
-mapfile -d '' -t MD_FILES < <(find "${DOCS_ROOT}" -type f -name '*.md' -print0 | sort -z)
+count=0
+errors=0
 
-if [[ ${#MD_FILES[@]} -eq 0 ]]; then
-  echo "no .md files under ${DOCS_ROOT}" >&2
-  exit 0
-fi
+while IFS= read -r md_file; do
+  rel_path="${md_file#$DOCS_DIR/}"
+  out_name="${rel_path//\//__}"
+  out_name="${out_name%.md}.pdf"
+  out_path="$OUT_DIR/$out_name"
 
-for f in "${MD_FILES[@]}"; do
-  rel="${f#"${DOCS_ROOT}/"}"
-  out_dir="${DIST}/$(dirname "${rel}")"
-  base="$(basename "${rel}" .md)"
-  mkdir -p "${out_dir}"
-  pandoc "${f}" -o "${out_dir}/${base}.pdf"
-done
+  echo -n "  $rel_path ... "
+  if pandoc "$md_file" \
+    -o "$out_path" \
+    --pdf-engine=xelatex \
+    -V geometry:margin=2cm \
+    -V fontsize=10pt \
+    -V colorlinks=true \
+    --toc \
+    2>/dev/null; then
+    echo "OK"
+    count=$((count + 1))
+  else
+    echo "FAIL"
+    errors=$((errors + 1))
+  fi
+done < <(find "$DOCS_DIR" -name "*.md" ! -path "*/_*" | sort)
 
-echo "Wrote PDFs under ${DIST}/ (mirrors docs/ layout)."
+echo ""
+echo "Done: $count PDF(s) generated, $errors error(s)"
+echo "Output: $OUT_DIR"
