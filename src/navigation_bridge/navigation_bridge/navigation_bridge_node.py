@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Republish PX4 VehicleOdometry as FlightMind NavigationState + quality_flag."""
+"""Republish PX4 VehicleOdometry as FlightMind NavigationState + quality_flag.
+
+quality_flag (0..1) desde pose_covariance[0] (varianza posición NED ~x):
+  > 5.0  -> 0.3  (degradación fuerte; FSM suele reaccionar si < umbral YAML)
+  > 1.0  -> 0.7
+  else   -> 1.0
+Sin odometría reciente (>1 s) -> 0.0
+"""
 
 from __future__ import annotations
 
@@ -11,6 +18,9 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy
 
 from flightmind_msgs.msg import NavigationState
 from std_msgs.msg import Bool, Float64
+
+# Calidad también va en NavigationState.quality_flag; el FSM puede alimentarse
+# vía navigation_quality_relay_node (launch) o mocks SIL.
 
 try:
     from px4_msgs.msg import VehicleOdometry
@@ -56,6 +66,7 @@ class NavigationBridgeNode(Node):
         self._last_odom_time = time.monotonic()
 
     def _quality_from_cov(self, c0: float) -> float:
+        c0 = max(0.0, float(c0))
         if c0 > 5.0:
             return 0.3
         if c0 > 1.0:
@@ -75,7 +86,7 @@ class NavigationBridgeNode(Node):
 
         msg = self._last_odom
         pc = list(getattr(msg, "pose_covariance", []) or [])
-        c0 = float(pc[0]) if len(pc) > 0 else 0.0
+        c0 = float(pc[0]) if len(pc) > 0 else 0.0  # upper-tri pose cov; [0] ~ var pos primera componente
         q = self._quality_from_cov(c0)
         self._pub_q.publish(Float64(data=q))
 

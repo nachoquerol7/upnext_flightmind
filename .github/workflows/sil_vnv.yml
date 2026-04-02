@@ -1,0 +1,83 @@
+# SIL / V&V: subset of colcon tests (mission_fsm, gpp, navigation_bridge, acas_node).
+# Ubuntu 24.04: ROS 2 Jazzy desktop packages target Noble; Jammy (22.04) has no ros-jazzy-* in packages.ros.org.
+name: SIL V&V
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sil-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ROS 2 Jazzy (apt)
+        run: |
+          set -eo pipefail
+          sudo apt-get update
+          sudo apt-get install -y curl software-properties-common gnupg lsb-release
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+            -o /usr/share/keyrings/ros-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+            http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo "${UBUNTU_CODENAME:-noble}") main" \
+            | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y \
+            ros-jazzy-desktop \
+            python3-colcon-common-extensions \
+            ros-jazzy-px4-msgs
+
+      - name: Python test tools
+        run: |
+          pip install pytest pytest-cov --break-system-packages
+
+      - name: Build SIL closure
+        run: |
+          set -eo pipefail
+          source /opt/ros/jazzy/setup.bash
+          cd "${{ github.workspace }}"
+          # Cierre de dependencias + gpp (exec_depend de mission_fsm, no entra solo con up-to mission_fsm)
+          colcon build --symlink-install \
+            --packages-up-to mission_fsm \
+            --packages-up-to navigation_bridge \
+            --packages-up-to acas_node \
+            --packages-up-to gpp
+
+      - name: Test SIL suite
+        run: |
+          set -eo pipefail
+          source /opt/ros/jazzy/setup.bash
+          source "${{ github.workspace }}/install/setup.bash"
+          cd "${{ github.workspace }}"
+          # XFAIL permitido; FAIL hace fallar el job (--return-code-on-test-failure)
+          colcon test \
+            --packages-select mission_fsm gpp navigation_bridge acas_node \
+            --return-code-on-test-failure \
+            --event-handlers console_direct+ \
+            --executor sequential
+          colcon test-result --verbose
+
+      - name: Coverage (mission_fsm.fsm)
+        run: |
+          set -eo pipefail
+          source /opt/ros/jazzy/setup.bash
+          source "${{ github.workspace }}/install/setup.bash"
+          cd "${{ github.workspace }}"
+          colcon test \
+            --packages-select mission_fsm \
+            --return-code-on-test-failure \
+            --event-handlers console_direct+ \
+            --executor sequential \
+            --pytest-args --cov=mission_fsm.fsm --cov-report=xml:"${{ github.workspace }}/coverage.xml" --cov-branch
+          colcon test-result --verbose
+
+      - name: Upload coverage.xml
+        uses: actions/upload-artifact@v4
+        with:
+          name: mission-fsm-fsm-coverage
+          path: coverage.xml
+          if-no-files-found: warn

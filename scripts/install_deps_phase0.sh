@@ -9,8 +9,14 @@ else
   exit 1
 fi
 sudo apt-get update
-sudo apt-get install -y \
-  "ros-${DIST}-ompl" \
-  python3-pytest \
+APT_PKGS=(
+  "ros-${DIST}-ompl"
+  python3-pytest
   python3-colcon-common-extensions
-echo "[install_deps_phase0] OK (ros-${DIST}-ompl + pytest + colcon)"
+)
+# rosbridge_suite en src/ (CMake) lo pide al compilar mission_fsm / testbench
+if apt-cache show "ros-${DIST}-ament-cmake-mypy" &>/dev/null; then
+  APT_PKGS+=("ros-${DIST}-ament-cmake-mypy")
+fi
+sudo apt-get install -y "${APT_PKGS[@]}"
+echo "[install_deps_phase0] OK (ros-${DIST}-ompl + pytest + colcon + ament_cmake_mypy si existe)"

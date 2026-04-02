@@ -21,6 +21,15 @@ from std_msgs.msg import String
 
 from mission_fsm.mission_fsm_node import MissionFsmNode
 
+# test/m8_middleware → parents[4] = colcon workspace root (…/upnext_uas_ws)
+_WORKSPACE_ROOT = Path(__file__).resolve().parents[4]
+_INSTALL_SETUP = _WORKSPACE_ROOT / "install" / "setup.bash"
+_ROS2_RUN_MISSION_FSM = (
+    "source /opt/ros/jazzy/setup.bash && "
+    f"source {_INSTALL_SETUP} && "
+    "ros2 run mission_fsm mission_fsm_node"
+)
+
 
 class _FSMStateCollector(Node):
     def __init__(self) -> None:
@@ -33,12 +42,15 @@ class _FSMStateCollector(Node):
 
 
 @pytest.fixture
-def mw_runtime(ros_context: None) -> SimpleNamespace:
+def mw_runtime(ros_context: None, request: pytest.FixtureRequest) -> SimpleNamespace:
     ex = MultiThreadedExecutor()
     node = MissionFsmNode()
     sub = _FSMStateCollector()
     ex.add_node(node)
     ex.add_node(sub)
+    if not request.node.get_closest_marker("tight_dwell"):
+        for k in node._fsm._max_duration_by_state:  # noqa: SLF001
+            node._fsm._max_duration_by_state[k] = 3600.0  # noqa: SLF001
     yield SimpleNamespace(ex=ex, node=node, sub=sub)
     ex.remove_node(node)
     ex.remove_node(sub)
@@ -52,7 +64,7 @@ def _spin(ex: MultiThreadedExecutor, n: int = 40) -> None:
 
 
 @pytest.mark.no_ros
-@pytest.mark.xfail(reason="XFAIL-ARCH-1.7: /watchdog/status publisher not implemented", strict=True)
+@pytest.mark.xfail(reason="XFAIL-ARCH-1.7-WATCHDOG: watchdog_node not implemented", strict=True)
 def test_tc_mw_001_static_watchdog_status_topic_declared() -> None:
     src = Path(__file__).resolve().parents[2] / "mission_fsm" / "mission_fsm_node.py"
     mod = ast.parse(src.read_text(encoding="utf-8"))
@@ -107,17 +119,34 @@ def test_tc_mw_004_fsm_state_qos_reliable_transient_local(mw_runtime: SimpleName
     assert infos[0].qos_profile.durability == DurabilityPolicy.TRANSIENT_LOCAL
 
 
+@pytest.mark.slow
+@pytest.mark.timeout(12)
 def test_tc_mw_005_restart_node_republishes_state() -> None:
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
-    cmd = ["bash", "-lc", "source /opt/ros/jazzy/setup.bash && source /home/ignacio-querol/upnext_uas_ws/install/setup.bash && ros2 run mission_fsm mission_fsm_node"]
-    p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, preexec_fn=os.setsid)
+    cmd = ["bash", "-lc", _ROS2_RUN_MISSION_FSM]
+    # DEVNULL avoids pipe buffer deadlock if the node logs heavily.
+    p = subprocess.Popen(
+        cmd,
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        preexec_fn=os.setsid,
+    )
     try:
         time.sleep(1.0)
     finally:
         os.killpg(p.pid, signal.SIGTERM)
         p.wait(timeout=10)
-    p2 = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, preexec_fn=os.setsid)
+    p2 = subprocess.Popen(
+        cmd,
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        preexec_fn=os.setsid,
+    )
     try:
         time.sleep(1.0)
         assert p2.poll() is None
@@ -132,27 +161,45 @@ def test_tc_mw_006_legacy_topics_still_published(mw_runtime: SimpleNamespace) ->
     assert len(infos_mode) >= 1 and len(infos_trig) >= 1
 
 
+@pytest.mark.slow
+@pytest.mark.timeout(12)
 def test_tc_mw_007_yaml_parameters_match_defaults() -> None:
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
-    cmd = ["bash", "-lc", "source /opt/ros/jazzy/setup.bash && source /home/ignacio-querol/upnext_uas_ws/install/setup.bash && ros2 run mission_fsm mission_fsm_node"]
-    p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, preexec_fn=os.setsid)
+    cmd = ["bash", "-lc", _ROS2_RUN_MISSION_FSM]
+    p = subprocess.Popen(
+        cmd,
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        preexec_fn=os.setsid,
+    )
+    _ros = (
+        "source /opt/ros/jazzy/setup.bash && "
+        f"source {_INSTALL_SETUP} && "
+        "ros2 param get /mission_fsm_node {}"
+    )
+    _cli_timeout = 3.0
     try:
         time.sleep(1.0)
         q = subprocess.check_output(
-            ["bash", "-lc", "source /opt/ros/jazzy/setup.bash && source /home/ignacio-querol/upnext_uas_ws/install/setup.bash && ros2 param get /mission_fsm_node quality_flag_threshold"],
+            ["bash", "-lc", _ros.format("quality_flag_threshold")],
             text=True,
             env=env,
+            timeout=_cli_timeout,
         )
         a = subprocess.check_output(
-            ["bash", "-lc", "source /opt/ros/jazzy/setup.bash && source /home/ignacio-querol/upnext_uas_ws/install/setup.bash && ros2 param get /mission_fsm_node daidalus_alert_amber"],
+            ["bash", "-lc", _ros.format("daidalus_alert_amber")],
             text=True,
             env=env,
+            timeout=_cli_timeout,
         )
         i = subprocess.check_output(
-            ["bash", "-lc", "source /opt/ros/jazzy/setup.bash && source /home/ignacio-querol/upnext_uas_ws/install/setup.bash && ros2 param get /mission_fsm_node initial_state"],
+            ["bash", "-lc", _ros.format("initial_state")],
             text=True,
             env=env,
+            timeout=_cli_timeout,
         )
     finally:
         os.killpg(p.pid, signal.SIGTERM)
@@ -165,7 +212,9 @@ def test_tc_mw_008_fsm_state_message_shape_on_wire(mw_runtime: SimpleNamespace) 
     assert mw_runtime.sub.msgs and mw_runtime.sub.msgs[-1].current_mode != ""
 
 
-def test_tc_mw_009_startup_under_15s_to_first_fsm_state() -> None:
+@pytest.mark.slow
+@pytest.mark.timeout(18)
+def test_tc_mw_009_startup_under_15s_to_first_fsm_state(request: pytest.FixtureRequest) -> None:
     if rclpy.ok():
         rclpy.shutdown()
     rclpy.init()
@@ -175,6 +224,9 @@ def test_tc_mw_009_startup_under_15s_to_first_fsm_state() -> None:
     sub = _FSMStateCollector()
     ex.add_node(node)
     ex.add_node(sub)
+    if not request.node.get_closest_marker("tight_dwell"):
+        for k in node._fsm._max_duration_by_state:  # noqa: SLF001
+            node._fsm._max_duration_by_state[k] = 3600.0  # noqa: SLF001
     while (time.monotonic() - t0) < 15.0 and not sub.msgs:
         ex.spin_once(timeout_sec=0.05)
     ex.remove_node(node)

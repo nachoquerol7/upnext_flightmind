@@ -19,6 +19,14 @@ from trajectory_gen.dubins3d import (
 )
 from trajectory_gen.waypoint_follower import WaypointFollower, path_to_ned_waypoints
 
+try:
+    from px4_msgs.msg import TrajectorySetpoint as Px4TrajectorySetpoint
+
+    _HAS_PX4 = True
+except ImportError:  # pragma: no cover
+    Px4TrajectorySetpoint = None  # type: ignore[misc, assignment]
+    _HAS_PX4 = False
+
 
 def quat_to_heading(q: Quaternion) -> float:
     """Yaw from North (rad), CCW — works for level attitudes."""
@@ -40,6 +48,28 @@ def select_input_path(adjusted: Optional[Path], global_path: Optional[Path]) -> 
     return None
 
 
+def _finite(x: float) -> bool:
+    return math.isfinite(float(x))
+
+
+def _sanitize_vel(vn: float, ve: float, vd: float) -> Tuple[float, float, float]:
+    def c(v: float) -> float:
+        fv = float(v)
+        return fv if _finite(fv) else 0.0
+
+    return (c(vn), c(ve), c(vd))
+
+
+def _sanitize_ned(
+    pos: Tuple[float, float, float], fallback: List[float]
+) -> Tuple[float, float, float]:
+    out: List[float] = []
+    for i in range(3):
+        v = float(pos[i])
+        out.append(v if _finite(v) else float(fallback[i]))
+    return (out[0], out[1], out[2])
+
+
 def path_to_waypoints_nezh(path: Path) -> List[Tuple[float, float, float, float]]:
     out: List[Tuple[float, float, float, float]] = []
     for ps in path.poses:
@@ -54,8 +84,13 @@ class TrajectoryGenNode(Node):
         super().__init__("trajectory_gen_node")
         self.declare_parameter("cruise_speed_ms", -1.0)
         self.declare_parameter("use_waypoint_follower", False)
+        self.declare_parameter("use_pure_pursuit", True)
         self.declare_parameter("waypoint_radius_m", 5.0)
+        self.declare_parameter("pure_pursuit_lookahead_m", 2.5)
+        self.declare_parameter("path_resample_step_m", 0.5)
+        self.declare_parameter("arrival_radius_m", 2.0)
         self.declare_parameter("follower_cruise_ms", 25.0)
+        self.declare_parameter("publish_px4_trajectory_setpoint", True)
 
         latched = QoSProfile(
             depth=1,
@@ -71,7 +106,7 @@ class TrajectoryGenNode(Node):
         self._repl_active = False
         self._path_gpp_alias: Optional[Path] = None
         self._path_repl: Optional[Path] = None
-        self._follower = WaypointFollower(float(self.get_parameter("waypoint_radius_m").value))
+        self._follower = self._make_follower()
         self._mission_complete_sent = False
 
         self._pub_sp = self.create_publisher(Float64MultiArray, "/trajectory/setpoints", 10)
@@ -92,15 +127,42 @@ class TrajectoryGenNode(Node):
         self._pub_progress = self.create_publisher(String, "/trajectory/progress", 10)
         self._pub_mission_complete = self.create_publisher(Bool, "/fsm/in/mission_complete", 10)
 
+        self._pub_px4_traj: Any = None
+        if (
+            _HAS_PX4
+            and Px4TrajectorySetpoint is not None
+            and bool(self.get_parameter("publish_px4_trajectory_setpoint").value)
+        ):
+            self._pub_px4_traj = self.create_publisher(
+                Px4TrajectorySetpoint, "/fmu/in/trajectory_setpoint", 10
+            )
+            self.get_logger().info("PX4 TrajectorySetpoint publisher on /fmu/in/trajectory_setpoint")
+        elif bool(self.get_parameter("publish_px4_trajectory_setpoint").value):
+            self.get_logger().warn(
+                "publish_px4_trajectory_setpoint true pero px4_msgs no importable; omitiendo publisher PX4"
+            )
+
         self.create_timer(0.05, self._tick)
         self.create_timer(1.0 / 50.0, self._tick_follower)
         self.get_logger().info("trajectory_gen_node started (base tick 20 Hz; output throttled)")
+
+    def _make_follower(self) -> WaypointFollower:
+        use_pp = bool(self.get_parameter("use_pure_pursuit").value)
+        return WaypointFollower(
+            float(self.get_parameter("waypoint_radius_m").value),
+            use_pure_pursuit=use_pp,
+            pure_pursuit_lookahead_m=float(self.get_parameter("pure_pursuit_lookahead_m").value),
+            path_resample_step_m=float(self.get_parameter("path_resample_step_m").value),
+            arrival_radius_m=float(self.get_parameter("arrival_radius_m").value),
+        )
 
     def _on_adj(self, msg: Path) -> None:
         self._adjusted_path = msg
 
     def _on_glob(self, msg: Path) -> None:
         self._global_path = msg
+        if not self._repl_active and len(msg.poses) >= 1:
+            self._reset_follower_from_path(msg)
 
     def _on_vm(self, msg: Float64MultiArray) -> None:
         self._vm_data = [float(x) for x in msg.data]
@@ -122,8 +184,11 @@ class TrajectoryGenNode(Node):
         self._repl_active = bool(msg.data)
         if self._repl_active and self._path_repl is not None:
             self._reset_follower_from_path(self._path_repl)
-        elif not self._repl_active and self._path_gpp_alias is not None:
-            self._reset_follower_from_path(self._path_gpp_alias)
+        elif not self._repl_active:
+            if self._path_gpp_alias is not None and len(self._path_gpp_alias.poses) >= 1:
+                self._reset_follower_from_path(self._path_gpp_alias)
+            elif self._global_path is not None and len(self._global_path.poses) >= 1:
+                self._reset_follower_from_path(self._global_path)
 
     def _on_nav_state(self, msg: NavigationState) -> None:
         self._nav_pos = [float(msg.position_ned[0]), float(msg.position_ned[1]), float(msg.position_ned[2])]
@@ -131,10 +196,80 @@ class TrajectoryGenNode(Node):
     def _reset_follower_from_path(self, path: Path) -> None:
         if len(path.poses) < 1:
             return
-        r = float(self.get_parameter("waypoint_radius_m").value)
-        self._follower = WaypointFollower(r)
+        self._follower = self._make_follower()
         self._follower.set_path(path_to_ned_waypoints(path.poses))
         self._mission_complete_sent = False
+
+    def _active_path_for_follower(self) -> Optional[Path]:
+        if self._repl_active and self._path_repl is not None and len(self._path_repl.poses) >= 1:
+            return self._path_repl
+        if self._path_gpp_alias is not None and len(self._path_gpp_alias.poses) >= 1:
+            return self._path_gpp_alias
+        if self._global_path is not None and len(self._global_path.poses) >= 1:
+            return self._global_path
+        return None
+
+    def _publish_px4_setpoint(
+        self,
+        tgt: Tuple[float, float, float],
+        vn: float,
+        ve: float,
+        vd: float,
+        *,
+        hold: bool = False,
+    ) -> None:
+        if self._pub_px4_traj is None or Px4TrajectorySetpoint is None:
+            return
+        if self._nav_pos is None:
+            return
+        pn, pe, pd_ = _sanitize_ned(tgt, self._nav_pos)
+        vn, ve, vd = _sanitize_vel(vn, ve, vd)
+        if hold:
+            vn, ve, vd = 0.0, 0.0, 0.0
+        ts_us = self.get_clock().now().nanoseconds // 1000
+        m = Px4TrajectorySetpoint()
+        m.timestamp = ts_us
+        if hasattr(m, "timestamp_sample"):
+            setattr(m, "timestamp_sample", ts_us)
+        m.position = [pn, pe, pd_]
+        m.velocity = [vn, ve, vd]
+        m.acceleration = [0.0, 0.0, 0.0]
+        m.jerk = [0.0, 0.0, 0.0]
+        horiz = math.hypot(vn, ve)
+        m.yaw = math.atan2(ve, vn) if horiz > 0.15 else 0.0
+        m.yawspeed = 0.0
+        self._pub_px4_traj.publish(m)
+
+    def _publish_fm_setpoint(
+        self,
+        tgt: Tuple[float, float, float],
+        vn: float,
+        ve: float,
+        vd: float,
+        *,
+        hold: bool = False,
+    ) -> None:
+        if self._nav_pos is None:
+            return
+        pn, pe, pd_ = _sanitize_ned(tgt, self._nav_pos)
+        vn, ve, vd = _sanitize_vel(vn, ve, vd)
+        if hold:
+            vn, ve, vd = 0.0, 0.0, 0.0
+        sp = TrajectorySetpoint()
+        sp.header.stamp = self.get_clock().now().to_msg()
+        sp.header.frame_id = "ned"
+        sp.position_ned = [pn, pe, pd_]
+        sp.velocity_ned = [vn, ve, vd]
+        self._pub_traj_setpoint.publish(sp)
+
+    def _publish_hold(self) -> None:
+        """Mantiene posición NED actual y velocidad cero (offboard estable sin ruta)."""
+        if self._nav_pos is None:
+            return
+        hold_pos = (float(self._nav_pos[0]), float(self._nav_pos[1]), float(self._nav_pos[2]))
+        self._publish_fm_setpoint(hold_pos, 0.0, 0.0, 0.0, hold=True)
+        self._publish_px4_setpoint(hold_pos, 0.0, 0.0, 0.0, hold=True)
+        self._pub_progress.publish(String(data="hold:no_valid_path"))
 
     def _tick_follower(self) -> None:
         if not bool(self.get_parameter("use_waypoint_follower").value):
@@ -143,8 +278,9 @@ class TrajectoryGenNode(Node):
             return
         cruise = float(self.get_parameter("follower_cruise_ms").value)
         if not self._follower.waypoints:
-            src = self._path_repl if self._repl_active and self._path_repl else self._path_gpp_alias
+            src = self._active_path_for_follower()
             if src is None or len(src.poses) < 1:
+                self._publish_hold()
                 return
             self._reset_follower_from_path(src)
 
@@ -155,18 +291,17 @@ class TrajectoryGenNode(Node):
             self._pub_progress.publish(String(data="complete"))
             return
         if tgt is None:
+            self._publish_hold()
             return
         vn, ve, vd = self._follower.velocity_toward(self._nav_pos, cruise)
-        sp = TrajectorySetpoint()
-        sp.header.stamp = self.get_clock().now().to_msg()
-        sp.header.frame_id = "ned"
-        sp.position_ned = [float(tgt[0]), float(tgt[1]), float(tgt[2])]
-        sp.velocity_ned = [float(vn), float(ve), float(vd)]
-        self._pub_traj_setpoint.publish(sp)
+        if not all(_finite(float(x)) for x in (*tgt, vn, ve, vd)):
+            self._publish_hold()
+            return
+        self._publish_fm_setpoint(tgt, vn, ve, vd, hold=False)
+        self._publish_px4_setpoint(tgt, vn, ve, vd, hold=False)
         dstr = f"{dist:.1f}" if dist is not None else "?"
-        self._pub_progress.publish(
-            String(data=f"wp:{self._follower.wp_idx}/{len(self._follower.waypoints)} dist:{dstr}m")
-        )
+        prog = self._follower.progress_fragment()
+        self._pub_progress.publish(String(data=f"{prog} dist:{dstr}m"))
 
     def _tick(self) -> None:
         now = self.get_clock().now().nanoseconds

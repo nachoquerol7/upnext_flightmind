@@ -2,9 +2,39 @@
  * ROS2 bridge via rosbridge WebSocket + roslibjs
  * @see https://github.com/RobotWebTools/roslibjs
  */
+
+const ROSBRIDGE_PORT = 9090;
+
+/**
+ * Candidatos WebSocket: primero el mismo host que sirve la UI (LAN u host local),
+ * luego 127.0.0.1 y localhost para compatibilidad con file:// y políticas del navegador.
+ * @returns {string[]}
+ */
+function rosbridgeWebSocketCandidates() {
+  const out = [];
+  const add = (host) => {
+    if (!host) return;
+    const u = `ws://${host}:${ROSBRIDGE_PORT}`;
+    if (!out.includes(u)) out.push(u);
+  };
+  if (typeof window !== "undefined" && window.location?.hostname) {
+    add(window.location.hostname);
+  }
+  add("127.0.0.1");
+  add("localhost");
+  return out;
+}
+
 class RosBridge {
-  constructor(url = "ws://localhost:9090") {
-    this.url = url;
+  /**
+   * @param {string | null | undefined} explicitUrl Si se omite, se prueban candidatos en connect().
+   */
+  constructor(explicitUrl) {
+    this._explicitUrl =
+      explicitUrl !== undefined && explicitUrl !== null && explicitUrl !== ""
+        ? explicitUrl
+        : null;
+    this.url = this._explicitUrl || "";
     /** @type {ROSLIB.Ros | null} */
     this.ros = null;
     this._connected = false;
@@ -12,6 +42,8 @@ class RosBridge {
     this._suppressClosedLog = false;
     /** @type {Array<(s: string) => void>} */
     this._statusCbs = [];
+    /** @type {ReturnType<typeof setTimeout> | null} */
+    this._connectTimer = null;
   }
 
   connect() {
@@ -20,29 +52,108 @@ class RosBridge {
       this._emitStatus("error");
       return;
     }
+    const urls = this._explicitUrl
+      ? [this._explicitUrl]
+      : rosbridgeWebSocketCandidates();
+    this._connectAttempt(urls, 0);
+  }
+
+  /**
+   * @param {string[]} urls
+   * @param {number} i
+   */
+  _connectAttempt(urls, i) {
+    if (this._connectTimer !== null) {
+      clearTimeout(this._connectTimer);
+      this._connectTimer = null;
+    }
+    if (i >= urls.length) {
+      console.error("rosbridge: sin conexión tras probar:", urls.join(", "));
+      this._emitStatus("error");
+      return;
+    }
+    this.url = urls[i];
     if (this.ros) {
       try {
         this.ros.close();
       } catch (_) {}
+      this.ros = null;
     }
+
+    let connecting = true;
+    /** Salimos de este intento (éxito o paso al siguiente URL). */
+    let handshakeDone = false;
+    /** Hubo evento "connection" en este intento. */
+    let connectedOk = false;
+
+    const tryNext = () => {
+      if (handshakeDone) return;
+      handshakeDone = true;
+      connecting = false;
+      if (this._connectTimer !== null) {
+        clearTimeout(this._connectTimer);
+        this._connectTimer = null;
+      }
+      if (this.ros) {
+        try {
+          this.ros.close();
+        } catch (_) {}
+        this.ros = null;
+      }
+      this._connectAttempt(urls, i + 1);
+    };
+
     this.ros = new ROSLIB.Ros({ url: this.url });
+
+    this._connectTimer = setTimeout(() => {
+      if (connecting && !handshakeDone) tryNext();
+    }, 2500);
+
     this.ros.on("connection", () => {
+      if (handshakeDone) return;
+      handshakeDone = true;
+      connectedOk = true;
+      connecting = false;
+      if (this._connectTimer !== null) {
+        clearTimeout(this._connectTimer);
+        this._connectTimer = null;
+      }
       this._connected = true;
       this._emitStatus("connected");
     });
+
     this.ros.on("error", () => {
+      if (!connectedOk) {
+        if (!handshakeDone) tryNext();
+        return;
+      }
       this._connected = false;
       this._emitStatus("error");
     });
+
     this.ros.on("close", () => {
+      connecting = false;
+      if (this._connectTimer !== null) {
+        clearTimeout(this._connectTimer);
+        this._connectTimer = null;
+      }
       this._connected = false;
+      if (!connectedOk && !handshakeDone) {
+        tryNext();
+        return;
+      }
+      if (!connectedOk) {
+        return;
+      }
       this._emitStatus("closed");
       if (
         !this._suppressClosedLog &&
         typeof window !== "undefined" &&
         typeof window.testbenchLog === "function"
       ) {
-        window.testbenchLog("Stack detenido. Ejecuta launch.sh para reiniciar.");
+        window.testbenchLog(
+          "Stack detenido. Ejecuta testbench/run_all.sh para reiniciar."
+        );
       }
       this._suppressClosedLog = false;
     });
@@ -104,6 +215,10 @@ class RosBridge {
 
   /** Cierra el WebSocket hacia rosbridge (no apaga nodos ROS). */
   disconnect() {
+    if (this._connectTimer !== null) {
+      clearTimeout(this._connectTimer);
+      this._connectTimer = null;
+    }
     this._suppressClosedLog = true;
     if (this.ros) {
       try {
@@ -133,3 +248,4 @@ class RosBridge {
 }
 
 window.RosBridge = RosBridge;
+window.rosbridgeWebSocketCandidates = rosbridgeWebSocketCandidates;

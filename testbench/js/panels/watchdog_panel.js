@@ -28,26 +28,76 @@ class WatchdogPanel extends BasePanel {
     this.container.appendChild(grid);
     const banner = document.createElement("div");
     banner.className = "watchdog-banner";
-    banner.id = "wd-banner";
+    banner.classList.add("wd-banner-el");
     banner.style.display = "none";
     banner.textContent = "WATCHDOG TRIGGERED";
     this.container.appendChild(banner);
     const emerg = document.createElement("div");
     emerg.className = "fdir-emergency-banner";
-    emerg.id = "fdir-emerg";
+    emerg.classList.add("fdir-emerg-el");
     emerg.style.display = "none";
     emerg.textContent = "FDIR EMERGENCY";
     this.container.appendChild(emerg);
     const tree = document.createElement("div");
     tree.className = "wd-consequence";
-    tree.id = "wd-tree";
+    tree.classList.add("wd-tree-el");
     tree.innerHTML =
       "<b>Árbol de consecuencias</b> (placeholder): si un nodo está DEAD, las transiciones FSM que dependen de él no pueden completarse.";
     this.container.appendChild(tree);
+
+    const stamp = () => Date.now();
+    this._nodes.forEach((n) => {
+      const t = n.topic;
+      const typ =
+        t === "/fsm/state"
+          ? "flightmind_msgs/FSMState"
+          : t === "/daidalus/alert_level"
+            ? "std_msgs/Int32"
+            : t === "/fdir/status"
+              ? "std_msgs/String"
+              : "std_msgs/Float64";
+      this.subscribeRos(t, typ, () => {
+        this._lastMsg[n.id] = stamp();
+      });
+    });
+    this.subscribeRos("/fdir/emergency", "std_msgs/Bool", (msg) => {
+      if (msg && msg.data) this._flashEmergency();
+    });
+    this.subscribeRos("/fdir/active_fault", "std_msgs/String", (msg) => {
+      if (msg && msg.data) this._applyActiveFault(String(msg.data));
+    });
   }
 
-  onMessage(topic, msg) {
-    if (this._frozen) return;
+  _flashEmergency() {
+    const el = this.container.querySelector(".fdir-emerg-el");
+    if (el) {
+      el.style.display = "block";
+      setTimeout(() => {
+        if (el) el.style.display = "none";
+      }, 1000);
+    }
+    this.container.querySelectorAll(".watchdog-card").forEach((c) => {
+      c.classList.add("wd-flash");
+      setTimeout(() => c.classList.remove("wd-flash"), 1000);
+    });
+  }
+
+  _applyActiveFault(fault) {
+    this.container.querySelectorAll(".watchdog-card").forEach((c) => {
+      c.classList.remove("wd-fault");
+    });
+    const match = this._nodes.find((n) => fault.indexOf(n.label) >= 0);
+    if (match) {
+      const card = this.container.querySelector(`[data-node="${match.id}"]`);
+      if (card) {
+        card.classList.add("wd-fault");
+        const title = card.querySelector(".wd-title");
+        if (title) title.textContent = match.label + " · " + fault;
+      }
+    }
+  }
+
+  handleTopic(topic, msg) {
     const now = Date.now();
     this._nodes.forEach((n) => {
       if (n.topic === topic) {
@@ -55,31 +105,10 @@ class WatchdogPanel extends BasePanel {
       }
     });
     if (topic === "/fdir/emergency" && msg && msg.data) {
-      const el = document.getElementById("fdir-emerg");
-      if (el) {
-        el.style.display = "block";
-        setTimeout(() => {
-          if (el) el.style.display = "none";
-        }, 1000);
-      }
-      document.querySelectorAll(".watchdog-card").forEach((c) => {
-        c.classList.add("wd-flash");
-        setTimeout(() => c.classList.remove("wd-flash"), 1000);
-      });
+      this._flashEmergency();
     }
     if (topic === "/fdir/active_fault" && msg && msg.data) {
-      document.querySelectorAll(".watchdog-card").forEach((c) => {
-        c.classList.remove("wd-fault");
-      });
-      const fault = String(msg.data);
-      const match = this._nodes.find((n) => fault.indexOf(n.label) >= 0);
-      if (match) {
-        const card = this.container.querySelector(`[data-node="${match.id}"]`);
-        if (card) {
-          card.classList.add("wd-fault");
-          card.querySelector(".wd-title").textContent = match.label + " · " + fault;
-        }
-      }
+      this._applyActiveFault(String(msg.data));
     }
   }
 
@@ -111,7 +140,7 @@ class WatchdogPanel extends BasePanel {
       }
       card.classList.toggle("wd-card-dead", state === "DEAD");
     });
-    const banner = document.getElementById("wd-banner");
+    const banner = this.container.querySelector(".wd-banner-el");
     if (banner) {
       const anyDead = this._nodes.some((n) => {
         const last = this._lastMsg[n.id];

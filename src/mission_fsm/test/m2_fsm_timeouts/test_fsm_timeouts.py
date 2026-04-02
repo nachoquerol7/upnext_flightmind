@@ -20,6 +20,8 @@ if str(_MOCKS) not in sys.path:
 
 import mock_sensors  # noqa: E402
 
+pytestmark = pytest.mark.tight_dwell
+
 
 def _dwell_spin(h: SimpleNamespace, iterations: int = 120) -> None:
     """Avanza tiempo real (morada FSM por reloj) y drena el ejecutor."""
@@ -40,18 +42,21 @@ def test_m2_yaml_states_expose_max_duration_for_flight_states() -> None:
         assert isinstance(body, dict) and "max_duration_sec" in body, f"missing max_duration_sec on {name}"
 
 
+@pytest.mark.slow
 def test_m2_preflight_stable_under_short_dwell(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """Por debajo del umbral de morada, PREFLIGHT permanece estable."""
     _dwell_spin(mission_fsm_sil_harness, 40)
     assert mission_fsm_sil_harness.fsm._fsm.state == "PREFLIGHT"  # noqa: SLF001
 
 
+@pytest.mark.slow
 def test_tc_to001_preflight_excessive_dwell_moves_to_fault(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-001: morada prolongada en PREFLIGHT fuerza salida (ABORT/RTB en cadena)."""
     _dwell_spin(mission_fsm_sil_harness)
     assert mission_fsm_sil_harness.fsm._fsm.state != "PREFLIGHT"  # noqa: SLF001
 
 
+@pytest.mark.slow
 def test_tc_to002_autotaxi_excessive_dwell_moves_to_fault(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-002: morada prolongada en AUTOTAXI sin progreso → fallo."""
     mission_fsm_sil_harness.inj.inject("preflight_ok", True)
@@ -61,6 +66,7 @@ def test_tc_to002_autotaxi_excessive_dwell_moves_to_fault(mission_fsm_sil_harnes
     assert st not in ("AUTOTAXI", "PREFLIGHT")
 
 
+@pytest.mark.slow
 def test_tc_to003_takeoff_excessive_dwell_moves_to_fault(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-003: morada prolongada en TAKEOFF sin takeoff_complete → fallo."""
     mission_fsm_sil_harness.inj.inject("preflight_ok", True)
@@ -71,6 +77,7 @@ def test_tc_to003_takeoff_excessive_dwell_moves_to_fault(mission_fsm_sil_harness
     assert mission_fsm_sil_harness.fsm._fsm.state != "TAKEOFF"  # noqa: SLF001
 
 
+@pytest.mark.slow
 def test_tc_to004_cruise_excessive_dwell_moves_to_fault(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-004: CRUISE indefinido sin comandos → timeout; ABORT en cadena puede pasar a RTB."""
     mission_fsm_sil_harness.inj.inject("preflight_ok", True)
@@ -84,6 +91,7 @@ def test_tc_to004_cruise_excessive_dwell_moves_to_fault(mission_fsm_sil_harness:
     assert st in ("ABORT", "RTB")
 
 
+@pytest.mark.slow
 def test_tc_to005_event_excessive_dwell_resolves_or_escalates(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-005: EVENT prolongado sin clear → escalado (ABORT; puede encadenar RTB)."""
     mission_fsm_sil_harness.inj.inject("preflight_ok", True)
@@ -99,6 +107,7 @@ def test_tc_to005_event_excessive_dwell_resolves_or_escalates(mission_fsm_sil_ha
     assert st in ("ABORT", "RTB")
 
 
+@pytest.mark.slow
 def test_tc_to006_gcs_heartbeat_loss_triggers_rtb_or_event(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-006: pérdida de GCS heartbeat superando umbral temporal → RTB o EVENT o ABORT."""
     mission_fsm_sil_harness.inj.inject("preflight_ok", True)
@@ -124,6 +133,7 @@ def test_tc_to006_gcs_heartbeat_loss_triggers_rtb_or_event(mission_fsm_sil_harne
         sens.destroy_node()
 
 
+@pytest.mark.slow
 def test_tc_to007_c2_link_loss_triggers_protective_state(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-007: enlace C2 falso sostenido → estado protector."""
     mission_fsm_sil_harness.inj.inject("preflight_ok", True)
@@ -145,6 +155,7 @@ def test_tc_to007_c2_link_loss_triggers_protective_state(mission_fsm_sil_harness
         sens.destroy_node()
 
 
+@pytest.mark.slow
 def test_tc_to008_low_battery_timeout_triggers_rtb(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-008: batería crítica sostenida → RTB (o cadena vía ABORT)."""
     mission_fsm_sil_harness.inj.inject("preflight_ok", True)
@@ -166,6 +177,7 @@ def test_tc_to008_low_battery_timeout_triggers_rtb(mission_fsm_sil_harness: Simp
         sens.destroy_node()
 
 
+@pytest.mark.slow
 def test_tc_to009_geofence_breach_timeout_triggers_event(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-009: violación de geofence sostenida → ABORT (cruise_to_abort incl. geofence_breach)."""
     mission_fsm_sil_harness.inj.inject("preflight_ok", True)
@@ -187,6 +199,7 @@ def test_tc_to009_geofence_breach_timeout_triggers_event(mission_fsm_sil_harness
         sens.destroy_node()
 
 
+@pytest.mark.slow
 def test_tc_to010_combined_stale_inputs_trigger_fault(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-TO-010: morada global en PREFLIGHT agota ventana → ABORT/RTB."""
     _dwell_spin(mission_fsm_sil_harness, 160)

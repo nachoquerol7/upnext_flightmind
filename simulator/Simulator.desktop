@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Flightmind Simulator
+Exec=python3 /home/ignacio-querol/upnext_uas_ws/simulator/launch_simulator.py
+Icon=/home/ignacio-querol/upnext_uas_ws/simulator/icon.png
+Type=Application
+Terminal=false

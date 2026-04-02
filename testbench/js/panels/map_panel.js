@@ -154,6 +154,7 @@ class MapPanel extends BasePanel {
     badge.style.display = "none";
     wrap.appendChild(badge);
     this.container.appendChild(wrap);
+    this._mapRoot = wrap;
     this._map = new MapPanelCanvas(c);
     this._map.waypoints = [
       { x: 60, y: 340 },
@@ -176,15 +177,15 @@ class MapPanel extends BasePanel {
       this._map.setVehicle(n, e, q);
     }
     this._map.updateViolationFromVehicle();
-    const badge = document.getElementById("nfz-violation-badge");
+    const badge = this._mapRoot && this._mapRoot.querySelector("#nfz-violation-badge");
     if (badge) {
       badge.style.display = this._map.nfzViolation ? "block" : "none";
       if (this._map.nfzViolation) {
         badge.style.animation = "nfz-pulse 0.6s ease-in-out infinite";
       }
     }
-    const qEl = document.getElementById("map-q-val");
-    const light = document.getElementById("map-q-light");
+    const qEl = this._mapRoot && this._mapRoot.querySelector("#map-q-val");
+    const light = this._mapRoot && this._mapRoot.querySelector("#map-q-light");
     if (qEl) qEl.textContent = st.quality != null ? st.quality.toFixed(2) : "—";
     if (light) {
       light.className = "map-q-light";

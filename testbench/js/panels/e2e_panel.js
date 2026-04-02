@@ -70,8 +70,7 @@ class E2EPanel extends BasePanel {
     }
   }
 
-  onMessage(topic, msg) {
-    if (this._frozen) return;
+  handleTopic(topic, msg) {
     if (topic === "/fdir/active_fault" && msg && msg.data) {
       this._pushEvent("FAULT — " + msg.data);
       this._faultFlashUntil = Date.now() + 3000;

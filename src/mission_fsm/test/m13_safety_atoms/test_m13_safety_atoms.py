@@ -42,6 +42,7 @@ def test_tc_atom_003_c2_lost_cruise_to_rtb(mission_fsm_sil_harness: SimpleNamesp
     )
 
 
+@pytest.mark.demo
 def test_tc_atom_004_geofence_breach_cruise_to_abort(mission_fsm_sil_harness: SimpleNamespace) -> None:
     _reach_cruise(mission_fsm_sil_harness)
     mission_fsm_sil_harness.inj.inject("geofence_breach", True)

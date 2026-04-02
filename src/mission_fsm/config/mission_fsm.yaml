@@ -198,6 +198,12 @@ fsm:
         all: [missed_approach_climb]
 
     - from: ABORT
+      to: LANDING
+      trigger: abort_slz_emergency_land
+      when:
+        all: [slz_available, fdir_emergency]
+
+    - from: ABORT
       to: RTB
       trigger: abort_to_rtb
       when:

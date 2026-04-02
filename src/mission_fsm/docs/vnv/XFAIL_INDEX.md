@@ -37,6 +37,14 @@
 **Responsable:** —
 **Fecha objetivo:** —
 
+## ARCH-SLZ-001 — SLZ con cámara real vs stub geométrico
+**Estado:** ABIERTO
+**Tests bloqueados:** —
+**Descripción:** SLZ requiere cámara real; en SIL se usa stub geométrico (`slz_detector` sobre `/slam/map`). La transición ABORT→LANDING con `slz_available` depende de ese pipeline hasta contar con visión operativa.
+**Impacto:** Candidatos SLZ en vuelo real no validados por la misma lógica que en SIL.
+**Responsable:** —
+**Fecha objetivo:** —
+
 ## ARCH-1.6 — Validación geofence pre-Nav2
 **Estado:** ABIERTO
 **Tests bloqueados:** TC-NAV-006, TC-FAULT-005
@@ -45,12 +53,19 @@
 **Responsable:** —
 **Fecha objetivo:** —
 
-## ARCH-1.7 — Supervisión externa (watchdog + enlaces)
-**Estado:** CERRADO (supervisión GCS/C2/batería/geocerca en nodo)
+## ARCH-1.7-FSM — Supervisión de señales en FSM (GCS/C2/batería/geofence)
+**Estado:** CERRADO
 **Fecha cierre:** 2026-04-01
-**Tests bloqueados:** TC-FDIR-007, TC-FDIR-008, TC-FDIR-016, TC-MW-001, TC-FAULT-008 *(watchdog de nodos / MW — ver paquete `fdir`)*
+**Tests bloqueados:** —
 **Descripción:** `mission_fsm_node` integra timeouts sobre `/gcs_heartbeat`, `/c2_link_status`, `/battery_state` (umbral + sostenimiento), `/geofence_breach` y Polycarp; átomos en `_inputs` antes de `step()`.
-**Nota:** Watchdog **de procesos** ROS sigue en `fdir` (`watchdog_node`); no confundir con supervisión de señales en FSM.
+**Impacto:** —
+**Responsable:** —
+**Fecha objetivo:** —
+
+## ARCH-1.7-WATCHDOG — Watchdog de procesos ROS (fdir/watchdog_node)
+**Estado:** ABIERTO
+**Tests bloqueados:** TC-FDIR-007, TC-FDIR-008, TC-MW-001, TC-FAULT-008
+**Descripción:** `watchdog_node` no implementado en `fdir`. Los tests en `m6_fdir`, `m8_middleware` y `m10_e2e_faults` que referenciaban ARCH-1.7 corresponden a este gap.
 **Impacto:** —
 **Responsable:** —
 **Fecha objetivo:** —

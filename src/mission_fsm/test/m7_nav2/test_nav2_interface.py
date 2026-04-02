@@ -17,6 +17,8 @@ if str(_MOCKS) not in sys.path:
 
 import mock_nav2  # noqa: E402
 
+pytestmark = pytest.mark.timeout(30)
+
 
 class _PathCollector(Node):
     def __init__(self) -> None:

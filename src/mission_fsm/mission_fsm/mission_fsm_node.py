@@ -11,12 +11,14 @@ Histéresis calidad (ARCH-1.1):
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from typing import Any, Callable, Dict, Optional, Tuple
 
 import rclpy
 from flightmind_msgs.msg import ACASAdvisory, FSMState
+from geometry_msgs.msg import PoseStamped
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
@@ -34,6 +36,14 @@ try:
     from ament_index_python.packages import get_package_share_directory
 except ImportError:  # pragma: no cover
     get_package_share_directory = None  # type: ignore[misc, assignment]
+
+try:
+    from px4_msgs.msg import OffboardControlMode
+
+    _HAS_PX4_OFFBOARD = True
+except ImportError:  # pragma: no cover
+    OffboardControlMode = None  # type: ignore[misc, assignment]
+    _HAS_PX4_OFFBOARD = False
 
 
 _BOOL_TOPICS: Tuple[str, ...] = (
@@ -76,6 +86,8 @@ class MissionFsmNode(Node):
         self.declare_parameter("battery_low_sustain_sec", 1.0)
         self.declare_parameter("geofence_breach_sustain_sec", 0.5)
         self.declare_parameter("event_log_dir", "")
+        self.declare_parameter("offboard_enable", False)
+        self.declare_parameter("offboard_heartbeat_hz", 10.0)
 
         cfg = self.get_parameter("config_file").get_parameter_value().string_value.strip()
         if cfg and os.path.isfile(cfg):
@@ -155,6 +167,8 @@ class MissionFsmNode(Node):
             "geofence_breach": False,
         }
         self._ext_polycarp_geofence = False
+        self._slz_last_best_mono: Optional[float] = None
+        self._slz_best_score: float = 0.0
         log_dir = self.get_parameter("event_log_dir").get_parameter_value().string_value.strip()
         self._evlog: Any = None
         if log_dir and EventLogger is not None:
@@ -183,10 +197,31 @@ class MissionFsmNode(Node):
         self.create_subscription(BatteryState, "/battery_state", self._on_battery, 10)
         self.create_subscription(Bool, "/geofence_breach", self._on_geofence_breach, 10)
 
+        self.create_subscription(PoseStamped, "/slz/best", self._on_slz_best, 10)
+        self.create_subscription(String, "/slz/status", self._on_slz_status, 10)
+
         self.create_subscription(ACASAdvisory, "/acas/advisory", self._on_acas_advisory, 10)
 
         self._fsm_heartbeat_pub = self.create_publisher(Bool, "/fsm/heartbeat", 10)
         self.create_timer(1.0, self._publish_fsm_heartbeat)
+
+        self._pub_offboard: Any = None
+        if (
+            _HAS_PX4_OFFBOARD
+            and OffboardControlMode is not None
+            and bool(self.get_parameter("offboard_enable").get_parameter_value().bool_value)
+        ):
+            self._pub_offboard = self.create_publisher(
+                OffboardControlMode, "/fmu/in/offboard_control_mode", 10
+            )
+            ob_hz = float(self.get_parameter("offboard_heartbeat_hz").get_parameter_value().double_value)
+            if ob_hz > 1e-3:
+                self.create_timer(1.0 / ob_hz, self._publish_offboard_mode)
+                self.get_logger().info("PX4 OffboardControlMode heartbeat on /fmu/in/offboard_control_mode")
+        elif bool(self.get_parameter("offboard_enable").get_parameter_value().bool_value):
+            self.get_logger().warn(
+                "offboard_enable true pero px4_msgs no disponible; sin publicación OffboardControlMode"
+            )
 
         hz = float(self.get_parameter("tick_hz").get_parameter_value().double_value)
         period = 1.0 / hz if hz > 1e-3 else 0.05
@@ -214,6 +249,23 @@ class MissionFsmNode(Node):
 
     def _publish_fsm_heartbeat(self) -> None:
         self._fsm_heartbeat_pub.publish(Bool(data=True))
+
+    def _publish_offboard_mode(self) -> None:
+        if self._pub_offboard is None or OffboardControlMode is None:
+            return
+        st = self._fsm.state
+        if st not in ("TAKEOFF", "CRUISE", "EVENT", "LANDING"):
+            return
+        msg = OffboardControlMode()
+        msg.timestamp = self.get_clock().now().nanoseconds // 1000
+        msg.position = True
+        msg.velocity = False
+        msg.acceleration = False
+        msg.attitude = False
+        msg.body_rate = False
+        msg.thrust_and_torque = False
+        msg.direct_actuator = False
+        self._pub_offboard.publish(msg)
 
     def _mk_float(self, key: str) -> Callable[[Float64], None]:
         def cb(msg: Float64) -> None:
@@ -274,6 +326,22 @@ class MissionFsmNode(Node):
 
     def _on_acas_advisory(self, msg: ACASAdvisory) -> None:
         self._acas_ra_active = bool(msg.ra_active)
+
+    def _on_slz_best(self, _msg: PoseStamped) -> None:
+        self._slz_last_best_mono = time.monotonic()
+
+    def _on_slz_status(self, msg: String) -> None:
+        try:
+            data = json.loads(msg.data)
+            if isinstance(data, dict) and "best_score" in data:
+                self._slz_best_score = float(data["best_score"])
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
+
+    def _update_slz_atoms(self, now: float) -> None:
+        age = 999.0 if self._slz_last_best_mono is None else (now - self._slz_last_best_mono)
+        self._inputs["slz_best_age_sec"] = age
+        self._inputs["slz_best_score"] = float(self._slz_best_score)
 
     def _update_supervision_atoms(self, now: float) -> None:
         gcs_to = float(self.get_parameter("gcs_heartbeat_timeout_sec").value)
@@ -337,6 +405,7 @@ class MissionFsmNode(Node):
     def _on_tick(self) -> None:
         now = time.monotonic()
         self._update_supervision_atoms(now)
+        self._update_slz_atoms(now)
 
         merged: Dict[str, Any] = dict(self._inputs)
         use_acas_abort = bool(self.get_parameter("acas_abort_from_advisory").value)

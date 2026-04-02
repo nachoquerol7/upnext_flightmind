@@ -160,15 +160,29 @@
 
       const STATE_COLORS = {
         PREFLIGHT: "#5b7f9b",
+        AUTOTAXI: "#7c9eb8",
         TAKEOFF: "#00bcd4",
         CRUISE: "#35c759",
         EVENT: "#ffcc00",
         LANDING: "#00bcd4",
+        GO_AROUND: "#ce93d8",
         RTB: "#ff9500",
         ABORT: "#ff3b30"
       };
 
-      const STATES = ["PREFLIGHT", "TAKEOFF", "CRUISE", "EVENT", "LANDING", "RTB", "ABORT"];
+      const STATES = [
+        "PREFLIGHT",
+        "AUTOTAXI",
+        "TAKEOFF",
+        "CRUISE",
+        "EVENT",
+        "LANDING",
+        "GO_AROUND",
+        "RTB",
+        "ABORT"
+      ];
+
+      const FLIGHT_ABORT_STATES = ["AUTOTAXI", "TAKEOFF", "CRUISE", "EVENT", "LANDING", "GO_AROUND", "RTB"];
 
       const chipsEl = document.getElementById("chips");
       STATES.forEach((s) => {
@@ -212,6 +226,25 @@
             { x: HOME.x, y: HOME.y }
           ];
         }
+        if (mode === "GO_AROUND") {
+          const sx = start.x;
+          const sy = start.y;
+          return [
+            { x: sx, y: sy },
+            { x: sx - 50, y: sy - 45 },
+            { x: sx + 20, y: sy - 130 },
+            { x: Math.min(Math.max(sx + 160, 520), 780), y: Math.min(sy - 40, 200) }
+          ];
+        }
+        if (mode === "FINAL") {
+          const tx = target.x;
+          const ty = target.y;
+          return [
+            { x: start.x, y: start.y },
+            { x: (start.x + tx) * 0.55 + 40, y: (start.y + ty) * 0.45 },
+            { x: tx, y: ty }
+          ];
+        }
         return BASE_PATH.map((p) => ({ x: p.x, y: p.y }));
       }
 
@@ -236,7 +269,10 @@
           replanning: false,
           replanningFrames: 0,
           replanFrom: null,
-          missionDoneAt: 0
+          missionDoneAt: 0,
+          stateSince: 0,
+          goAroundUntil: 0,
+          skipLandingRandom: false
         };
       }
 
@@ -253,8 +289,9 @@
         cancelAnimationFrame(raf);
         resetSim();
         sim.running = true;
-        sim.fsmState = "TAKEOFF";
-        sim.uas.speed = 2.2;
+        sim.fsmState = "PREFLIGHT";
+        sim.stateSince = performance.now();
+        sim.uas.speed = 0;
         raf = requestAnimationFrame(loop);
       }
 
@@ -270,7 +307,7 @@
       function sensorFault() {
         if (!sim.running) return;
         sim.sensorFaultActive = true;
-        sim.sensorFaultRecoverAt = performance.now() + 5000;
+        sim.sensorFaultRecoverAt = performance.now() + 20000;
       }
 
       function batteryCritical() {
@@ -281,24 +318,34 @@
 
       function setRoute(mode) {
         sim.routeMode = mode;
-        sim.waypoints = buildPath(mode, { x: sim.uas.x, y: sim.uas.y }, mode === "RTB" ? HOME : TARGET);
+        const end = mode === "RTB" ? HOME : TARGET;
+        sim.waypoints = buildPath(mode, { x: sim.uas.x, y: sim.uas.y }, end);
         sim.wpIndex = 1;
       }
 
       function update(dtMs) {
         if (!sim.running) return;
         const dt = dtMs / 16.67;
+        const now = performance.now();
 
         sim.battery -= (sim.batteryCriticalInjected ? 0.08 : 0.015) * dt;
         sim.battery = Math.max(0, sim.battery);
 
         if (sim.sensorFaultActive) {
-          sim.qualityFlag = Math.max(0.2, sim.qualityFlag - 0.008 * dt);
-          if (performance.now() > sim.sensorFaultRecoverAt) {
+          sim.qualityFlag = Math.max(0, sim.qualityFlag - 0.045 * dt);
+          if (now > sim.sensorFaultRecoverAt) {
             sim.sensorFaultActive = false;
           }
         } else {
           sim.qualityFlag = Math.min(1.0, sim.qualityFlag + 0.006 * dt);
+        }
+
+        if (sim.fsmState === "ABORT") {
+          sim.uas.speed = 0;
+          sim.replanning = false;
+          sim.trail.push({ x: sim.uas.x, y: sim.uas.y });
+          if (sim.trail.length > 240) sim.trail.shift();
+          return;
         }
 
         if (sim.intruder.active) {
@@ -323,13 +370,62 @@
           sim.daidalusAlert = "NONE";
         }
 
-        if (sim.battery <= 10 && sim.fsmState !== "RTB" && sim.fsmState !== "LANDING") {
+        if (
+          sim.sensorFaultActive &&
+          sim.qualityFlag < 0.2 &&
+          FLIGHT_ABORT_STATES.includes(sim.fsmState)
+        ) {
+          sim.fsmState = "ABORT";
+          sim.eventSubstate = "";
+          sim.replanning = false;
+          sim.uas.speed = 0;
+          sim.trail.push({ x: sim.uas.x, y: sim.uas.y });
+          if (sim.trail.length > 240) sim.trail.shift();
+          return;
+        }
+
+        if (sim.fsmState === "PREFLIGHT" && now - sim.stateSince >= 2000) {
+          sim.fsmState = "AUTOTAXI";
+          sim.stateSince = now;
+        } else if (sim.fsmState === "AUTOTAXI" && now - sim.stateSince >= 1500) {
+          sim.fsmState = "TAKEOFF";
+          sim.stateSince = now;
+          sim.uas.speed = 2.2;
+          if (sim.wpIndex > 2) {
+            sim.fsmState = "CRUISE";
+          }
+        }
+
+        if (sim.fsmState === "GO_AROUND" && sim.goAroundUntil > 0 && now >= sim.goAroundUntil) {
+          sim.goAroundUntil = 0;
+          sim.fsmState = "LANDING";
+          sim.skipLandingRandom = true;
+          sim.routeMode = "FINAL";
+          sim.waypoints = buildPath("FINAL", { x: sim.uas.x, y: sim.uas.y }, TARGET);
+          sim.wpIndex = 1;
+          sim.missionDoneAt = now + 2200;
+        }
+
+        if (
+          sim.battery <= 10 &&
+          sim.fsmState !== "RTB" &&
+          sim.fsmState !== "LANDING" &&
+          sim.fsmState !== "PREFLIGHT" &&
+          sim.fsmState !== "AUTOTAXI"
+        ) {
           sim.fsmState = "RTB";
           sim.eventSubstate = "";
           setRoute("RTB");
         }
 
-        if (sim.qualityFlag < 0.5 && sim.fsmState !== "RTB" && sim.fsmState !== "LANDING") {
+        if (
+          sim.qualityFlag < 0.5 &&
+          sim.fsmState !== "RTB" &&
+          sim.fsmState !== "LANDING" &&
+          sim.fsmState !== "PREFLIGHT" &&
+          sim.fsmState !== "AUTOTAXI" &&
+          sim.fsmState !== "GO_AROUND"
+        ) {
           sim.fsmState = "EVENT";
           sim.eventSubstate = "SENSOR_DEGRADED";
         } else if (sim.eventSubstate === "SENSOR_DEGRADED" && sim.qualityFlag >= 0.75) {
@@ -337,7 +433,13 @@
           sim.eventSubstate = "";
         }
 
-        if (sim.daidalusLevel >= 2 && sim.fsmState !== "RTB" && sim.fsmState !== "LANDING") {
+        if (
+          sim.daidalusLevel >= 2 &&
+          sim.fsmState !== "RTB" &&
+          sim.fsmState !== "LANDING" &&
+          sim.fsmState !== "PREFLIGHT" &&
+          sim.fsmState !== "AUTOTAXI"
+        ) {
           sim.fsmState = "EVENT";
           sim.eventSubstate = "TRAFFIC_CONFLICT";
           if (!sim.replanning && sim.routeMode !== "DETOUR") {
@@ -361,6 +463,10 @@
 
         if (sim.fsmState === "EVENT" && sim.eventSubstate === "SENSOR_DEGRADED") {
           sim.uas.speed = 0.7;
+        } else if (sim.fsmState === "PREFLIGHT") {
+          sim.uas.speed = 0;
+        } else if (sim.fsmState === "AUTOTAXI") {
+          sim.uas.speed = 0.55;
         } else if (sim.fsmState === "TAKEOFF") {
           sim.uas.speed = 2.0;
         } else if (sim.fsmState === "CRUISE") {
@@ -369,9 +475,12 @@
           sim.uas.speed = 2.1;
         } else if (sim.fsmState === "LANDING") {
           sim.uas.speed = 0.6;
+        } else if (sim.fsmState === "GO_AROUND") {
+          sim.uas.speed = 2.0;
         }
 
-        const targetWp = sim.waypoints[sim.wpIndex];
+        const grounded = sim.fsmState === "PREFLIGHT";
+        const targetWp = grounded ? null : sim.waypoints[sim.wpIndex];
         if (targetWp) {
           const dx = targetWp.x - sim.uas.x;
           const dy = targetWp.y - sim.uas.y;
@@ -384,18 +493,30 @@
           if (Math.hypot(dx, dy) < 10) {
             sim.wpIndex += 1;
             if (sim.wpIndex >= sim.waypoints.length) {
-              if (sim.fsmState === "RTB") {
+              if (sim.fsmState === "GO_AROUND") {
+                /* Espera al timer goAroundUntil; no transición aquí */
+              } else if (sim.fsmState === "RTB") {
                 sim.fsmState = "LANDING";
-                sim.missionDoneAt = performance.now() + 1200;
+                sim.missionDoneAt = now + 1200;
               } else {
-                sim.fsmState = "LANDING";
-                sim.missionDoneAt = performance.now() + 1200;
+                if (sim.skipLandingRandom) {
+                  sim.fsmState = "LANDING";
+                  sim.skipLandingRandom = false;
+                  sim.missionDoneAt = now + 1200;
+                } else if (Math.random() < 0.2) {
+                  sim.fsmState = "GO_AROUND";
+                  sim.goAroundUntil = now + 3000;
+                  setRoute("GO_AROUND");
+                } else {
+                  sim.fsmState = "LANDING";
+                  sim.missionDoneAt = now + 1200;
+                }
               }
             } else if (sim.fsmState === "TAKEOFF" && sim.wpIndex > 2) {
               sim.fsmState = "CRUISE";
             }
           }
-        } else if (sim.fsmState === "LANDING" && performance.now() > sim.missionDoneAt) {
+        } else if (sim.fsmState === "LANDING" && now > sim.missionDoneAt) {
           sim.running = false;
         }
 
@@ -470,7 +591,16 @@
         ctx.stroke();
         ctx.setLineDash([]);
 
-        ctx.strokeStyle = sim.routeMode === "DETOUR" ? "#ffae42" : sim.routeMode === "RTB" ? "#ff9500" : "#2dd4bf";
+        ctx.strokeStyle =
+          sim.routeMode === "DETOUR"
+            ? "#ffae42"
+            : sim.routeMode === "RTB"
+              ? "#ff9500"
+              : sim.routeMode === "GO_AROUND"
+                ? "#ce93d8"
+                : sim.routeMode === "FINAL"
+                  ? "#80cbc4"
+                  : "#2dd4bf";
         ctx.lineWidth = 2.2;
         ctx.beginPath();
         ctx.moveTo(sim.uas.x, sim.uas.y);

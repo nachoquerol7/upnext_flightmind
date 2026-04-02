@@ -30,6 +30,15 @@ from mission_fsm.mission_fsm_node import MissionFsmNode
 
 def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "no_ros: test estático sin grafo ROS 2")
+    config.addinivalue_line("markers", "slow: tests que arrancan nodos ROS2 reales")
+    config.addinivalue_line("markers", "tight_dwell: FSM conserva max_duration_sec del YAML (solo M2 morada)")
+    config.addinivalue_line("markers", "demo: tests incluidos en la suite de demo para el 8 de abril")
+    # Colcon sometimes picks a rootdir without package pytest.ini; enforce a ceiling on hangs.
+    if config.pluginmanager.has_plugin("timeout"):
+        to = getattr(config.option, "timeout", None)
+        # pytest-timeout: None if unset; 0 disables — only apply a default when unset.
+        if to is None:
+            config.option.timeout = 30
 
 
 class _FsmModeCapture(Node):
@@ -108,7 +117,7 @@ def fsm_params(yaml_config: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @pytest.fixture
-def mission_fsm_sil_harness(ros_context: None) -> Generator[SimpleNamespace, None, None]:
+def mission_fsm_sil_harness(ros_context: None, request: pytest.FixtureRequest) -> Generator[SimpleNamespace, None, None]:
     """mission_fsm_node + FsmInputInjector + captura de /fsm/current_mode y /fsm/active_trigger."""
     ex = MultiThreadedExecutor()
     fsm = MissionFsmNode()
@@ -117,6 +126,9 @@ def mission_fsm_sil_harness(ros_context: None) -> Generator[SimpleNamespace, Non
     ex.add_node(fsm)
     ex.add_node(inj)
     ex.add_node(cap)
+    if not request.node.get_closest_marker("tight_dwell"):
+        for k in fsm._fsm._max_duration_by_state:  # noqa: SLF001
+            fsm._fsm._max_duration_by_state[k] = 3600.0  # noqa: SLF001
     # Reset deterministic start to avoid transient-local latched samples from previous tests.
     fsm._fsm.reset("PREFLIGHT")  # noqa: SLF001
     fsm._inputs = default_inputs()  # noqa: SLF001

@@ -25,6 +25,8 @@ _VTOL = _CFG / "mission_fsm_vtol.yaml"
 _HELI = _CFG / "mission_fsm_heli.yaml"
 _MALE = _CFG / "mission_fsm_male.yaml"
 
+pytestmark = pytest.mark.slow
+
 
 def _fsm() -> MissionFsm:
     return mission_fsm_from_path(str(_MISSION))

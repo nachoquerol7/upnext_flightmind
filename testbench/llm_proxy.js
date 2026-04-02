@@ -20,25 +20,39 @@ if (!API_KEY) {
 }
 
 const SNAPSHOT_PATH = path.join(__dirname, "docs", "LLM_REQUIREMENTS_SNAPSHOT.md");
+const RVM_CSV_PATH = path.join(__dirname, "..", "docs", "vnv", "REQUIREMENTS_VERIFICATION_MATRIX.csv");
 let requirementsSnapshot = "";
+let requirementsMatrixCsv = "";
 try {
   requirementsSnapshot = fs.readFileSync(SNAPSHOT_PATH, "utf8");
   console.log(`[LLM Proxy] Requisitos cargados: ${SNAPSHOT_PATH} (${requirementsSnapshot.length} chars)`);
 } catch (e) {
   console.warn("[LLM Proxy] AVISO: no se pudo leer LLM_REQUIREMENTS_SNAPSHOT.md:", e.message);
 }
+try {
+  requirementsMatrixCsv = fs.readFileSync(RVM_CSV_PATH, "utf8");
+  console.log(`[LLM Proxy] Matriz V&V cargada: ${RVM_CSV_PATH} (${requirementsMatrixCsv.length} chars)`);
+} catch (e) {
+  console.warn("[LLM Proxy] AVISO: no se pudo leer REQUIREMENTS_VERIFICATION_MATRIX.csv:", e.message);
+}
 
 const SYSTEM_BASE = `Eres un ingeniero experto en V&V de sistemas UAS autónomos analizando el stack FlightMind en tiempo real.
 El sistema tiene: Mission FSM (9 estados), GPP (Informed-RRT* + Dubins), FDIR (4 detectores), DAIDALUS (DAA), ACAS Xu.
 Responde en español. Sé conciso (máx 3 frases). Enfócate en si el comportamiento es correcto y qué significa para el evaluador.
-Debes cruzar observaciones del testbench con los requisitos UpNext (SR/R) del snapshot siguiente cuando sea relevante.`;
+Debes cruzar observaciones del testbench con los requisitos UpNext (SR/R) del snapshot siguiente cuando sea relevante.
+Si un test TC o un fallo del testbench encaja con filas de la matriz CSV (mismo Test_File, Verification_Method o subsistema), indica el Req_ID y una frase del Description (ej.: «Este fallo afecta al requisito DAA-045: …»). Si Status es GAP o PARTIAL con (ARCH-…), menciónalo.`;
 
 function buildSystemPrompt() {
-  if (!requirementsSnapshot.trim()) return SYSTEM_BASE;
-  return `${SYSTEM_BASE}
-
---- SNAPSHOT REQUISITOS UPNEXT (certificación; prioridad sobre suposiciones) ---
-${requirementsSnapshot}`;
+  const parts = [SYSTEM_BASE];
+  if (requirementsSnapshot.trim()) {
+    parts.push(`--- SNAPSHOT REQUISITOS UPNEXT (certificación; prioridad sobre suposiciones) ---\n${requirementsSnapshot}`);
+  }
+  if (requirementsMatrixCsv.trim()) {
+    parts.push(
+      `--- MATRIZ DE TRAZABILIDAD Req ↔ implementación ↔ test (REQUIREMENTS_VERIFICATION_MATRIX.csv) ---\n${requirementsMatrixCsv}`,
+    );
+  }
+  return parts.join("\n\n");
 }
 
 console.log(`[LLM Proxy] Arrancado en http://localhost:${PORT}`);

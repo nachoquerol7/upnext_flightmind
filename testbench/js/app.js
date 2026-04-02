@@ -9,8 +9,8 @@
   let activeModuleId = "M1";
   /** @type {import('./tc_runner').TestCase | null} */
   let activeTc = null;
-  /** @type {BasePanel | null} */
-  let activePanel = null;
+  /** @type {DashboardManager | null} */
+  let dashboardMgr = null;
   /** @type {TCDescriptionPanel | null} */
   let tcDescPanel = null;
   /** @type {ResultsPanel | null} */
@@ -61,31 +61,23 @@
     return d.innerHTML;
   }
 
-  function panelClassForTcId(tcId) {
-    const def = window.getTcDefinition && window.getTcDefinition(tcId);
+  function panelIdsForTc(tc) {
+    const def = tc && (tc.definition || (window.getTcDefinition && window.getTcDefinition(tc.id)));
+    if (def && Array.isArray(def.required_panels) && def.required_panels.length > 0) {
+      return def.required_panels.slice();
+    }
     const name = (def && def.panel) || "FsmGraphPanel";
-    const Ctor = window[name];
-    return Ctor || window.FsmGraphPanel;
+    return [name];
   }
 
-  function mountPanelForActiveTc() {
-    const root = document.getElementById("main-display");
-    if (!root) return;
-    if (activePanel) {
-      try {
-        activePanel.unmount();
-      } catch (e) {
-        console.error(e);
-      }
-      activePanel = null;
-    }
-    root.innerHTML = "";
-    const tcId = activeTc ? activeTc.id : null;
-    const Ctor = panelClassForTcId(tcId || "TC-FSM-001");
-    activePanel = new Ctor(root, bridge);
-    activePanel.mount();
-    activePanel.onTCStart(activeTc);
-    activePanel.syncFromState(state);
+  function mountDashboardForActiveTc() {
+    if (!bridge) return;
+    if (!dashboardMgr) dashboardMgr = new DashboardManager(bridge);
+    else dashboardMgr.setBridge(bridge);
+    const ids = panelIdsForTc(activeTc);
+    dashboardMgr.loadLayout(ids, activeTc);
+    dashboardMgr.syncFromState(state);
+    if (bridge.connected) dashboardMgr.flushAllPanelRosSubscriptions();
   }
 
   function getModule(mid) {
@@ -106,23 +98,26 @@
   let _prevFsmMode = "";
 
   function wireRos() {
-    bridge = new RosBridge("ws://localhost:9090");
-    runner = new TCRunner(bridge, logLine);
+    if (!bridge) {
+      bridge = new RosBridge();
+      runner = new TCRunner(bridge, logLine);
+    }
     bridge.on_status((s) => {
       logLine("rosbridge: " + s);
       setConnUi(bridge.connected);
       if (s === "connected" && !_subsArmed) {
         subscribeAll();
         _subsArmed = true;
+        if (dashboardMgr) dashboardMgr.flushAllPanelRosSubscriptions();
       }
     });
     bridge.connect();
   }
 
   function dispatchPanel(topic, msg) {
-    if (activePanel && typeof activePanel.onMessage === "function") {
+    if (dashboardMgr) {
       try {
-        activePanel.onMessage(topic, msg);
+        dashboardMgr.broadcast(topic, msg);
       } catch (e) {
         console.error(e);
       }
@@ -207,9 +202,9 @@ Veredicto automático: (evaluación en curso en el panel de resultados).
   }
 
   function tick() {
-    if (activePanel && typeof activePanel.syncFromState === "function") {
+    if (dashboardMgr) {
       try {
-        activePanel.syncFromState(state);
+        dashboardMgr.syncFromState(state);
       } catch (e) {
         console.error(e);
       }
@@ -244,7 +239,7 @@ Veredicto automático: (evaluación en curso en el panel de resultados).
           activeModuleId = mod.id;
           document.querySelectorAll(".module-block").forEach((b) => b.classList.remove("open"));
           block.classList.add("open");
-          mountPanelForActiveTc();
+          mountDashboardForActiveTc();
           if (tcDescPanel) tcDescPanel.show(tc);
           TelemetryPanel.updateTcSummary(tc);
           const last = tcResults.get(tc.id);
@@ -330,13 +325,13 @@ Veredicto automático: (evaluación en curso en el panel de resultados).
     if (!activeTc || !bridge.connected || executionBusy) return;
     executionBusy = true;
     try {
-      if (activePanel) activePanel.onTCStart(activeTc);
+      if (dashboardMgr) dashboardMgr.forEachPanel((p) => p.onTCStart(activeTc));
       setBadge(activeTc.id, "run");
       logLine(`BEGIN ${activeTc.id} ${activeTc.name || activeTc.title || ""}`);
       const res = await runner.run(activeTc);
       logLine(`END ${activeTc.id} → ${res.pass ? "PASS" : "FAIL"} (${res.detail})`);
       const { def } = applyRunResult(activeTc, res, true);
-      if (activePanel) activePanel.onTCEnd(res);
+      if (dashboardMgr) dashboardMgr.forEachPanel((p) => p.onTCEnd(res));
 
       if (llmAnalyst && llmAnalyst.enabled) {
         const verdict = res.pass ? "PASS" : "FAIL";
@@ -427,7 +422,7 @@ Respuesta del runner: ${verdict}. Detalle: ${res.detail || "—"}.
         const idx = i + 1;
         setBadge(tc.id, "run");
         logLine(`Executing ${mod.id}... [${idx}/${total}] ${tc.id}`);
-        if (activePanel && tc.id === activeTc.id) activePanel.onTCStart(tc);
+        if (dashboardMgr && tc.id === activeTc.id) dashboardMgr.forEachPanel((p) => p.onTCStart(tc));
         const res = await runner.run(tc);
         const def = tc.definition || tcDef(tc.id);
         const isXfail = Boolean(def && def.xfail && !res.pass);
@@ -437,7 +432,7 @@ Respuesta del runner: ${verdict}. Detalle: ${res.detail || "—"}.
         else failed += 1;
         applyRunResult(tc, res, true);
         logLine(`Executing ${mod.id}... [${idx}/${total}] ${tc.id} ${verdict} (${Math.round(res.durationMs || 0)}ms)`);
-        if (activePanel && tc.id === activeTc.id) activePanel.onTCEnd(res);
+        if (dashboardMgr && tc.id === activeTc.id) dashboardMgr.forEachPanel((p) => p.onTCEnd(res));
         await new Promise((r) => setTimeout(r, 500));
       }
     } finally {
@@ -460,9 +455,11 @@ Dame un resumen ejecutivo de 2 frases del estado de este subsistema.`,
     });
     tcResults.clear();
     if (resultsPanel) resultsPanel.clear();
-    if (activePanel && typeof activePanel.clearVerdict === "function") {
-      activePanel.clearVerdict();
-      activePanel.onTCStart(activeTc);
+    if (dashboardMgr) {
+      dashboardMgr.forEachPanel((p) => {
+        if (typeof p.clearVerdict === "function") p.clearVerdict();
+        p.onTCStart(activeTc);
+      });
     }
   }
 
@@ -522,7 +519,9 @@ Dame un resumen ejecutivo de 2 frases del estado de este subsistema.`,
       tcDescPanel.show(firstTc);
       TelemetryPanel.updateTcSummary(firstTc);
     }
-    mountPanelForActiveTc();
+    bridge = new RosBridge();
+    runner = new TCRunner(bridge, logLine);
+    mountDashboardForActiveTc();
     wireRos();
     document.getElementById("btn-run").addEventListener("click", runTc);
     document.getElementById("btn-run-all")?.addEventListener("click", runAllModule);

@@ -67,6 +67,7 @@ def test_tc_dai_003_alert_high_enters_event(mission_fsm_sil_with_daidalus: Simpl
     assert mission_fsm_sil_with_daidalus.wait_mode("EVENT")
 
 
+@pytest.mark.demo
 def test_tc_dai_004_alert_near_fast_path_without_hysteresis(mission_fsm_sil_with_daidalus: SimpleNamespace) -> None:
     _reach_cruise(mission_fsm_sil_with_daidalus)
     mission_fsm_sil_with_daidalus.daidalus.inject("alert_level", 3)
@@ -113,6 +114,7 @@ def test_tc_dai_007_advisory_topic_is_published(ros_context: None) -> None:
     assert len(sub.msgs) >= 1
 
 
+@pytest.mark.slow
 def test_tc_dai_008_daidalus_feed_timeout_raises_fault(mission_fsm_sil_with_daidalus: SimpleNamespace) -> None:
     _reach_cruise(mission_fsm_sil_with_daidalus)
     mission_fsm_sil_with_daidalus.daidalus.inject("fsm_feed_enabled", False)
@@ -122,6 +124,7 @@ def test_tc_dai_008_daidalus_feed_timeout_raises_fault(mission_fsm_sil_with_daid
     )
 
 
+@pytest.mark.slow
 @pytest.mark.xfail(reason="advisory integration to guidance not implemented", strict=True)
 def test_tc_dai_009_advisory_vector_applied_to_guidance(mission_fsm_sil_with_daidalus: SimpleNamespace) -> None:
     _reach_cruise(mission_fsm_sil_with_daidalus)

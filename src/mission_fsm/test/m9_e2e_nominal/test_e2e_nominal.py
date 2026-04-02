@@ -76,11 +76,14 @@ def e2e_runtime(mission_fsm_sil_harness: SimpleNamespace) -> SimpleNamespace:
         n.destroy_node()
 
 
+@pytest.mark.slow
 def test_tc_e2e_001_nominal_mission_reaches_cruise(e2e_runtime: SimpleNamespace) -> None:
     _reach_cruise(e2e_runtime)
     assert e2e_runtime.fsm_state_sub.msgs and e2e_runtime.fsm_state_sub.msgs[-1].current_mode == "CRUISE"
 
 
+@pytest.mark.demo
+@pytest.mark.slow
 def test_tc_e2e_002_nominal_landing_path(e2e_runtime: SimpleNamespace) -> None:
     _reach_cruise(e2e_runtime)
     e2e_runtime.inj.inject("land_command", True)
@@ -115,6 +118,7 @@ def test_tc_e2e_006_repeated_nominal_transition_stability(e2e_runtime: SimpleNam
     assert e2e_runtime.cap.mode == "CRUISE"
 
 
+@pytest.mark.slow
 def test_tc_e2e_007_memory_growth_under_10mb_across_5_missions(e2e_runtime: SimpleNamespace) -> None:
     psutil = pytest.importorskip("psutil")
     proc = psutil.Process(os.getpid())
@@ -131,6 +135,7 @@ def test_tc_e2e_007_memory_growth_under_10mb_across_5_missions(e2e_runtime: Simp
     assert (rss1 - rss0) < (10 * 1024 * 1024)
 
 
+@pytest.mark.slow
 def test_tc_e2e_008_fsm_state_contract_used_in_e2e(e2e_runtime: SimpleNamespace) -> None:
     _reach_cruise(e2e_runtime)
     _spin(e2e_runtime.ex, 40)

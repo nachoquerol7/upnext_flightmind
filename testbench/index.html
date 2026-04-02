@@ -8,7 +8,7 @@
 </head>
 <body>
   <div id="conn-status">
-    <span class="dot"></span>
+    <span id="connection-indicator" aria-hidden="true"></span>
     <span class="txt">ROS2 disconnected</span>
   </div>
 
@@ -49,9 +49,12 @@
   <script src="js/displays/fdir_tree.js"></script>
   <script src="js/displays/fault_tree.js"></script>
   <script src="js/panels/base_panel.js"></script>
+  <script src="js/DashboardManager.js"></script>
   <script src="js/panels/fsm_graph_panel.js"></script>
   <script src="js/panels/map_panel.js"></script>
   <script src="js/panels/radar_panel.js"></script>
+  <script src="js/panels/hysteresis_panel.js"></script>
+  <script src="js/panels/gpp_rrt_panel.js"></script>
   <script src="js/panels/latency_panel.js"></script>
   <script src="js/panels/watchdog_panel.js"></script>
   <script src="js/panels/e2e_panel.js"></script>

@@ -1,6 +1,9 @@
 # UpNext UAS workspace
 
 [![FlightMind CI](https://github.com/nachoquerol7/upnext_flightmind/actions/workflows/ci.yml/badge.svg)](https://github.com/nachoquerol7/upnext_flightmind/actions/workflows/ci.yml)
+[![SIL V&V](https://github.com/nachoquerol7/upnext_flightmind/actions/workflows/sil_vnv.yml/badge.svg)](https://github.com/nachoquerol7/upnext_flightmind/actions/workflows/sil_vnv.yml)
+
+CI SIL / testbench (XFAIL vs FAIL, artifacts, repro local): **`docs/ci/CI_SETUP.md`**.
 
 Workspace personal para el hilo **UpNext**: simulación y stack de autonomía con **PX4** como autopiloto. La navegación GNSS-denied y el resto de perception quedan **fuera de alcance** hasta que se vuelvan a priorizar.
 
@@ -62,8 +65,72 @@ Requisito: ROS 2 **Jazzy** (o la distro que uséis en el equipo).
 cd /path/to/upnext_uas_ws
 source /opt/ros/jazzy/setup.bash
 source ~/ros2_ws/install/setup.bash   # px4_msgs
+# Si compilas rosbridge desde src/: sudo apt install ros-jazzy-ament-cmake-mypy
+# (también en scripts/install_deps_phase0.sh). Para el testbench suele bastar:
+# colcon build --symlink-install --packages-up-to mission_fsm
 colcon build --symlink-install
 source install/setup.bash
+```
+
+### Tests (`colcon test`)
+
+Antes de ejecutar tests que importan **`px4_msgs`** (p. ej. `navigation_bridge`), hay que hacer **`source`** del **`install/setup.bash` del workspace donde está compilado `px4_msgs`** (underlay), **antes** del `source install/setup.bash` de `upnext_uas_ws`.
+
+**Localizar `px4_msgs` en tu máquina** (ThinkPad u otro):
+
+```bash
+# Árboles habituales
+find ~/install ~/px4-flightmind -name "px4_msgs" -type d 2>/dev/null
+# Layout “merge-install” (share a nivel install/)
+find ~ -path "*/install/share/px4_msgs" -type d 2>/dev/null | head -5
+# Layout por paquete (install/px4_msgs/share/px4_msgs)
+find ~ -path "*/install/px4_msgs/share/px4_msgs" -type d 2>/dev/null | head -5
+```
+
+El **`source`** debe apuntar al **`install` padre** de ese `share` (el que contiene `setup.bash`). Ejemplos:
+
+| Si encuentras… | Entonces |
+|------------------|----------|
+| `…/some_ws/install/share/px4_msgs` | `source …/some_ws/install/setup.bash` |
+| `…/some_ws/install/px4_msgs/share/px4_msgs` | `source …/some_ws/install/setup.bash` (mismo prefijo `install/`) |
+
+En el **home de este proyecto tal como está en el entorno de desarrollo**, `~/install` y `~/px4-flightmind/...` **no** contienen `px4_msgs`; el paquete instalado aparece bajo el ws archivado:
+
+- **Ruta:** `~/archive_repos/ros2_ws/src/install/px4_msgs/share/px4_msgs`
+- **`source` del underlay:** `source ~/archive_repos/ros2_ws/src/install/setup.bash`
+
+En **tu ThinkPad**, si `px4_msgs` sí está en `~/install`, basta `source ~/install/setup.bash`; confírmalo con el `find` de arriba.
+
+```bash
+cd ~/upnext_uas_ws
+# Orden: ROS distro → underlay con px4_msgs → overlay upnext_uas_ws
+source /opt/ros/jazzy/setup.bash
+source ~/install/setup.bash 2>/dev/null || true   # sustituye por el setup.bash donde tú tengas px4_msgs
+# ejemplo si usas el ws archivado de este entorno:
+# source ~/archive_repos/ros2_ws/src/install/setup.bash
+source ~/upnext_uas_ws/install/setup.bash
+
+colcon test --packages-select mission_fsm gpp navigation_bridge acas_node fdir \
+  --event-handlers console_direct+ --executor sequential
+colcon test-result --verbose
+```
+
+**Solo `navigation_bridge`** (mismo orden de `source` que arriba; underlay = donde esté `px4_msgs`):
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/install/setup.bash   # o: source ~/archive_repos/ros2_ws/src/install/setup.bash
+source ~/upnext_uas_ws/install/setup.bash
+colcon test --packages-select navigation_bridge --event-handlers console_direct+
+```
+
+**Revisar / repetir `mission_fsm`:** `colcon test-result` **no** tiene `--packages-select`; usa `colcon test-result --verbose` y, si hace falta, inspecciona `build/mission_fsm/test_results/` o `log/latest_test/mission_fsm/`. Para re-lanzar solo ese paquete:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/install/setup.bash   # o el underlay real de px4_msgs
+source ~/upnext_uas_ws/install/setup.bash
+colcon test --packages-select mission_fsm --event-handlers console_direct+ --executor sequential
 ```
 
 ### ICAROUS + PX4 (DAIDALUS en bucle)

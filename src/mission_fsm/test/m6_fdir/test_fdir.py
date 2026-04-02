@@ -117,13 +117,13 @@ def test_tc_fdir_006_reset_emergency_topic_is_received(fdir_runtime: SimpleNames
     assert True in fdir_runtime.fdir.get_received("/fdir/reset_emergency")
 
 
-@pytest.mark.xfail(reason="XFAIL-ARCH-1.7: watchdog node not implemented", strict=True)
+@pytest.mark.xfail(reason="XFAIL-ARCH-1.7-WATCHDOG: watchdog_node not implemented", strict=True)
 def test_tc_fdir_007_watchdog_detects_fsm_drop() -> None:
     # GAP-ARCH-1.7: no /watchdog/status producer in stack.
     assert False
 
 
-@pytest.mark.xfail(reason="XFAIL-ARCH-1.7: watchdog node not implemented", strict=True)
+@pytest.mark.xfail(reason="XFAIL-ARCH-1.7-WATCHDOG: watchdog_node not implemented", strict=True)
 def test_tc_fdir_008_watchdog_detects_fdir_drop() -> None:
     # GAP-ARCH-1.7: no /watchdog/safe_mode producer in stack.
     assert False
@@ -146,6 +146,7 @@ def test_tc_fdir_010_fault_list_accepts_single_fault_as_array(fdir_runtime: Simp
     assert json.loads(sub.values[-1]) == ["baro_fault"]
 
 
+@pytest.mark.slow
 def test_tc_fdir_011_status_heartbeat_periodic_updates(fdir_runtime: SimpleNamespace) -> None:
     sub = _StringCollector("/fdir/status")
     fdir_runtime.ex.add_node(sub)
@@ -179,6 +180,7 @@ def test_tc_fdir_013_reset_false_does_not_clear_emergency(fdir_runtime: SimpleNa
     assert sub.values[-1] is True
 
 
+@pytest.mark.slow
 def test_tc_fdir_014_emergency_publication_latency_p99_below_500ms(fdir_runtime: SimpleNamespace) -> None:
     """20 repeticiones; P99 medido con time.monotonic()."""
     sub = _BoolCollector("/fdir/emergency")
@@ -207,7 +209,7 @@ def test_tc_fdir_015_invalid_inject_key_raises_keyerror(fdir_runtime: SimpleName
 def test_tc_fdir_016_watchdog_file_under_100_lines() -> None:
     watchdog = Path(__file__).resolve().parents[2] / "mission_fsm" / "watchdog_node.py"
     if not watchdog.exists():
-        pytest.xfail("XFAIL-ARCH-1.7: watchdog node file missing")
+        pytest.xfail("XFAIL-ARCH-1.7-WATCHDOG: watchdog_node not implemented")
     out = subprocess.run(["wc", "-l", str(watchdog)], check=True, capture_output=True, text=True)
     n_lines = int(out.stdout.strip().split()[0])
     assert n_lines < 100

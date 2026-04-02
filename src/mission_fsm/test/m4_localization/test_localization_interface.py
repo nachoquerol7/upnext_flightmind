@@ -25,7 +25,15 @@ if str(_MOCKS) not in sys.path:
 import fsm_input_injector  # noqa: E402
 import mock_fastlio2  # noqa: E402
 
+from mission_fsm.fsm import default_inputs
 from mission_fsm.mission_fsm_node import MissionFsmNode
+
+
+def _sil_relax_state_dwell_unless_tight(fsm: MissionFsmNode, request: pytest.FixtureRequest) -> None:
+    if request.node.get_closest_marker("tight_dwell"):
+        return
+    for k in fsm._fsm._max_duration_by_state:  # noqa: SLF001
+        fsm._fsm._max_duration_by_state[k] = 3600.0  # noqa: SLF001
 
 
 class _FsmModeCapture(Node):
@@ -82,7 +90,7 @@ def _spin_n(ex: MultiThreadedExecutor, n: int) -> None:
 
 
 @pytest.fixture
-def mission_fsm_sil_with_fastlio(ros_context: None) -> SimpleNamespace:
+def mission_fsm_sil_with_fastlio(ros_context: None, request: pytest.FixtureRequest) -> SimpleNamespace:
     """Reusa patrón M1: FSM + inyector + captura + mock FastLIO2."""
     ex = MultiThreadedExecutor()
     fsm = MissionFsmNode()
@@ -91,6 +99,15 @@ def mission_fsm_sil_with_fastlio(ros_context: None) -> SimpleNamespace:
     lio = mock_fastlio2.create_mock_fastlio2()
     for n in (fsm, inj, cap, lio):
         ex.add_node(n)
+    # Dejar que timers/suscripciones del nodo terminen de arrancar antes de tocar límites de morada.
+    _spin_n(ex, 30)
+    _sil_relax_state_dwell_unless_tight(fsm, request)
+    fsm._fsm.reset("PREFLIGHT")  # noqa: SLF001
+    fsm._inputs = default_inputs()  # noqa: SLF001
+    _spin_until(ex, lambda: fsm._fsm.state == "PREFLIGHT", timeout_sec=3.0)
+    cap.mode = fsm._fsm.state
+    cap.trig = ""
+    cap.triggers.clear()
 
     def wait_mode(expected: str, *, timeout_sec: float = 3.0) -> bool:
         def _match() -> bool:

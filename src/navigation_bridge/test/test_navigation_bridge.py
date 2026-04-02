@@ -118,10 +118,13 @@ def test_tc_nav_bridge_003_quality_zero_when_odom_stale(ros_context, odom_qos) -
         publisher.publish(VehicleOdometry())
         assert _spin_until(ex, lambda: len(samples) > 0 and samples[-1] >= 1.0, timeout_sec=2.0)
 
-        deadline = time.monotonic() + 1.15
+        # Dejar pasar >1 s de reloj real: el bridge usa time.monotonic() en _tick.
+        time.sleep(1.15)
+
+        deadline = time.monotonic() + 2.0
         saw_zero = False
         while time.monotonic() < deadline:
-            ex.spin_once(timeout_sec=0.05)
+            ex.spin_once(timeout_sec=0.02)
             if samples and samples[-1] == 0.0:
                 saw_zero = True
                 break

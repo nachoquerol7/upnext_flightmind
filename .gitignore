@@ -22,3 +22,6 @@ testbench/.env
 
 # ICAROUS build tree (sources stay in submodule + UpdateModules)
 third_party/icarous/Modules/build/
+
+# Generated documentation PDFs (see docs/build_docs.sh; docs/.gitignore_docs)
+dist/

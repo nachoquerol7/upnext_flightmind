@@ -49,8 +49,7 @@ class LatencyPanel extends BasePanel {
     this._hist = [];
   }
 
-  onMessage(topic, msg) {
-    if (this._frozen) return;
+  handleTopic(topic, msg) {
     const now = performance.now();
     const prev = this._lastArrival[topic];
     this._lastArrival[topic] = now;

@@ -27,8 +27,8 @@ def _yaw_to_quat(yaw: float) -> Quaternion:
 
 
 class GppNode(Node):
-    def __init__(self) -> None:
-        super().__init__("gpp_node")
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__("gpp_node", **kwargs)
         self.declare_parameter("base_margin_m", 0.0)
         self.declare_parameter("turn_radius_min_m", 600.0)
         self.declare_parameter("vr_mps", 28.0)

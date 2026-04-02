@@ -45,17 +45,20 @@ def faults_runtime(mission_fsm_sil_harness: SimpleNamespace) -> SimpleNamespace:
         n.destroy_node()
 
 
+@pytest.mark.timeout(10)
 @pytest.mark.xfail(reason="XFAIL-ARCH-1.9: interruption waypoint persistence missing", strict=True)
 def test_tc_fault_001_resume_from_saved_waypoint() -> None:
     assert False
 
 
+@pytest.mark.slow
 def test_tc_fault_002_quality_drop_forces_event(faults_runtime: SimpleNamespace) -> None:
     _reach_cruise(faults_runtime)
     faults_runtime.inj.inject("quality_flag", 0.1)
     assert faults_runtime.wait_mode("EVENT")
 
 
+@pytest.mark.slow
 def test_tc_fault_003_daidalus_escalation_forces_event(faults_runtime: SimpleNamespace) -> None:
     _reach_cruise(faults_runtime)
     faults_runtime.daidalus.inject("alert_level", 2)
@@ -68,6 +71,7 @@ def test_tc_fault_004_fdir_emergency_forces_abort_path(faults_runtime: SimpleNam
     assert faults_runtime.wait_mode("RTB")
 
 
+@pytest.mark.timeout(10)
 @pytest.mark.xfail(reason="XFAIL-ARCH-1.6: RTB->ABORT battery cascade transition missing", strict=True)
 def test_tc_fault_005_rtb_to_abort_on_battery_cascade() -> None:
     p = Path(__file__).resolve().parents[2] / "config" / "mission_fsm.yaml"
@@ -76,6 +80,7 @@ def test_tc_fault_005_rtb_to_abort_on_battery_cascade() -> None:
     assert any(t["from"] == "RTB" and t["to"] == "ABORT" for t in trans)
 
 
+@pytest.mark.slow
 def test_tc_fault_006_event_to_abort_on_fdir_emergency(faults_runtime: SimpleNamespace) -> None:
     _reach_cruise(faults_runtime)
     faults_runtime.inj.inject("quality_flag", 0.1)
@@ -92,11 +97,13 @@ def test_tc_fault_007_event_to_rtb_command_path(faults_runtime: SimpleNamespace)
     assert faults_runtime.wait_mode("RTB")
 
 
-@pytest.mark.xfail(reason="XFAIL-ARCH-1.7: watchdog node not implemented", strict=True)
+@pytest.mark.timeout(10)
+@pytest.mark.xfail(reason="XFAIL-ARCH-1.7-WATCHDOG: watchdog_node not implemented", strict=True)
 def test_tc_fault_008_fdir_drop_detected_by_watchdog() -> None:
     assert False
 
 
+@pytest.mark.slow
 def test_tc_fault_009_recover_event_to_cruise(faults_runtime: SimpleNamespace) -> None:
     _reach_cruise(faults_runtime)
     faults_runtime.inj.inject("quality_flag", 0.1)
@@ -106,6 +113,7 @@ def test_tc_fault_009_recover_event_to_cruise(faults_runtime: SimpleNamespace) -
     assert faults_runtime.wait_mode("CRUISE")
 
 
+@pytest.mark.slow
 def test_tc_fault_010_landing_go_around_reentry(faults_runtime: SimpleNamespace) -> None:
     _reach_cruise(faults_runtime)
     faults_runtime.inj.inject("land_command", True)
@@ -114,12 +122,14 @@ def test_tc_fault_010_landing_go_around_reentry(faults_runtime: SimpleNamespace)
     assert faults_runtime.wait_mode("GO_AROUND")
 
 
+@pytest.mark.slow
 def test_tc_fault_011_abort_to_rtb_path(faults_runtime: SimpleNamespace) -> None:
     _reach_cruise(faults_runtime)
     faults_runtime.inj.inject("abort_command", True)
     assert faults_runtime.wait_mode("RTB")
 
 
+@pytest.mark.timeout(10)
 @pytest.mark.xfail(reason="FDIR severity table not implemented", strict=True)
 def test_tc_fault_012_fault_severity_cascade_table_exists() -> None:
     assert Path(__file__).resolve().parents[2].joinpath("config", "fdir_severity_table.yaml").exists()

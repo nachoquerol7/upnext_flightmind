@@ -1,5 +1,5 @@
 /**
- * DAIDALUS: PPI + bandas 360° (M5).
+ * DAIDALUS: PPI + bandas 360° (M5/M6). Suscripción a /daidalus/alert_level vía BasePanel.
  */
 class RadarPanel extends BasePanel {
   mount() {
@@ -8,34 +8,53 @@ class RadarPanel extends BasePanel {
     wrap.className = "radar-panel-grid";
     wrap.innerHTML = `
       <div class="radar-ppi-wrap">
-        <div class="radar-dist" id="radar-dist">Dist. horizontal: — m</div>
-        <canvas id="radar-ppi" width="360" height="360" class="map-canvas"></canvas>
+        <div class="radar-dist radar-dist-label">Dist. horizontal: — m</div>
+        <canvas width="360" height="360" class="map-canvas radar-ppi-canvas"></canvas>
       </div>
       <div class="radar-hdg-wrap">
-        <canvas id="radar-hdg" width="320" height="320" class="map-canvas"></canvas>
-        <div id="radar-alert-badge" class="radar-alert-badge">NONE</div>
+        <canvas width="320" height="320" class="map-canvas radar-hdg-canvas"></canvas>
+        <div class="radar-alert-badge radar-alert-badge-el">NONE</div>
       </div>
     `;
     this.container.appendChild(wrap);
-    this._ppi = document.getElementById("radar-ppi");
-    this._hdg = document.getElementById("radar-hdg");
+    this._wrap = wrap;
+    this._ppi = wrap.querySelector(".radar-ppi-canvas");
+    this._hdg = wrap.querySelector(".radar-hdg-canvas");
+    this._distLabel = wrap.querySelector(".radar-dist-label");
+    this._badgeEl = wrap.querySelector(".radar-alert-badge-el");
     this._level = 0;
     this._distM = 420;
+    this.subscribeRos("/daidalus/alert_level", "std_msgs/Int32", (msg) => {
+      this._level = msg.data != null ? parseInt(msg.data, 10) : 0;
+      this._paint();
+    });
+  }
+
+  handleTopic(topic, msg) {
+    if (topic === "/daidalus/alert_level" && msg && msg.data != null) {
+      this._level = parseInt(msg.data, 10);
+      this._paint();
+    }
   }
 
   syncFromState(st) {
     if (this._frozen) return;
-    const level = st.daidalusLevel != null ? st.daidalusLevel : 0;
+    const level = st.daidalusLevel != null ? st.daidalusLevel : this._level;
     this._level = level;
+    this._paint();
+  }
+
+  _paint() {
+    const level = this._level;
     const names = ["NONE", "FAR", "MID", "NEAR", "COLLISION"];
-    const badge = document.getElementById("radar-alert-badge");
-    if (badge) {
+    if (this._badgeEl) {
       const label = names[level] || String(level);
-      badge.textContent = label;
-      badge.className = "radar-alert-badge lvl-" + level;
+      this._badgeEl.textContent = label;
+      this._badgeEl.className = "radar-alert-badge radar-alert-badge-el lvl-" + level;
     }
-    const distEl = document.getElementById("radar-dist");
-    if (distEl) distEl.textContent = "Dist. horizontal intruso: ~" + this._distM + " m (sintético)";
+    if (this._distLabel) {
+      this._distLabel.textContent = "Dist. horizontal intruso: ~" + this._distM + " m (sintético)";
+    }
     this._drawPpi(level);
     this._drawHdg(level);
   }

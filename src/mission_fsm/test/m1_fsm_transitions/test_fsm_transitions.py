@@ -93,6 +93,7 @@ def test_tc_fsm_004_cruise_to_event_quality_via_fastlio(mission_fsm_sil_with_fas
     assert mission_fsm_sil_with_fastlio.wait_mode("EVENT") and "to_event" in mission_fsm_sil_with_fastlio.cap.triggers
 
 
+@pytest.mark.demo
 def test_tc_fsm_005_cruise_to_event_daidalus_via_mock(mission_fsm_sil_with_daidalus: SimpleNamespace) -> None:
     """TC-FSM-005: alerta DAIDALUS ≥ ámbar vía mock → EVENT."""
     _reach_cruise(mission_fsm_sil_with_daidalus)
@@ -124,6 +125,7 @@ def test_tc_fsm_008_event_to_cruise(mission_fsm_sil_harness: SimpleNamespace) ->
     assert mission_fsm_sil_harness.wait_mode("CRUISE") and "event_to_cruise" in mission_fsm_sil_harness.cap.triggers
 
 
+@pytest.mark.demo
 def test_tc_fsm_009_event_to_abort(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-FSM-009: fdir_emergency en EVENT → ABORT."""
     _reach_event_via_quality(mission_fsm_sil_harness)
@@ -217,6 +219,7 @@ def test_tc_fsm_018_rtb_to_cruise(mission_fsm_sil_harness: SimpleNamespace) -> N
     assert mission_fsm_sil_harness.wait_mode("CRUISE") and "rtb_to_cruise" in mission_fsm_sil_harness.cap.triggers
 
 
+@pytest.mark.demo
 def test_tc_fsm_019_cruise_abort_wins_over_event_path(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-FSM-019: abort_command y calidad mala: primera coincidencia es cruise_to_abort, no to_event."""
     _reach_cruise(mission_fsm_sil_harness)
@@ -237,6 +240,7 @@ def test_tc_fsm_020_cruise_rtb_before_landing_when_both_commands(mission_fsm_sil
 
 def test_tc_fsm_021_preflight_holds_without_preflight_ok(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """TC-FSM-021: sin preflight_ok permanece en PREFLIGHT."""
+    mission_fsm_sil_harness.inj.inject("preflight_ok", False)
     for _ in range(60):
         mission_fsm_sil_harness.ex.spin_once(timeout_sec=0.05)
     assert mission_fsm_sil_harness.fsm._fsm.state == "PREFLIGHT"  # noqa: SLF001 — cap.mode puede rezagarse con QoS volatile

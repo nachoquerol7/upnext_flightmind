@@ -13,6 +13,7 @@
   <depend>vehicle_model</depend>
   <depend>gpp</depend>
   <depend>flightmind_msgs</depend>
+  <depend>px4_msgs</depend>
   <test_depend>python3-pytest</test_depend>
   <export>
     <build_type>ament_python</build_type>

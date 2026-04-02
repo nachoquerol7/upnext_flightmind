@@ -26,11 +26,19 @@ def _builtin_daidalus_recovery(i: Inputs, c: Context) -> bool:
     return int(i.get("daidalus_alert", 0)) >= 4
 
 
+def _builtin_slz_available(i: Inputs, c: Context) -> bool:
+    """SLZ reciente (/slz/best <5s) y score >0.6 (vía `slz_best_*` alimentados por el nodo)."""
+    age = float(i.get("slz_best_age_sec", 999.0))
+    score = float(i.get("slz_best_score", 0.0))
+    return age < 5.0 and score > 0.6
+
+
 BUILTINS: Dict[str, Callable[[Inputs, Context], bool]] = {
     "fdir_emergency": _builtin_fdir_emergency,
     "approach_not_stabilized": _builtin_approach_unstabilized,
     "daidalus_near": _builtin_daidalus_near,
     "daidalus_recovery": _builtin_daidalus_recovery,
+    "slz_available": _builtin_slz_available,
 }
 
 
@@ -89,6 +97,8 @@ def default_inputs() -> Dict[str, Any]:
         "battery_critical": False,
         "geofence_violation": False,
         "geofence_breach": False,
+        "slz_best_age_sec": 999.0,
+        "slz_best_score": 0.0,
     }
 
 
