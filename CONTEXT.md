@@ -59,6 +59,7 @@ python3 ~/upnext_uas_ws/simulator/launch_simulator.py
 | Element | Status |
 |---|---|
 | Demo suite FSM (6 tests) | ✅ 6 passed, 6.16s |
+| Demo smoke TC-DEMO-001..003 | ✅ `test/test_demo_smoke.py` |
 | T1 GPP NFZ standalone | ✅ PASS, 1.53s, min_dist=85.1m |
 | demo.sh single launcher | ✅ working |
 | XFAIL_INDEX.md | ✅ ARCH-1.7 split FSM/WATCHDOG |
@@ -362,15 +363,16 @@ v_min_reserve_gain_ms: 5.0   # v_min increase as fuel depletes
 
 | Package | Passed | XFail | Failed |
 |---|---|---|---|
-| mission_fsm | 158 | 23 | 0 |
+| mission_fsm | 161 | 23 | 0 |
 | gpp | 94 | 2 | 0 |
 | fdir | 22 | 0 | 0 |
 | acas_node | 2 | 0 | 0 |
-| navigation_bridge | 4 | 0 | 1 |
+| navigation_bridge | 5 | 0 | 0 |
+| perception_bridge | 4 | 0 | 0 |
 | slz_detector | 10 | 0 | 0 |
 | trajectory_gen | 3 | 0 | 0 |
 | vehicle_model | 2 | 0 | 0 |
-| **Total** | **295** | **25** | **1** |
+| **Total** | **303** | **25** | **0** |
 
 ---
 
