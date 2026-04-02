@@ -1,0 +1,272 @@
+                            SUB-AIR
+                               Airspace Monitor
+Vigilancia de geofence via PolyCARP — GeoJSON 3D, lookahead, NFZ dinámicas
+
+                          23 requisitos · v1.1 · 2026-04-01
+                       UpNext — Flightmind Autonomy Stack
+              EU 2021/665 · NASA PolyCARP · ICAO Annex 2 · RFC 7946
+
+
+                     CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-AIR: AIRSPACE MONITOR                                                           v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      7    SHALL       23
+
+                                      PARCIAL                       10   SHOULD      0
+
+                                      XFAIL                         1    MAY         0
+
+                                      PENDIENTE                     5
+
+                                      N/A-DEMO                      0
+
+                                      TOTAL                         23
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Motor PolyCARP y datos GeoJSON                                      6
+
+                 2     Propiedades 3D y altitud                                            3
+
+                 3     Identificadores y clasificación                                     2
+
+                 4     Vigilancia y alerting                                               8
+
+                 5     NFZ dinámicas y temporales                                          4
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-AIR: AIRSPACE MONITOR                                                                              v1.1 · 2026-04-01
+
+
+
+
+          Motor PolyCARP y datos GeoJSON
+
+         AIR-001             Motor de contención: PolyCARP NASA Langley                                 SHALL   CUBIERTO
+
+         Descripción          El monitor SHALL usar PolyCARP para verificar contención en polígonos.
+         Fuentes              NASA PolyCARP · EU 2019/947
+         Fundamento           PolyCARP implementa algoritmos verificados con casos degenerados correctos.
+         Verificación         upnext_airspace — PolyCARP.
+         Traza impl.          airspace_monitor_node.py
+
+         AIR-002             Cálculo de distancia al borde del polígono más cercano                     SHALL   PARCIAL
+
+         Descripción          PolyCARP SHALL calcular la distancia mínima al borde de cada NFZ activa.
+         Fuentes              NASA PolyCARP
+         Fundamento           Necesario para time_to_violation y nearest_nfz_dist_m.
+         Verificación         airspace_monitor_node.py — distanceToPolygon().
+         Traza impl.          airspace_monitor_node.py
+
+         AIR-003             Detección de posición dentro de NFZ (inside_nfz)                           SHALL   PARCIAL
+
+         Descripción          El monitor SHALL detectar si la posición actual está dentro de una NFZ.
+         Fuentes              SAF
+         Fundamento           Violación activa más urgente que violación inminente.
+         Verificación         airspace_monitor_node.py — inside_nfz check.
+
+         AIR-004             Carga de NFZ desde GeoJSON RFC 7946                                        SHALL   CUBIERTO
+
+         Descripción          Las NFZ SHALL definirse en GeoJSON estándar.
+         Fuentes              EU 2021/665 · RFC 7946
+         Fundamento           GeoJSON es el estándar para U-space y compatible con GIS.
+         Verificación         upnext_airspace — GeoJSON loader.
+         Traza impl.          nfz_zones.geojson
+
+         AIR-005             Soporte de Feature type Polygon                                            SHALL   CUBIERTO
+
+         Descripción          El cargador SHALL soportar Polygon.
+         Fuentes              RFC 7946
+         Fundamento           Polygon es el tipo básico de NFZ.
+         Verificación         airspace_monitor_node.py.
+
+         AIR-006             Soporte de Feature type MultiPolygon                                       SHALL   PARCIAL
+
+         Descripción          El cargador SHALL soportar MultiPolygon.
+         Fuentes              RFC 7946
+         Fundamento           Zonas reales pueden tener geometría compleja.
+         Verificación         airspace_monitor_node.py — MultiPolygon.
+
+
+          Propiedades 3D y altitud
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                             Page 3
+FLIGHTMIND — SUB-AIR: AIRSPACE MONITOR                                                                          v1.1 · 2026-04-01
+
+
+
+
+         AIR-007             Propiedad alt_min_m por Feature                                       SHALL    PARCIAL
+
+         Descripción          Cada Feature SHALL poder incluir alt_min_m.
+         Fuentes              EU 2021/665
+         Fundamento           NFZ reales tienen altitud mínima.
+         Verificación         GeoJSON — alt_min_m.
+
+         AIR-008             Propiedad alt_max_m por Feature                                       SHALL    PARCIAL
+
+         Descripción          Cada Feature SHALL poder incluir alt_max_m.
+         Fuentes              EU 2021/665
+         Fundamento           UAS puede sobrevolar una NFZ con techo bajo.
+         Verificación         GeoJSON — alt_max_m.
+
+         AIR-009             Verificación 3D: incluir altitud en detección                         SHALL    PARCIAL
+
+         Descripción          La vigilancia SHALL considerar alt_min y alt_max.
+         Fuentes              EU 2021/665 · ICAO
+         Fundamento           Sin check 3D el monitor evita zonas que podrían sobrevolarse.
+         Verificación         airspace_monitor_node.py — 3D containment.
+
+
+          Identificadores y clasificación
+
+         AIR-010             Propiedad zone_id única por Feature                                   SHALL    PARCIAL
+
+         Descripción          Cada Feature SHALL incluir zone_id único.
+         Fuentes              SYS
+         Fundamento           El GPP usa zone_id para el replanning.
+         Verificación         GeoJSON — zone_id.
+
+                             Propiedad zone_class: NFZ_GENERIC,                   CTR,   DANGER,
+         AIR-011                                                                                   SHALL   PENDIENTE
+                             RESTRICTED, PROHIBITED
+
+         Descripción          Cada Feature SHALL incluir zone_class ICAO.
+         Fuentes              ICAO Annex 2
+         Fundamento           Distintos tipos tienen implicaciones operacionales diferentes.
+         Verificación         GeoJSON — zone_class.
+
+
+          Vigilancia y alerting
+
+         AIR-012             Proyección trayectoria: position + velocity × lookahead_s             SHALL   CUBIERTO
+
+         Descripción          La proyección SHALL calcularse linealmente.
+         Fuentes              SYS
+         Fundamento           La proyección lineal es conservadora y eficiente.
+         Verificación         airspace_monitor_node.py — linear projection.
+         Traza impl.          airspace_monitor_node.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                         Page 4
+FLIGHTMIND — SUB-AIR: AIRSPACE MONITOR                                                                                   v1.1 · 2026-04-01
+
+
+
+
+         AIR-013             lookahead_s configurable (default 30s)                                 SHALL        CUBIERTO
+
+         Descripción          El horizonte de predicción SHALL ser configurable.
+         Fuentes              SAF
+         Fundamento           A 30s y 20 m/s el UAS tiene 600m para replanificar.
+         Verificación         config/airspace_params.yaml.
+         Traza impl.          config/
+
+         AIR-014             violation_imminent publicado en /polycarp/violation_imminent           SHALL        CUBIERTO
+
+         Descripción          violation_imminent=True SHALL publicarse cuando la trayectoria cruzará una NFZ.
+         Fuentes              SAF · EU 2019/947
+         Fundamento           La anticipación es fundamental.
+         Verificación         TC-FAULT-009.
+         Traza impl.          airspace_monitor_node.py
+
+         AIR-015             inside_nfz publicado cuando posición actual ya está dentro             SHALL            PARCIAL
+
+         Descripción          inside_nfz=True SHALL publicarse cuando hay violación activa.
+         Fuentes              SAF
+         Fundamento           Violación activa requiere respuesta más urgente.
+         Verificación         airspace_monitor_node.py.
+
+                             GeofenceStatus     publicado           a    ≥       10    Hz     en
+         AIR-016                                                                                    SHALL            PARCIAL
+                             /polycarp/geofence_status
+
+         Descripción          GeofenceStatus SHALL publicarse con todos los campos a 10 Hz.
+         Fuentes              SYS
+         Fundamento           GPP y FSM necesitan información actualizada en cada ciclo.
+         Verificación         airspace_monitor_node.py — /polycarp/geofence_status.
+         Traza impl.          airspace_monitor_node.py
+
+         AIR-017             QoS en /polycarp/geofence_status: RELIABLE                             SHALL       PENDIENTE
+
+         Descripción          GeofenceStatus SHALL usar RELIABLE.
+         Fuentes              SAF
+         Fundamento           La pérdida de un mensaje de violación es inaceptable.
+         Verificación         airspace_monitor_node.py.
+
+         AIR-018             time_to_violation_s = dist_to_edge / |velocity|                        SHALL            PARCIAL
+
+         Descripción          time_to_violation_s SHALL calcularse como distancia al borde dividida por velocidad.
+         Fuentes              SYS
+         Fundamento           El tiempo permite graduar la urgencia de la respuesta.
+         Verificación         airspace_monitor_node.py.
+
+         AIR-019             nearest_nfz_dist_m: distancia horizontal al borde más cercano          SHALL       PENDIENTE
+
+         Descripción          nearest_nfz_dist_m SHALL ser la distancia mínima a cualquier NFZ activa.
+         Fuentes              USR
+         Fundamento           El operador necesita ver el margen de separación.
+         Verificación         airspace_monitor_node.py.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                  Page 5
+FLIGHTMIND — SUB-AIR: AIRSPACE MONITOR                                                                       v1.1 · 2026-04-01
+
+
+
+
+          NFZ dinámicas y temporales
+
+         AIR-020             Servicio /airspace/update_nfz para añadir/eliminar NFZ en vuelo    SHALL     XFAIL
+
+         Descripción          SHALL existir servicio de actualización dinámica.
+         Fuentes              OPS · EU 2021/664
+         Fundamento           Las restricciones UTM pueden activarse en tiempo real.
+         Verificación         TC-NAV-008 — XFAIL.
+
+         AIR-021             NFZ temporales con start_time/end_time ISO 8601                    SHALL   PENDIENTE
+
+         Descripción          NFZ con ventana temporal SHALL activarse/desactivarse automáticamente.
+         Fuentes              EU 2021/665
+         Fundamento           Las restricciones son habitualmente temporales.
+         Verificación         airspace_monitor_node.py — temporal_scheduler.
+
+         AIR-022             Alerta específica para CTR: requiere coordinación ATC              SHALL   PENDIENTE
+
+         Descripción          Violación inminente de CTR SHALL generar alerta diferenciada.
+         Fuentes              ICAO Annex 2
+         Fundamento           Entrar en CTR sin autorización es infracción grave.
+         Verificación         airspace_monitor_node.py — CTR alert.
+
+         AIR-023             Carga de GeoJSON inicial al arranque del nodo                      SHALL   CUBIERTO
+
+         Descripción          El nodo SHALL cargar el GeoJSON configurado al arranque.
+         Fuentes              SYS
+         Fundamento           Las NFZ deben estar listas antes de comenzar la misión.
+         Verificación         airspace_monitor_node.py — startup load.
+         Traza impl.          airspace_monitor_node.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                      Page 6
+

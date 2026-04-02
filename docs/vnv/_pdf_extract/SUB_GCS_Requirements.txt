@@ -1,0 +1,311 @@
+                    SUB-GCS
+                          GCS Interface
+Interfaz del operador — display FSM/DAA, alertas, mapa, testbench
+
+                   26 requisitos · v1.1 · 2026-04-01
+                 UpNext — Flightmind Autonomy Stack
+                 EU 2019/947 · USR ConOps · DO-365
+
+
+               CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-GCS: GCS INTERFACE                                                              v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      17   SHALL       24
+
+                                      PARCIAL                       8    SHOULD      2
+
+                                      XFAIL                         0    MAY         0
+
+                                      PENDIENTE                     1
+
+                                      N/A-DEMO                      0
+
+                                      TOTAL                         26
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Display del estado FSM                                              6
+
+                 2     Mapa de misión 2D                                                   6
+
+                 3     Alertas y notificaciones                                            5
+
+                 4     Display DAA (radar PPI)                                             3
+
+                 5     Señales, watchdog y control                                         6
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-GCS: GCS INTERFACE                                                                                v1.1 · 2026-04-01
+
+
+
+
+          Display del estado FSM
+
+         GCS-001             Display estado FSM con latencia < 500ms                                SHALL    CUBIERTO
+
+         Descripción          La GCS SHALL mostrar estado FSM, trigger activo y event_substate con latencia < 500ms.
+         Fuentes              USR · OPS
+         Fundamento           El operador debe tener situational awareness en todo momento.
+         Verificación         testbench FsmGraphPanel.
+         Traza impl.          testbench/js/panels/FsmGraphPanel.js
+
+         GCS-002             Grafo FSM completo con estado activo resaltado                         SHALL    CUBIERTO
+
+         Descripción          El grafo FSM SHALL mostrarse con estado activo diferenciado.
+         Fuentes              USR
+         Fundamento           Ver el grafo permite anticipar las posibles transiciones.
+         Verificación         testbench FsmGraphPanel — canvas.
+         Traza impl.          testbench/js/panels/FsmGraphPanel.js
+
+         GCS-003             Trigger activo mostrado junto al estado                                SHALL    CUBIERTO
+
+         Descripción          El nombre del átomo que causó la última transición SHALL mostrarse.
+         Fuentes              USR
+         Fundamento           El operador necesita entender por qué el FSM transitó.
+         Verificación         testbench FsmGraphPanel — trigger label.
+         Traza impl.          testbench/js/panels/FsmGraphPanel.js
+
+         GCS-004             event_substate mostrado cuando FSM está en EVENT                       SHALL     PARCIAL
+
+         Descripción          SENSOR_DEGRADED o TRAFFIC_CONFLICT SHALL mostrarse.
+         Fuentes              USR
+         Fundamento           La causa del EVENT determina la respuesta del operador.
+         Verificación         testbench FsmGraphPanel — substate.
+
+         GCS-005             Historial de últimas 10 transiciones con timestamp                     SHALL     PARCIAL
+
+         Descripción          La GCS SHALL mostrar el historial reciente.
+         Fuentes              USR
+         Fundamento           El historial permite entender la secuencia de eventos.
+         Verificación         testbench FsmGraphPanel — history list.
+
+         GCS-006             go_around_count mostrado cuando > 0                                    SHALL     PARCIAL
+
+         Descripción          El contador SHALL mostrarse de forma prominente.
+         Fuentes              USR
+         Fundamento           El operador necesita saber cuántos intentos quedan.
+         Verificación         testbench FsmGraphPanel.
+
+
+          Mapa de misión 2D
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                            Page 3
+FLIGHTMIND — SUB-GCS: GCS INTERFACE                                                                          v1.1 · 2026-04-01
+
+
+
+
+                             Mapa 2D con posición UAS, ruta planificada, waypoints
+         GCS-007                                                                               SHALL    CUBIERTO
+                             numerados
+
+         Descripción          La GCS SHALL mostrar posición UAS, ruta y waypoints.
+         Fuentes              USR · OPS
+         Fundamento           Situational awareness espacial fundamental.
+         Verificación         testbench MapPanel.
+         Traza impl.          testbench/js/panels/MapPanel.js
+
+         GCS-008             NFZ activas como polígonos en el mapa                             SHALL    CUBIERTO
+
+         Descripción          Las NFZ SHALL mostrarse como polígonos semitransparentes.
+         Fuentes              USR
+         Fundamento           El operador debe ver las zonas excluidas.
+         Verificación         testbench MapPanel — NFZ overlay.
+         Traza impl.          testbench/js/panels/MapPanel.js
+
+         GCS-009             Trail de posición histórico (últimos 60s)                         SHOULD   CUBIERTO
+
+         Descripción          El mapa SHALL mostrar el trail del UAS.
+         Fuentes              USR
+         Fundamento           Permite detectar anomalías de vuelo.
+         Verificación         testbench MapPanel — trail.
+         Traza impl.          testbench/js/panels/MapPanel.js
+
+         GCS-010             Icono UAS orientado según heading                                 SHALL     PARCIAL
+
+         Descripción          El icono SHALL rotar según el heading actual.
+         Fuentes              USR
+         Fundamento           Orientación del icono transmite heading sin leer número.
+         Verificación         testbench MapPanel — heading rotation.
+
+         GCS-011             Overlay de intrusos DAIDALUS con vector de velocidad              SHALL    PENDIENTE
+
+         Descripción          Los intrusos SHALL mostrarse en el mapa.
+         Fuentes              USR
+         Fundamento           El operador necesita ver la geometría del conflicto.
+         Verificación         testbench MapPanel — traffic overlay.
+
+         GCS-012             Zoom y centrado en UAS                                            SHALL     PARCIAL
+
+         Descripción          El operador SHALL poder ajustar la escala y centrar en el UAS.
+         Fuentes              USR
+         Fundamento           Mapa sin zoom es inutilizable en misiones largas.
+         Verificación         testbench MapPanel — zoom.
+
+
+          Alertas y notificaciones
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                      Page 4
+FLIGHTMIND — SUB-GCS: GCS INTERFACE                                                                           v1.1 · 2026-04-01
+
+
+
+
+         GCS-013             Banner de alerta al entrar en EVENT                                  SHALL   CUBIERTO
+
+         Descripción          Al transicionar a EVENT, SHALL mostrarse banner con causa.
+         Fuentes              USR · OPS
+         Fundamento           El operador debe ser notificado inmediatamente.
+         Verificación         testbench WatchdogPanel — EVENT banner.
+         Traza impl.          testbench/js/panels/WatchdogPanel.js
+
+         GCS-014             Banner de alerta naranja/rojo al entrar en RTB                       SHALL   CUBIERTO
+
+         Descripción          Al transicionar a RTB, SHALL mostrarse banner naranja.
+         Fuentes              USR
+         Fundamento           RTB indica condición anómala.
+         Verificación         testbench WatchdogPanel — RTB banner.
+         Traza impl.          testbench/js/panels/WatchdogPanel.js
+
+         GCS-015             Banner crítico rojo al entrar en ABORT                               SHALL   CUBIERTO
+
+         Descripción          Al transicionar a ABORT, SHALL mostrarse banner rojo parpadeante.
+         Fuentes              USR · SAF
+         Fundamento           ABORT es el evento más crítico.
+         Verificación         testbench WatchdogPanel — ABORT banner.
+         Traza impl.          testbench/js/panels/WatchdogPanel.js
+
+         GCS-016             Indicador de DAIDALUS alert_level con código de colores              SHALL   CUBIERTO
+
+         Descripción          NONE=verde, FAR=amarillo, MID=naranja, NEAR=rojo.
+         Fuentes              USR · DO-365
+         Fundamento           Código de colores permite evaluación instantánea.
+         Verificación         testbench — daidalus indicator.
+         Traza impl.          testbench/index.html
+
+         GCS-017             Indicador fdir_emergency con alarma visual                           SHALL   CUBIERTO
+
+         Descripción          fdir_emergency SHALL mostrarse con indicador rojo parpadeante.
+         Fuentes              USR · SAF
+         Fundamento           Emergencia FDIR requiere atención inmediata.
+         Verificación         testbench WatchdogPanel.
+         Traza impl.          testbench/js/panels/WatchdogPanel.js
+
+
+
+          Display DAA (radar PPI)
+
+         GCS-018             Display radar PPI con bandas DAIDALUS (heading 360°)                 SHALL   CUBIERTO
+
+         Descripción          La GCS SHALL mostrar display PPI con sectores rojos/verdes e intruso.
+         Fuentes              USR · DO-365
+         Fundamento           El PPI permite ver qué headings son seguros.
+         Verificación         testbench RadarPanel.
+         Traza impl.          testbench/js/panels/RadarPanel.js
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                       Page 5
+FLIGHTMIND — SUB-GCS: GCS INTERFACE                                                                                   v1.1 · 2026-04-01
+
+
+
+
+         GCS-019             Distancia y tiempo al intruso más cercano en display DAA                 SHALL       PARCIAL
+
+         Descripción          min_horizontal_dist_m y time_to_violation_s SHALL mostrarse.
+         Fuentes              USR
+         Fundamento           El operador necesita la proximidad del intruso cuantificada.
+         Verificación         testbench RadarPanel — threat metrics.
+
+         GCS-020             Recovery heading indicado en el PPI                                      SHALL       PARCIAL
+
+         Descripción          El heading de recuperación SHALL marcarse en el PPI.
+         Fuentes              USR
+         Fundamento           El operador necesita ver la dirección recomendada.
+         Verificación         testbench RadarPanel — recovery heading.
+
+
+          Señales, watchdog y control
+
+         GCS-021             Panel de señales críticas siempre visible                                SHALL       CUBIERTO
+
+         Descripción          quality_flag, daidalus_alert_level, battery_remaining, fdir_emergency, FSM state.
+         Fuentes              USR
+         Fundamento           Las señales críticas deben estar siempre visibles.
+         Verificación         testbench — signals panel.
+         Traza impl.          testbench/index.html
+
+         GCS-022             Estado heartbeat por nodo: ALIVE/DEAD con tiempo                         SHALL       CUBIERTO
+
+         Descripción          La GCS SHALL mostrar estado de cada nodo crítico.
+         Fuentes              USR · SAF
+         Fundamento           El operador debe saber si algún nodo ha fallado.
+         Verificación         testbench WatchdogPanel — node cards.
+         Traza impl.          testbench/js/panels/WatchdogPanel.js
+
+         GCS-023             Panel de memoria y latencias                                            SHOULD       CUBIERTO
+
+         Descripción          La GCS SHALL mostrar RAM por proceso y latencias.
+         Fuentes              USR
+         Fundamento           Permite detectar memory leaks.
+         Verificación         testbench MemoryPanel.
+         Traza impl.          testbench/js/panels/MemoryPanel.js
+
+         GCS-024             Botón ABORT EMERGENCY visible en 1 click                                 SHALL       PARCIAL
+
+         Descripción          Un botón de ABORT SHALL estar siempre presente.
+         Fuentes              SAF · EU 2019/947
+         Fundamento           En emergencia no se puede buscar el botón entre menus.
+         Verificación         testbench — abort button.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                               Page 6
+FLIGHTMIND — SUB-GCS: GCS INTERFACE                                                                     v1.1 · 2026-04-01
+
+
+
+
+         GCS-025             Override manual de átomos FSM para testing                     SHALL   CUBIERTO
+
+         Descripción          La GCS SHALL permitir publicar manualmente cualquier átomo.
+         Fuentes              DO-178C
+         Fundamento           Los TCs requieren inyectar átomos manualmente.
+         Verificación         testbench/js/tc_runner.js.
+         Traza impl.          testbench/js/tc_runner.js
+
+         GCS-026             Log de eventos de misión en tiempo real                        SHALL   CUBIERTO
+
+         Descripción          La GCS SHALL mostrar log con timestamp, tipo y descripción.
+         Fuentes              USR
+         Fundamento           El log permite entender la secuencia de eventos.
+         Verificación         testbench — event log.
+         Traza impl.          testbench/index.html
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                 Page 7
+

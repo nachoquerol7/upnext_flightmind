@@ -1,0 +1,325 @@
+                      SUB-NAV
+                           Navigation Bridge
+Adaptador PX4 EKF2 → NavigationState ROS2 — calidad, frames, energía
+
+                      26 requisitos · v1.1 · 2026-04-01
+                   UpNext — Flightmind Autonomy Stack
+              PX4 uXRCE-DDS · ROS2 REP 103 · DO-365 · SAF
+
+
+                 CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-NAV: NAVIGATION BRIDGE                                                          v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      14   SHALL       25
+
+                                      PARCIAL                       2    SHOULD      1
+
+                                      XFAIL                         1    MAY         0
+
+                                      PENDIENTE                     9
+
+                                      N/A-DEMO                      0
+
+                                      TOTAL                         26
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Publicación, timing y QoS                                           4
+
+                 2     Quality flag y anomalías de pose                                    8
+
+                 3     Campos de NavigationState                                           6
+
+                 4     Energía y batería                                                   2
+
+                 5     Interfaz PX4 y fuentes alternativas                                 4
+
+                 6     Ciclo de vida                                                       2
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-NAV: NAVIGATION BRIDGE                                                                                    v1.1 · 2026-04-01
+
+
+
+
+          Publicación, timing y QoS
+
+                             Publicación  NavigationState            a         50       Hz,      QoS
+         NAV-001                                                                                           SHALL     CUBIERTO
+                             RELIABLE+TRANSIENT_LOCAL
+
+         Descripción          navigation_bridge_node SHALL          publicar        NavigationState    a   50   Hz   con    QoS
+                              RELIABLE+TRANSIENT_LOCAL.
+         Fuentes              SYS · DO-365
+         Fundamento           50 Hz actualiza DAIDALUS, GPP y ACAS en cada ciclo. TRANSIENT_LOCAL para nodos
+                              tardíos.
+         Verificación         TC-MW-001.
+         Traza impl.          navigation_bridge_node.py
+
+         NAV-002             Latencia odometría→NavigationState < 5ms                                      SHALL     CUBIERTO
+
+         Descripción          El tiempo desde recepción del mensaje PX4 hasta publicación SHALL ser < 5ms.
+         Fuentes              SYS
+         Fundamento           Latencia alta introduce error de posición proyectada en DAIDALUS.
+         Verificación         TC-MW benchmark.
+         Traza impl.          navigation_bridge_node.py
+
+                             Timeout odometría:        quality_flag=0.0   tras      odom_timeout_s
+         NAV-003                                                                                           SHALL     CUBIERTO
+                             (default 1.0s)
+
+         Descripción          Si vehicle_odometry no llega en odom_timeout_s, quality_flag SHALL forzarse a 0.0.
+         Fuentes              SAF
+         Fundamento           Silencio en odometría es tan peligroso como covarianza alta.
+         Verificación         TC-LOC-001.
+         Traza impl.          navigation_bridge_node.py
+
+         NAV-004             odom_timeout_s configurable como parámetro ROS2                               SHALL     CUBIERTO
+
+         Descripción          El timeout SHALL ser configurable vía declare_parameter.
+         Fuentes              SYS
+         Fundamento           Distintos sensores publican a diferentes frecuencias.
+         Verificación         declare_parameter odom_timeout_s.
+         Traza impl.          navigation_bridge_node.py
+
+
+
+          Quality flag y anomalías de pose
+
+         NAV-005             quality_flag desde pose_covariance[0]: >5→0.3, >1→0.7, ≤1→1.0                 SHALL     CUBIERTO
+
+         Descripción          quality_flag SHALL calcularse con tres tramos de covarianza.
+         Fuentes              SYS
+         Fundamento           La covarianza EKF2 es la métrica de incertidumbre más directa.
+         Verificación         TC-LOC-001/002.
+         Traza impl.          navigation_bridge_node.py — _compute_quality_flag()
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                    Page 3
+FLIGHTMIND — SUB-NAV: NAVIGATION BRIDGE                                                                             v1.1 · 2026-04-01
+
+
+
+
+         NAV-006             Umbral covariance_med configurable (default 1.0)                          SHALL   PENDIENTE
+
+         Descripción          El umbral que separa quality_flag 0.7/1.0 SHALL ser configurable.
+         Fuentes              SYS
+         Fundamento           Distintos entornos tienen niveles de covarianza diferentes.
+         Verificación         declare_parameter covariance_med.
+
+         NAV-007             Umbral covariance_high configurable (default 5.0)                         SHALL   PENDIENTE
+
+         Descripción          El umbral que separa quality_flag 0.3/0.7 SHALL ser configurable.
+         Fuentes              SYS
+         Fundamento           El límite de calidad mínima aceptable varía según la operación.
+         Verificación         declare_parameter covariance_high.
+
+                             quality_flag  publicado          también     en    /nav/quality_flag
+         NAV-008                                                                                       SHALL   CUBIERTO
+                             (std_msgs/Float64)
+
+         Descripción          quality_flag SHALL publicarse en topic separado para el FSM.
+         Fuentes              SYS
+         Fundamento           El FSM suscribe este topic directamente sin parsear NavigationState.
+         Verificación         navigation_bridge_node.py — dual publisher.
+         Traza impl.          navigation_bridge_node.py
+
+         NAV-009             gnss_available=(quality_flag>0.5) en NavigationState                      SHALL   CUBIERTO
+
+         Descripción          gnss_available SHALL derivarse automáticamente.
+         Fuentes              SYS
+         Fundamento           Otros nodos usan gnss_available para decisiones de confianza.
+         Verificación         navigation_bridge_node.py.
+         Traza impl.          navigation_bridge_node.py
+
+         NAV-010             Detección de pose jump > pose_jump_threshold_m (default 5m)               SHALL     XFAIL
+
+         Descripción          Saltos de posición entre ticks > umbral SHALL forzar quality_flag=0.0.
+         Fuentes              SAF · ARCH-1.8
+         Fundamento           Los pose jumps indican pérdida y re-adquisición de localización.
+         Verificación         TC-LOC-003 — XFAIL. ARCH-1.8.
+
+         NAV-011             pose_jump_threshold_m configurable (default 5.0)                          SHALL   PENDIENTE
+
+         Descripción          El umbral de detección de jump SHALL ser configurable.
+         Fuentes              SYS
+         Fundamento           Distinto comportamiento según velocidad de la plataforma.
+         Verificación         declare_parameter pose_jump_threshold_m.
+
+         NAV-012             Log del pose jump con posición anterior y nueva                           SHALL   PENDIENTE
+
+         Descripción          Un jump SHALL registrarse como WARNING con ambas posiciones.
+         Fuentes              DO-178C
+         Fundamento           Permite reconstruir el evento post-incidente.
+         Verificación         navigation_bridge_node.py — pose_jump_logger.
+
+
+          Campos de NavigationState
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                             Page 4
+FLIGHTMIND — SUB-NAV: NAVIGATION BRIDGE                                                                  v1.1 · 2026-04-01
+
+
+
+
+         NAV-013             position_ned[3]: North, East, Down en metros desde home         SHALL   CUBIERTO
+
+         Descripción          position_ned SHALL contener posición NED en metros.
+         Fuentes              SYS · ROS2 REP 103
+         Fundamento           NED es el frame estándar del stack.
+         Verificación         navigation_bridge_node.py.
+         Traza impl.          navigation_bridge_node.py
+
+         NAV-014             velocity_ned[3]: Vn, Ve, Vd en m/s                              SHALL   CUBIERTO
+
+         Descripción          velocity_ned SHALL contener velocidad NED en m/s.
+         Fuentes              SYS
+         Fundamento           Necesario para DAIDALUS (separación relativa).
+         Verificación         navigation_bridge_node.py.
+         Traza impl.          navigation_bridge_node.py
+
+         NAV-015             orientation_quat[4]: xyzw en convención ROS2                    SHALL   CUBIERTO
+
+         Descripción          Orientación como quaternion convención ROS2.
+         Fuentes              SYS · ROS2 REP 103
+         Fundamento           Consistencia con todos los consumidores del stack.
+         Verificación         navigation_bridge_node.py.
+         Traza impl.          navigation_bridge_node.py
+
+         NAV-016             heading_rad: yaw NED derivado del quaternion                    SHALL   CUBIERTO
+
+         Descripción          heading_rad SHALL incluirse en NavigationState.
+         Fuentes              SYS
+         Fundamento           DAIDALUS y ACAS necesitan heading directamente.
+         Verificación         navigation_bridge_node.py — heading_rad.
+         Traza impl.          navigation_bridge_node.py
+
+         NAV-017             covariance_6x6[36]: matriz covarianza pose EKF2                 SHALL   PARCIAL
+
+         Descripción          Matriz 6×6 aplanada en NavigationState.
+         Fuentes              DO-365
+         Fundamento           DAIDALUS puede incorporar incertidumbre posicional.
+         Verificación         navigation_bridge_node.py.
+         Traza impl.          navigation_bridge_node.py
+
+         NAV-018             stamp: timestamp de la odometría original (no de publicación)   SHALL   CUBIERTO
+
+         Descripción          stamp SHALL ser el tiempo de medición del sensor.
+         Fuentes              DO-365
+         Fundamento           Necesario para proyección correcta de trayectoria.
+         Verificación         navigation_bridge_node.py.
+         Traza impl.          navigation_bridge_node.py
+
+
+
+          Energía y batería
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                  Page 5
+FLIGHTMIND — SUB-NAV: NAVIGATION BRIDGE                                                                       v1.1 · 2026-04-01
+
+
+
+
+         NAV-019             battery_remaining_pct desde PX4 battery_status                     SHALL    PENDIENTE
+
+         Descripción          NavigationState SHALL incluir battery_remaining_pct (0.0-1.0).
+         Fuentes              SAF · OPS
+         Fundamento           El FSM necesita este campo para battery_low y battery_critical.
+         Verificación         navigation_bridge_node.py — battery_status subscriber.
+
+                             fuel_consumed_wh: integral del consumo desde inicio de
+         NAV-020                                                                                SHALL    PENDIENTE
+                             misión
+
+         Descripción          fuel_consumed_wh SHALL acumularse desde mission_start.
+         Fuentes              OPS
+         Fundamento           Permite estimar autonomía restante con mayor precisión.
+         Verificación         navigation_bridge_node.py — energy_integrator.
+
+
+          Interfaz PX4 y fuentes alternativas
+
+         NAV-021             Suscripción a px4_msgs/VehicleOdometry via uXRCE-DDS               SHALL    CUBIERTO
+
+         Descripción          El nodo SHALL suscribirse al topic PX4 vía uXRCE-DDS.
+         Fuentes              PX4 uXRCE-DDS
+         Fundamento           uXRCE-DDS es la interfaz estándar PX4↔ROS2.
+         Verificación         navigation_bridge_node.py.
+         Traza impl.          navigation_bridge_node.py
+
+         NAV-022             Suscripción a px4_msgs/VehicleGpsPosition para calidad GNSS        SHALL    PENDIENTE
+
+         Descripción          El nodo SHALL suscribirse para extraer num_satellites y hdop.
+         Fuentes              SYS
+         Fundamento           Satélites y HDOP son métricas complementarias de calidad.
+         Verificación         navigation_bridge_node.py — gps_position subscriber.
+
+         NAV-023             Suscripción a px4_msgs/BatteryStatus para nivel de batería         SHALL    PENDIENTE
+
+         Descripción          El nodo SHALL suscribirse a /fmu/out/battery_status.
+         Fuentes              SYS
+         Fundamento           PX4 expone batería vía uXRCE-DDS.
+         Verificación         navigation_bridge_node.py — battery_status.
+
+         NAV-024             Soporte de FAST-LIO2 como fuente alternativa (SHOULD)              SHOULD    PARCIAL
+
+         Descripción          odom_source=FAST_LIO2 SHALL poder seleccionarse por parámetro.
+         Fuentes              SDD Flightmind
+         Fundamento           En entornos urbanos sin GPS, FAST-LIO2 es más fiable.
+         Verificación         declare_parameter odom_source.
+
+
+          Ciclo de vida
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                       Page 6
+FLIGHTMIND — SUB-NAV: NAVIGATION BRIDGE                                                                          v1.1 · 2026-04-01
+
+
+
+
+         NAV-025             Primer NavigationState publicado en < 2s desde arranque                SHALL   CUBIERTO
+
+         Descripción          El primer mensaje SHALL publicarse en < 2s.
+         Fuentes              SYS
+         Fundamento           Arranque lento retrasa la verificación pre-vuelo.
+         Verificación         TC-MW-001.
+         Traza impl.          test/test_m8_middleware.py
+
+                             NavigationState      con    quality_flag=0.0    antes   de   primera
+         NAV-026                                                                                    SHALL   PENDIENTE
+                             odometría
+
+         Descripción          Desde el arranque hasta la primera odometría, quality_flag SHALL ser 0.0.
+         Fuentes              SAF
+         Fundamento           El FSM debe saber que la navegación no está disponible aún.
+         Verificación         navigation_bridge_node.py — initial_state.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                          Page 7
+

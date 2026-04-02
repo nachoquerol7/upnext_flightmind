@@ -1,0 +1,236 @@
+                               SUB-TRAJ
+                                   Trajectory Generator
+Generación de setpoints Dubins 3D para PX4 — modos NOMINAL/ALERT, integración FSM
+
+                                20 requisitos · v1.1 · 2026-04-01
+                             UpNext — Flightmind Autonomy Stack
+              PX4 TrajectorySetpoint · STANAG 4671 · Dubins 1957 · SDD Flightmind
+
+
+                           CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-TRAJ: TRAJECTORY GENERATOR                                                      v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      0    SHALL       20
+
+                                      PARCIAL                       0    SHOULD      0
+
+                                      XFAIL                         0    MAY         0
+
+                                      PENDIENTE                     20
+
+                                      N/A-DEMO                      0
+
+                                      TOTAL                         20
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Algoritmo y modos operacionales                                     6
+
+                 2     Límites cinemáticos y publicación                                   4
+
+                 3     Lógica de waypoints                                                 4
+
+                 4     Telemetría e integración con FSM                                    6
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-TRAJ: TRAJECTORY GENERATOR                                                                      v1.1 · 2026-04-01
+
+
+
+
+          Algoritmo y modos operacionales
+
+         TRAJ-001            Generación de trayectoria continua 3D desde nav_msgs/Path              SHALL   PENDIENTE
+
+         Descripción          El generador SHALL convertir nav_msgs/Path en trayectoria 3D con posición, velocidad y
+                              aceleración.
+         Fuentes              SDD Flightmind
+         Fundamento           PX4 necesita trayectoria continua. Lista discreta causa maniobras bruscas.
+         Verificación         trajectory_gen_node.py
+         Traza impl.          src/trajectory_gen/
+
+         TRAJ-002            Segmentos inter-waypoint con curvas Dubins de menor longitud           SHALL   PENDIENTE
+
+         Descripción          Cada segmento SHALL generarse con la curva Dubins más corta.
+         Fuentes              Dubins 1957
+         Fundamento           Dubins garantiza transiciones cinemáticamente factibles.
+         Verificación         trajectory_gen_node.py — dubins_segment().
+
+         TRAJ-003            Modo NOMINAL: v_cruise, jerk ≤ jerk_nominal_mps3                       SHALL   PENDIENTE
+
+         Descripción          En modo NOMINAL SHALL usarse velocidad de crucero y jerk suave.
+         Fuentes              OPS
+         Fundamento           El modo nominal prioriza eficiencia.
+         Verificación         trajectory_gen_node.py — NOMINAL mode.
+
+         TRAJ-004            Modo ALERT: v_max, jerk hasta jerk_alert_mps3                          SHALL   PENDIENTE
+
+         Descripción          En modo ALERT SHALL usarse v_max y mayor jerk.
+         Fuentes              OPS
+         Fundamento           En evasión DAA se acepta mayor agresividad cinemática.
+         Verificación         trajectory_gen_node.py — ALERT mode.
+
+                             Transición       automática              a   ALERT          cuando
+         TRAJ-005                                                                                   SHALL   PENDIENTE
+                             local_replanner/status=ACTIVE
+
+         Descripción          Al recibir ACTIVE del replanner SHALL activarse modo ALERT.
+         Fuentes              SYS
+         Fundamento           El replanning activo indica urgencia.
+         Verificación         trajectory_gen_node.py — mode_switch.
+
+         TRAJ-006            Retorno a NOMINAL cuando local_replanner/status=IDLE                   SHALL   PENDIENTE
+
+         Descripción          Al recibir IDLE SHALL volver a modo NOMINAL.
+         Fuentes              SYS
+         Fundamento           Resolver la emergencia, volver a modo eficiente.
+         Verificación         trajectory_gen_node.py — mode_switch.
+
+
+          Límites cinemáticos y publicación
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                          Page 3
+FLIGHTMIND — SUB-TRAJ: TRAJECTORY GENERATOR                                                                     v1.1 · 2026-04-01
+
+
+
+
+         TRAJ-007            Todos los setpoints respetan v_min ≤ airspeed ≤ v_max                 SHALL   PENDIENTE
+
+         Descripción          Cada setpoint SHALL respetar el rango de velocidades del Vehicle Model.
+         Fuentes              SAF
+         Fundamento           Velocidad fuera del rango puede causar pérdida de sustentación.
+         Verificación         trajectory_gen_node.py — velocity bounds.
+
+         TRAJ-008            Todos los setpoints respetan climb/descent rate máximos               SHALL   PENDIENTE
+
+         Descripción          Las tasas verticales SHALL respetar los límites del Vehicle Model.
+         Fuentes              SAF
+         Fundamento           Tasas verticales excesivas superan la envolvente estructural.
+         Verificación         trajectory_gen_node.py — vertical rate bounds.
+
+         TRAJ-009            Publicación en /trajectory/setpoint a ≥ 50 Hz, QoS RELIABLE           SHALL   PENDIENTE
+
+         Descripción          Los setpoints SHALL publicarse a ≥ 50 Hz con RELIABLE.
+         Fuentes              PX4 uXRCE-DDS
+         Fundamento           PX4 necesita setpoints a alta frecuencia.
+         Verificación         trajectory_gen_node.py — 50 Hz timer.
+
+                             Fuente de ruta: /local_replanner/path tiene prioridad sobre
+         TRAJ-010                                                                                  SHALL   PENDIENTE
+                             /gpp/path
+
+         Descripción          Cuando replanner ACTIVE, SHALL usarse /local_replanner/path.
+         Fuentes              SYS
+         Fundamento           Maniobra táctica tiene prioridad sobre plan estratégico.
+         Verificación         trajectory_gen_node.py — source_selector.
+
+
+          Lógica de waypoints
+
+         TRAJ-011            Waypoints en orden secuencial: no saltar al más cercano               SHALL   PENDIENTE
+
+         Descripción          Los waypoints SHALL seguirse en el orden de la ruta.
+         Fuentes              OPS
+         Fundamento           Saltar waypoints puede omitir acciones de misión.
+         Verificación         trajectory_gen_node.py — sequential_logic.
+
+                             Waypoint alcanzado cuando distancia < waypoint_radius_m
+         TRAJ-012                                                                                  SHALL   PENDIENTE
+                             (default 5m)
+
+         Descripción          El criterio de alcance SHALL ser distancia < umbral.
+         Fuentes              OPS
+         Fundamento           Equilibrio entre precisión y alcanzabilidad.
+         Verificación         trajectory_gen_node.py — waypoint_completion.
+
+         TRAJ-013            waypoint_radius_m configurable (misión=5m, aterrizaje=2m)             SHALL   PENDIENTE
+
+         Descripción          El radio SHALL ser configurable por tipo de waypoint.
+         Fuentes              OPS
+         Fundamento           El aterrizaje requiere mayor precisión.
+         Verificación         trajectory_gen_node.py — waypoint_radius_by_type.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                         Page 4
+FLIGHTMIND — SUB-TRAJ: TRAJECTORY GENERATOR                                                                             v1.1 · 2026-04-01
+
+
+
+
+         TRAJ-014            Rampa de frenado antes de cada waypoint                                   SHALL     PENDIENTE
+
+         Descripción          La velocidad SHALL reducirse suavemente al acercarse al waypoint.
+         Fuentes              SDD Flightmind
+         Fundamento           Llegar a velocidad de crucero impide ejecutar la acción del waypoint.
+         Verificación         trajectory_gen_node.py — velocity_profiling.
+
+
+          Telemetría e integración con FSM
+
+         TRAJ-015            Progreso en /trajectory/progress a 10 Hz                                  SHALL     PENDIENTE
+
+         Descripción          SHALL publicarse waypoint_index, distancia al siguiente y % de misión.
+         Fuentes              USR
+         Fundamento           El operador necesita ver el progreso de la misión.
+         Verificación         trajectory_gen_node.py — progress_publisher.
+
+                             mission_complete en /fsm/in/mission_complete al alcanzar
+         TRAJ-016                                                                                      SHALL     PENDIENTE
+                             último waypoint
+
+         Descripción          SHALL publicarse mission_complete=True al finalizar.
+         Fuentes              SDD Flightmind
+         Fundamento           Trigger de transición CRUISE→LANDING.
+         Verificación         trajectory_gen_node.py.
+
+         TRAJ-017            at_runway_threshold en /fsm/in/at_runway_threshold                        SHALL     PENDIENTE
+
+         Descripción          SHALL publicarse True cuando UAS esté en el punto de despegue.
+         Fuentes              OPS
+         Fundamento           Trigger de transición AUTOTAXI→TAKEOFF.
+         Verificación         trajectory_gen_node.py.
+
+         TRAJ-018            airborne_and_stable en /fsm/in/airborne_and_stable                        SHALL     PENDIENTE
+
+         Descripción          SHALL publicarse True cuando se alcance la altitud de crucero estabilizada.
+         Fuentes              OPS
+         Fundamento           Trigger de transición TAKEOFF→CRUISE.
+         Verificación         trajectory_gen_node.py.
+
+         TRAJ-019            home_reached en /fsm/in/home_reached                                      SHALL     PENDIENTE
+
+         Descripción          SHALL publicarse True cuando UAS esté sobre el home point en RTB.
+         Fuentes              OPS
+         Fundamento           Trigger de transición RTB→LANDING.
+         Verificación         trajectory_gen_node.py.
+
+         TRAJ-020            approach_not_stabilized en /fsm/in/approach_not_stabilized                SHALL     PENDIENTE
+
+         Descripción          SHALL publicarse True si los criterios de estabilización de aproximación no se cumplen.
+         Fuentes              OPS
+         Fundamento           Trigger de transición LANDING→GO_AROUND.
+         Verificación         trajectory_gen_node.py.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 5
+

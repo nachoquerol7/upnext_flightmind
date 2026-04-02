@@ -1,0 +1,294 @@
+                          SUB-VM
+                              Vehicle Model
+Parámetros dinámicos de envolvente por plataforma — is_feasible, energía
+
+                       25 requisitos · v1.1 · 2026-04-01
+                     UpNext — Flightmind Autonomy Stack
+                  STANAG 4671 · ARP4754A · SDD Flightmind
+
+
+                  CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-VM: VEHICLE MODEL                                                               v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      0    SHALL       24
+
+                                      PARCIAL                       13   SHOULD      1
+
+                                      XFAIL                         0    MAY         0
+
+                                      PENDIENTE                     12
+
+                                      N/A-DEMO                      0
+
+                                      TOTAL                         25
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Parámetros cinemáticos                                              9
+
+                 2     Masa y energía                                                      4
+
+                 3     Configuración y validación                                          3
+
+                 4     Interfaz is_feasible                                                5
+
+                 5     Dinámica, telemetría y VTOL                                         4
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-VM: VEHICLE MODEL                                                                                 v1.1 · 2026-04-01
+
+
+
+
+          Parámetros cinemáticos
+
+         VM-001              v_min_ms: velocidad mínima de vuelo estabilizado                         SHALL    PARCIAL
+
+         Descripción          VehicleModelState SHALL incluir v_min_ms en m/s calculado para la masa actual.
+         Fuentes              STANAG 4671
+         Fundamento           v_min es la velocidad por debajo de la cual la plataforma pierde sustentación.
+         Verificación         VehicleModelState.msg
+         Traza impl.          flightmind_msgs/VehicleModelState.msg
+
+         VM-002              v_max_ms: velocidad máxima estructural (VNE)                             SHALL    PARCIAL
+
+         Descripción          VehicleModelState SHALL incluir v_max_ms (Velocity Never Exceed).
+         Fuentes              STANAG 4671
+         Fundamento           Superar VNE puede dañar la estructura.
+         Verificación         VehicleModelState.msg
+         Traza impl.          flightmind_msgs/VehicleModelState.msg
+
+         VM-003              v_cruise_ms: velocidad nominal de crucero                                SHALL    PARCIAL
+
+         Descripción          VehicleModelState SHALL incluir v_cruise_ms.
+         Fuentes              OPS
+         Fundamento           trajectory_gen usa v_cruise en modo NOMINAL.
+         Verificación         VehicleModelState.msg
+         Traza impl.          flightmind_msgs/VehicleModelState.msg
+
+         VM-004              turn_radius_min_m: radio de giro mínimo                                  SHALL    PARCIAL
+
+         Descripción          VehicleModelState SHALL incluir turn_radius_min_m.
+         Fuentes              STANAG 4671
+         Fundamento           Limita las curvas Dubins del GPP y trajectory_gen.
+         Verificación         VehicleModelState.msg
+         Traza impl.          flightmind_msgs/VehicleModelState.msg
+
+         VM-005              turn_rate_max_degs: velocidad angular máxima en yaw                      SHALL    PARCIAL
+
+         Descripción          VehicleModelState SHALL incluir turn_rate_max_degs.
+         Fuentes              STANAG 4671
+         Fundamento           ACAS Xu usa este campo para verificar factibilidad de SL/SR.
+         Verificación         VehicleModelState.msg
+         Traza impl.          flightmind_msgs/VehicleModelState.msg
+
+         VM-006              climb_rate_max_mps: tasa de ascenso máxima                               SHALL    PARCIAL
+
+         Descripción          VehicleModelState SHALL incluir climb_rate_max_mps.
+         Fuentes              STANAG 4671
+         Fundamento           Excederlo puede causar pérdida de sustentación.
+         Verificación         VehicleModelState.msg
+         Traza impl.          flightmind_msgs/VehicleModelState.msg
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                            Page 3
+FLIGHTMIND — SUB-VM: VEHICLE MODEL                                                                        v1.1 · 2026-04-01
+
+
+
+
+         VM-007              descent_rate_max_mps: tasa de descenso máxima                   SHALL    PARCIAL
+
+         Descripción          VehicleModelState SHALL incluir descent_rate_max_mps.
+         Fuentes              STANAG 4671
+         Fundamento           Descensos excesivos superan la envolvente estructural.
+         Verificación         VehicleModelState.msg
+         Traza impl.          flightmind_msgs/VehicleModelState.msg
+
+         VM-008              max_bank_angle_deg: ángulo de alabeo máximo                     SHALL    PARCIAL
+
+         Descripción          VehicleModelState SHALL incluir max_bank_angle_deg.
+         Fuentes              STANAG 4671
+         Fundamento           Determina la tasa de giro real a una velocidad dada.
+         Verificación         VehicleModelState.msg
+         Traza impl.          flightmind_msgs/VehicleModelState.msg
+
+         VM-009              glide_ratio: planeo en fallo de motor (0 para multirotor)       SHALL    PARCIAL
+
+         Descripción          VehicleModelState SHALL incluir glide_ratio.
+         Fuentes              STANAG 4671
+         Fundamento           Necesario para estimar el alcance de emergencia.
+         Verificación         VehicleModelState.msg
+         Traza impl.          flightmind_msgs/VehicleModelState.msg
+
+
+
+          Masa y energía
+
+         VM-010              current_weight_kg: masa actual incluyendo carga y combustible   SHALL    PARCIAL
+
+         Descripción          current_weight_kg SHALL actualizarse en tiempo real.
+         Fuentes              STANAG 4671
+         Fundamento           La masa actual afecta v_min, consumo y maniobrabilidad.
+         Verificación         VehicleModelState.msg
+         Traza impl.          flightmind_msgs/VehicleModelState.msg
+
+         VM-011              max_payload_kg: capacidad máxima de carga útil                  SHALL    PARCIAL
+
+         Descripción          VehicleModelState SHALL incluir max_payload_kg.
+         Fuentes              OPS
+         Fundamento           Necesario para validar la carga de la misión.
+         Verificación         VehicleModelState.msg
+
+         VM-012              battery_capacity_wh o fuel_capacity_kg según plataforma         SHALL   PENDIENTE
+
+         Descripción          SHALL incluirse la capacidad total de energía.
+         Fuentes              OPS
+         Fundamento           Base para estimar la autonomía.
+         Verificación         VehicleModelState.msg
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                   Page 4
+FLIGHTMIND — SUB-VM: VEHICLE MODEL                                                                                v1.1 · 2026-04-01
+
+
+
+
+         VM-013              hover_power_w, cruise_power_w, climb_power_w                            SHALL   PENDIENTE
+
+         Descripción          VehicleModelState SHALL incluir el modelo de consumo por fase.
+         Fuentes              OPS
+         Fundamento           El modelo de consumo es necesario para estimar autonomía restante.
+         Verificación         VehicleModelState.msg
+
+
+          Configuración y validación
+
+         VM-014              Carga de parámetros desde YAML por vehicle_type                         SHALL    PARCIAL
+
+         Descripción          Los parámetros SHALL cargarse desde YAML seleccionable en launch.
+         Fuentes              SYS
+         Fundamento           Reutilización del nodo en múltiples plataformas.
+         Verificación         launch arg vehicle_type.
+         Traza impl.          src/vehicle_model/config/
+
+                             Validación de consistencia al arranque: v_min < v_cruise <
+         VM-015                                                                                      SHALL   PENDIENTE
+                             v_max
+
+         Descripción          El nodo SHALL verificar la consistencia de parámetros.
+         Fuentes              DO-178C
+         Fundamento           Parámetros inconsistentes causarían comportamiento incorrecto.
+         Verificación         vehicle_model_node.py — _validate_params().
+
+                             Publicación de  VehicleModelState             a     10    Hz,   QoS
+         VM-016                                                                                      SHALL   PENDIENTE
+                             TRANSIENT_LOCAL
+
+         Descripción          VehicleModelState SHALL publicarse a 10 Hz.
+         Fuentes              SYS
+         Fundamento           TRANSIENT_LOCAL para nodos tardíos.
+         Verificación         vehicle_model_node.py — publisher.
+
+
+          Interfaz is_feasible
+
+                             Servicio /vehicle_model/is_feasible:        {turn_rate,   climb_rate,
+         VM-017                                                                                      SHALL   PENDIENTE
+                             airspeed} → bool
+
+         Descripción          SHALL existir servicio is_feasible.
+         Fuentes              SAF
+         Fundamento           GPP y ACAS deben verificar factibilidad.
+         Verificación         vehicle_model_node.py — is_feasible service.
+
+         VM-018              is_feasible verifica turn_rate <= turn_rate_max_degs                    SHALL   PENDIENTE
+
+         Descripción          is_feasible SHALL retornar False si |turn_rate| excede el máximo.
+         Fuentes              SAF
+         Fundamento           Turn rate excesivo puede causar pérdida de control.
+         Verificación         vehicle_model_node.py.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                           Page 5
+FLIGHTMIND — SUB-VM: VEHICLE MODEL                                                                              v1.1 · 2026-04-01
+
+
+
+
+         VM-019              is_feasible verifica v_min <= airspeed <= v_max                       SHALL   PENDIENTE
+
+         Descripción          is_feasible SHALL retornar False si airspeed fuera del rango.
+         Fuentes              SAF
+         Fundamento           Operar fuera de la envolvente de velocidad es peligroso.
+         Verificación         vehicle_model_node.py.
+
+         VM-020              is_feasible verifica |climb_rate| <= max climb/descent                SHALL   PENDIENTE
+
+         Descripción          is_feasible SHALL verificar las tasas verticales.
+         Fuentes              SAF
+         Fundamento           Tasas verticales excesivas superan la envolvente estructural.
+         Verificación         vehicle_model_node.py.
+
+         VM-021              is_feasible retorna reason string si feasible=False                   SHALL   PENDIENTE
+
+         Descripción          reason SHALL indicar qué parámetro falló.
+         Fuentes              SYS
+         Fundamento           El llamante puede ajustar la maniobra según el motivo.
+         Verificación         vehicle_model_node.py.
+
+
+          Dinámica, telemetría y VTOL
+
+         VM-022              v_min dinámico con masa actual (SHOULD)                             SHOULD    PENDIENTE
+
+         Descripción          v_min_ms SHOULD actualizarse en tiempo real con current_weight_kg.
+         Fuentes              STANAG 4671
+         Fundamento           Con masa decreciente v_min decrece. v_min estático sobreprotege.
+         Verificación         vehicle_model_node.py — dynamic_v_min.
+
+         VM-023              flight_mode: HOVER/CRUISE/TRANSITION/EMERGENCY                        SHALL    PARCIAL
+
+         Descripción          VehicleModelState SHALL incluir flight_mode.
+         Fuentes              OPS
+         Fundamento           En VTOL los parámetros cambian durante la transición.
+         Verificación         VehicleModelState.msg — flight_mode.
+         Traza impl.          flightmind_msgs/VehicleModelState.msg
+
+         VM-024              elapsed_mission_h: tiempo de vuelo acumulado en sesión                SHALL   PENDIENTE
+
+         Descripción          elapsed_mission_h SHALL incrementarse durante estados de vuelo activo.
+         Fuentes              OPS
+         Fundamento           Necesario para verificar límites de horas de vuelo.
+         Verificación         vehicle_model_node.py — elapsed_timer.
+
+         VM-025              Parámetros VTOL: transition_airspeed_ms, hover_thrust_ratio           SHALL   PENDIENTE
+
+         Descripción          Para VTOL SHALL incluirse parámetros de transición.
+         Fuentes              OPS VTOL
+         Fundamento           La transición hover↔crucero requiere parámetros específicos.
+         Verificación         config/vtol_params.yaml.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                         Page 6
+

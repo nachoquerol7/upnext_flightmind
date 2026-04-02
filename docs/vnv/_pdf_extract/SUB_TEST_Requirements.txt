@@ -1,0 +1,388 @@
+                       SUB-TEST
+                             Testbench V&V;
+Infraestructura de verificación SIL — paneles, cobertura, CI/CD, simulador
+
+                       32 requisitos · v1.1 · 2026-04-01
+                     UpNext — Flightmind Autonomy Stack
+              DO-178C DAL-C · ARP4754A §6 · EUROCAE ED-12C
+
+
+                   CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-TEST: TESTBENCH V&V                                                             v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      27   SHALL       31
+
+                                      PARCIAL                       3    SHOULD      1
+
+                                      XFAIL                         0    MAY         0
+
+                                      PENDIENTE                     2
+
+                                      N/A-DEMO                      0
+
+                                      TOTAL                         32
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Infraestructura del testbench                                       7
+
+                 2     Paneles visuales y TC runner                                       10
+
+                 3     Cobertura y calidad de tests                                        6
+
+                 4     Documentación y trazabilidad                                        3
+
+                 5     CI/CD y simulador standalone                                        5
+
+                 6     Criterios de paso a HIL                                             1
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-TEST: TESTBENCH V&V                                                                                  v1.1 · 2026-04-01
+
+
+
+
+          Infraestructura del testbench
+
+         TEST-001            Conexión al stack ROS2 real via rosbridge WebSocket                      SHALL   CUBIERTO
+
+         Descripción          El testbench SHALL conectarse al stack real. No SHALL usar mocks en modo integración.
+         Fuentes              SYS · DO-178C
+         Fundamento           Un testbench que no conecta al stack real es simulación, no verificación.
+         Verificación         testbench/js/ros_bridge.js.
+         Traza impl.          testbench/js/ros_bridge.js
+
+         TEST-002            Reconexión automática si WebSocket se desconecta                         SHALL   CUBIERTO
+
+         Descripción          ros_bridge.js SHALL intentar reconexión automática cada 2s.
+         Fuentes              SYS
+         Fundamento           Desconexión temporal no debe requerir refrescar el testbench.
+         Verificación         ros_bridge.js — auto-reconnect.
+         Traza impl.          testbench/js/ros_bridge.js
+
+         TEST-003            Indicador de estado de conexión en la UI                                 SHALL   CUBIERTO
+
+         Descripción          La UI SHALL mostrar CONNECTED o DISCONNECTED.
+         Fuentes              USR
+         Fundamento           El operador debe saber si los datos son en tiempo real.
+         Verificación         testbench/index.html — connection indicator.
+         Traza impl.          testbench/index.html
+
+         TEST-004            Arranque automático con launch.sh                                        SHALL   PARCIAL
+
+         Descripción          launch.sh SHALL arrancar rosbridge + mission_fsm_node automáticamente.
+         Fuentes              USR
+         Fundamento           Usabilidad en demostraciones.
+         Verificación         testbench/launch.sh — en depuración.
+         Traza impl.          testbench/launch.sh
+
+         TEST-005            launch.sh ejecuta unset COLCON_TRACE antes de sourcing                   SHALL   PARCIAL
+
+         Descripción          El fix de COLCON_TRACE SHALL estar en launch.sh.
+         Fuentes              SYS
+         Fundamento           COLCON_TRACE unset causa error en bash estricto.
+         Verificación         testbench/launch.sh.
+         Traza impl.          testbench/launch.sh
+
+         TEST-006            Icono de escritorio .desktop para doble clic                             SHALL   CUBIERTO
+
+         Descripción          SHALL existir testbench.desktop.
+         Fuentes              USR
+         Fundamento           Las demos requieren arranque sin terminal.
+         Verificación         testbench/testbench.desktop.
+         Traza impl.          testbench/testbench.desktop
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                               Page 3
+FLIGHTMIND — SUB-TEST: TESTBENCH V&V                                                                             v1.1 · 2026-04-01
+
+
+
+
+         TEST-007            ram_monitor.py en HTTP :9091 para MemoryPanel                           SHALL   CUBIERTO
+
+         Descripción          ram_monitor.py SHALL exponer JSON de RAM en :9091.
+         Fuentes              SYS
+         Fundamento           MemoryPanel necesita datos de psutil no accesibles desde el browser.
+         Verificación         testbench/ram_monitor.py.
+         Traza impl.          testbench/ram_monitor.py
+
+
+
+          Paneles visuales y TC runner
+
+         TEST-008            Panel visual específico por TC montado automáticamente                  SHALL   CUBIERTO
+
+         Descripción          Al seleccionar un TC SHALL montarse el panel apropiado según TC_PANEL_MAP.
+         Fuentes              SYS · DO-178C
+         Fundamento           La evidencia visual es parte del paquete de verificación.
+         Verificación         testbench/js/app.js — TC_PANEL_MAP.
+         Traza impl.          testbench/js/app.js
+
+         TEST-009            TC_PANEL_MAP con entrada por cada TC del plan V&V; M1-M11               SHALL   CUBIERTO
+
+         Descripción          TC_PANEL_MAP SHALL tener entrada para cada TC.
+         Fuentes              SYS
+         Fundamento           Sin mapeo los TCs aparecerían sin panel apropiado.
+         Verificación         testbench/js/app.js.
+         Traza impl.          testbench/js/app.js
+
+         TEST-010            Overlay PASS/FAIL con valor recibido, esperado y latencia               SHALL   CUBIERTO
+
+         Descripción          Al completar un TC SHALL mostrarse overlay con evidencia exacta.
+         Fuentes              DO-178C
+         Fundamento           La evidencia debe ser visible durante la revisión del evaluador.
+         Verificación         testbench/js/tc_runner.js — BasePanel.onTCEnd().
+         Traza impl.          testbench/js/tc_runner.js
+
+         TEST-011            FsmGraphPanel para TCs de transiciones FSM (M1)                         SHALL   CUBIERTO
+
+         Descripción          M1 SHALL usar FsmGraphPanel.
+         Fuentes              SYS
+         Fundamento           La evidencia de transición es el grafo con estado destino.
+         Verificación         TC_PANEL_MAP — M1 → FsmGraphPanel.
+         Traza impl.          testbench/js/panels/FsmGraphPanel.js
+
+         TEST-012            RadarPanel para TCs de DAIDALUS (M5)                                    SHALL   CUBIERTO
+
+         Descripción          M5 SHALL usar RadarPanel con PPI y bandas 360°.
+         Fuentes              SYS
+         Fundamento           La evidencia de evasión DAA es el radar PPI.
+         Verificación         TC_PANEL_MAP — M5 → RadarPanel.
+         Traza impl.          testbench/js/panels/RadarPanel.js
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                          Page 4
+FLIGHTMIND — SUB-TEST: TESTBENCH V&V                                                                          v1.1 · 2026-04-01
+
+
+
+
+         TEST-013            WatchdogPanel para TCs de FDIR (M6)                                  SHALL   CUBIERTO
+
+         Descripción          M6 SHALL usar WatchdogPanel con tarjetas ALIVE/DEAD.
+         Fuentes              SYS
+         Fundamento           La evidencia de detección de fallo es ver el nodo DEAD.
+         Verificación         TC_PANEL_MAP — M6 → WatchdogPanel.
+         Traza impl.          testbench/js/panels/WatchdogPanel.js
+
+         TEST-014            LatencyPanel para TCs de timing (M8, M11)                            SHALL   CUBIERTO
+
+         Descripción          Los TCs de latencia SHALL usar LatencyPanel.
+         Fuentes              SYS
+         Fundamento           La evidencia de timing es la distribución de latencias.
+         Verificación         TC_PANEL_MAP — M8/M11 → LatencyPanel.
+         Traza impl.          testbench/js/panels/LatencyPanel.js
+
+         TEST-015            MemoryPanel para TC-E2E-007 (memory leak)                            SHALL   CUBIERTO
+
+         Descripción          TC-E2E-007 SHALL usar MemoryPanel con gráfico durante 5 misiones.
+         Fuentes              SYS
+         Fundamento           La evidencia de no-leak requiere curva de RAM estable.
+         Verificación         testbench MemoryPanel + ram_monitor.py.
+         Traza impl.          testbench/js/panels/MemoryPanel.js
+
+         TEST-016            MapPanel para TCs de navegación y geofence (M7)                      SHALL   CUBIERTO
+
+         Descripción          M7 y TCs de geofence SHALL usar MapPanel.
+         Fuentes              SYS
+         Fundamento           La evidencia de geofence es ver al UAS evitar la zona en el mapa.
+         Verificación         TC_PANEL_MAP — M7 → MapPanel.
+         Traza impl.          testbench/js/panels/MapPanel.js
+
+         TEST-017            E2EPanel para TCs end-to-end (M9, M10)                               SHALL   CUBIERTO
+
+         Descripción          M9 y M10 SHALL usar E2EPanel con timeline de estados.
+         Fuentes              SYS
+         Fundamento           La evidencia E2E es la secuencia completa de estados FSM.
+         Verificación         TC_PANEL_MAP — M9/M10 → E2EPanel.
+         Traza impl.          testbench/js/panels/E2EPanel.js
+
+
+
+          Cobertura y calidad de tests
+
+         TEST-018            11 módulos V&V; M1-M11 con ≥ 148 TCs                                 SHALL   CUBIERTO
+
+         Descripción          El plan SIL V&V; SHALL cubrir M1-M11 con ≥ 148 TCs.
+         Fuentes              DO-178C DAL-C
+         Fundamento           DO-178C requiere cobertura de requisitos.
+         Verificación         148 TCs. 140 passed, 38 XFAIL, 0 failed.
+         Traza impl.          src/mission_fsm/test/
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                       Page 5
+FLIGHTMIND — SUB-TEST: TESTBENCH V&V                                                                                v1.1 · 2026-04-01
+
+
+
+
+         TEST-019            M1: 22 TCs cubriendo cada transición del YAML                              SHALL   CUBIERTO
+
+         Descripción          M1 SHALL cubrir cada transición individual.
+         Fuentes              DO-178C §6.4
+         Fundamento           Transición no testada puede contener bugs invisibles.
+         Verificación         TC-FSM-001..022.
+         Traza impl.          test/test_m1_fsm_transitions.py
+
+         TEST-020            M2: 10 TCs de timeouts (XFAIL hasta ARCH-1.2)                              SHALL   CUBIERTO
+
+         Descripción          M2 SHALL intentar verificar cada timeout.
+         Fuentes              DO-178C
+         Fundamento           Los XFAIL documentan gaps a cerrar antes de HIL.
+         Verificación         TC-TO-001..010.
+         Traza impl.          test/test_m2_fsm_timeouts.py
+
+         TEST-021            100% branch coverage en fsm.py                                             SHALL   CUBIERTO
+
+         Descripción          El módulo fsm.py SHALL alcanzar 100% de branch coverage.
+         Fuentes              DO-178C DAL-C
+         Fundamento           Rama no cubierta = código no verificado.
+         Verificación         113 stmts, 60 branches, 0 miss = 100%.
+         Traza impl.          src/mission_fsm/mission_fsm/fsm.py
+
+                             Tests deterministas:       mismo       resultado    en   3   ejecuciones
+         TEST-022                                                                                       SHALL   CUBIERTO
+                             consecutivas
+
+         Descripción          Todos los tests SIL SHALL ser deterministas.
+         Fuentes              DO-178C
+         Fundamento           Tests no deterministas no son evidencia válida.
+         Verificación         TC-E2E-010. CUBIERTO.
+         Traza impl.          test/test_m9_e2e.py
+
+         TEST-023            colcon test retorna exit code 0 con solo passed y xfail                    SHALL   CUBIERTO
+
+         Descripción          El comando colcon test SHALL retornar 0 sin failures.
+         Fuentes              SYS
+         Fundamento           Criterio de paso: 0 failures.
+         Verificación         140 passed, 38 xfailed, 0 failed → 0.
+         Traza impl.          src/mission_fsm/test/
+
+
+
+          Documentación y trazabilidad
+
+         TEST-024            XFAIL documentados con referencia ARCH-X.X en el docstring                 SHALL   CUBIERTO
+
+         Descripción          Cada XFAIL SHALL referenciar el gap arquitectural.
+         Fuentes              DO-178C §11.14
+         Fundamento           XFAIL sin referencia es fallo sin justificación.
+         Verificación         XFAIL_INDEX.md.
+         Traza impl.          src/mission_fsm/docs/vnv/XFAIL_INDEX.md
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                             Page 6
+FLIGHTMIND — SUB-TEST: TESTBENCH V&V                                                                               v1.1 · 2026-04-01
+
+
+
+
+         TEST-025            VV_MATRIX.md con trazabilidad SR → TC                                SHALL       CUBIERTO
+
+         Descripción          SHALL existir matriz de trazabilidad SR→TC.
+         Fuentes              DO-178C §11.13
+         Fundamento           Sin trazabilidad no se puede demostrar cobertura.
+         Verificación         docs/vnv/VV_MATRIX.md.
+         Traza impl.          src/mission_fsm/docs/vnv/VV_MATRIX.md
+
+         TEST-026            XFAIL_INDEX.md con lista de todos los gaps arquitecturales           SHALL       CUBIERTO
+
+         Descripción          SHALL existir XFAIL_INDEX.md con cada ARCH-X.X.
+         Fuentes              DO-178C
+         Fundamento           El índice de gaps gestiona el trabajo pendiente antes de HIL.
+         Verificación         XFAIL_INDEX.md.
+         Traza impl.          src/mission_fsm/docs/vnv/XFAIL_INDEX.md
+
+
+
+          CI/CD y simulador standalone
+
+         TEST-027            GitHub Actions: colcon test en cada push a main                      SHALL       PENDIENTE
+
+         Descripción          SHALL existir workflow CI que ejecute colcon test.
+         Fuentes              DO-178C §12
+         Fundamento           CI garantiza que regresiones se detecten inmediatamente.
+         Verificación         .github/workflows/ci.yml — pendiente.
+         Traza impl.          .github/workflows/
+
+         TEST-028            GitHub Actions: badge de estado en README                            SHOULD      PENDIENTE
+
+         Descripción          El README SHALL mostrar el badge del workflow CI.
+         Fuentes              SYS
+         Fundamento           El badge hace visible el estado de salud del proyecto.
+         Verificación         README.md — badge pendiente.
+
+         TEST-029            Simulador standalone HTML5 sin dependencia de ROS2                   SHALL       CUBIERTO
+
+         Descripción          SHALL existir simulator/index.html que demuestre FSM/DAA/GPP sin ROS2.
+         Fuentes              USR
+         Fundamento           Las demos a stakeholders no técnicos necesitan herramienta en cualquier navegador.
+         Verificación         simulator/index.html.
+         Traza impl.          simulator/index.html
+
+                             Simulador: Start, Inject intruder, Sensor fault, Battery critical,
+         TEST-030                                                                                 SHALL       CUBIERTO
+                             Reset
+
+         Descripción          El simulador SHALL incluir los 5 botones de escenario.
+         Fuentes              USR
+         Fundamento           Permiten demostrar los escenarios principales sin configuración.
+         Verificación         simulator/index.html — 5 buttons.
+         Traza impl.          simulator/index.html
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                            Page 7
+FLIGHTMIND — SUB-TEST: TESTBENCH V&V                                                                                    v1.1 · 2026-04-01
+
+
+
+
+         TEST-031            Simulador: NFZ, trail de posición y FSM chips en el canvas              SHALL     CUBIERTO
+
+         Descripción          El simulador SHALL mostrar NFZ, trail y estado FSM.
+         Fuentes              USR
+         Fundamento           La visualización hace la demo intuitiva.
+         Verificación         simulator/index.html.
+         Traza impl.          simulator/index.html
+
+
+
+          Criterios de paso a HIL
+
+                             Criterio de paso a HIL: 0 failures, ≤ 15 XFAIL referenciados,
+         TEST-032                                                                                    SHALL      PARCIAL
+                             coverage 100%
+
+         Descripción          El criterio formal SHALL ser: 0 failures, XFAIL ≤ 15 todos con ARCH-X.X, coverage 100%.
+         Fuentes              ARP4754A
+         Fundamento           Criterio formal evita ambigüedad sobre cuándo el sistema está listo.
+         Verificación         Estado actual: 38 XFAIL (excede límite). Objetivo antes de HIL.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 8
+

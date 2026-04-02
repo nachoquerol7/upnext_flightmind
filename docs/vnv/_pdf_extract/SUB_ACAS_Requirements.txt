@@ -1,0 +1,302 @@
+                         SUB-ACAS
+                                    ACAS Xu
+Capa de emergencia — Resolution Advisories mediante redes neuronales .nnet
+
+                          23 requisitos · v1.1 · 2026-04-01
+                        UpNext — Flightmind Autonomy Stack
+         DO-386 · Stanford SISL HorizontalCAS · ICAO Annex 2 · ARP4754A §6
+
+
+                     CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-ACAS: ACAS XU                                                                   v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      0    SHALL       23
+
+                                      PARCIAL                       6    SHOULD      0
+
+                                      XFAIL                         0    MAY         0
+
+                                      PENDIENTE                     17
+
+                                      N/A-DEMO                      0
+
+                                      TOTAL                         23
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Arquitectura y motor neuronal                                       4
+
+                 2     Cálculo de inputs (5 variables)                                     4
+
+                 3     Advisories y categorías                                             4
+
+                 4     Coordinación y seguridad                                            5
+
+                 5     Publicación y mensajes                                              5
+
+                 6     Verificación                                                        1
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-ACAS: ACAS XU                                                                                               v1.1 · 2026-04-01
+
+
+
+
+          Arquitectura y motor neuronal
+
+         ACAS-001            Nodo ROS2 independiente de DAIDALUS                                           SHALL        PARCIAL
+
+         Descripción          acas_node SHALL ser un nodo ROS2 independiente. Su lógica no SHALL importar ni depender
+                              del módulo daidalus_node.
+         Fuentes              DO-386 · ARP4754A §6
+         Fundamento           La redundancia DAA requiere independencia de implementación y de proceso.
+         Verificación         acas_node — proceso independiente, suscribe directamente NavigationState y TrafficIntruder.
+         Traza impl.          src/acas_node/acas_node/acas_node.py
+
+                             Motor basado en 45 redes neuronales .nnet de Stanford SISL
+         ACAS-002                                                                                          SHALL       PENDIENTE
+                             HorizontalCAS
+
+         Descripción          La lógica de decisión SHALL implementarse con las 45 redes .nnet del prototipo HorizontalCAS,
+                              indexadas por tau (9 bins, 0-8s) y advisory previo (5 categorías).
+         Fuentes              DO-386 · Stanford SISL 2019
+         Fundamento           Las .nnet son la implementación open source más fiel al algoritmo ACAS Xu real. La lógica
+                              tabular no representa el comportamiento real.
+         Verificación         PENDIENTE — integración .nnet.
+
+         ACAS-003            Carga de las 45 redes .nnet al startup del nodo                               SHALL       PENDIENTE
+
+         Descripción          El nodo SHALL cargar las 45 redes .nnet desde el directorio configurado en el parámetro
+                              nnet_dir al arrranque.
+         Fuentes              DO-386
+         Fundamento           La carga tardía introduce latencia de inferencia en el primer advisory.
+         Verificación         acas_node.py — _load_networks() en __init__.
+
+         ACAS-004            Indexación de redes: tau_bin × prev_advisory = 9 × 5 = 45 redes               SHALL       PENDIENTE
+
+         Descripción          La selección de red SHALL             usar:   tau_bin   =   int(min(tau_s,    8)),   prev_adv_idx   =
+                              advisory_to_idx[prev_advisory].
+         Fuentes              Stanford SISL HorizontalCAS
+         Fundamento           La indexación incorrecta produce advisories inconsistentes que pueden agravar el conflicto.
+         Verificación         acas_node.py — _select_network().
+
+
+          Cálculo de inputs (5 variables)
+
+         ACAS-005            5 inputs normalizados: rho, theta, psi, v_own, v_int                          SHALL       PENDIENTE
+
+         Descripción          El nodo SHALL calcular: rho (dist. relativa m), theta (bearing relativo rad), psi (heading relativo
+                              rad), v_own (m/s), v_int (m/s) desde NavigationState + TrafficIntruder.
+         Fuentes              Stanford SISL HorizontalCAS · DO-386
+         Fundamento           Un input erróneo (unidades, frames) produce advisories erróneos con consecuencias de
+                              seguridad.
+         Verificación         acas_node.py — _compute_inputs().
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                      Page 3
+FLIGHTMIND — SUB-ACAS: ACAS XU                                                                                             v1.1 · 2026-04-01
+
+
+
+
+         ACAS-006            rho calculado como distancia euclídea horizontal en NED                    SHALL       PENDIENTE
+
+         Descripción          rho SHALL calcularse como sqrt((dNorth)²+(dEast)²) en metros.
+         Fuentes              Stanford SISL
+         Fundamento           La distancia horizontal es la métrica de separación principal en ACAS Xu.
+         Verificación         acas_node.py — _compute_rho().
+
+         ACAS-007            theta calculado como ángulo relativo en el plano horizontal                SHALL       PENDIENTE
+
+         Descripción          theta SHALL calcularse como atan2(dEast, dNorth) - heading_own, normalizado [-π, π].
+         Fuentes              Stanford SISL
+         Fundamento           theta es el bearing del intruso relativo al heading propio, necesario para determinar el lado de la
+                              maniobra.
+         Verificación         acas_node.py — _compute_theta().
+
+         ACAS-008            psi calculado como diferencia de headings, normalizado [-π, π]             SHALL       PENDIENTE
+
+         Descripción          psi SHALL calcularse como heading_int - heading_own, normalizado en [-π, π].
+         Fuentes              Stanford SISL
+         Fundamento           psi indica si el intruso se aproxima de frente, por detrás o en ángulo.
+         Verificación         acas_node.py — _compute_psi().
+
+
+          Advisories y categorías
+
+                             5 categorías de output: COC, WL, WR, SL, SR con turn rates
+         ACAS-009                                                                                       SHALL       PENDIENTE
+                             definidos
+
+         Descripción          La red neuronal SHALL mapearse a: COC (0°/s), WL (-1.5°/s), WR (+1.5°/s), SL (-3.0°/s), SR
+                              (+3.0°/s).
+         Fuentes              DO-386 · HorizontalCAS
+         Fundamento           Las 5 categorías cubren el espacio completo de maniobras horizontales.
+         Verificación         acas_node.py — advisory_enum.
+
+         ACAS-010            Advisory = argmax de los 5 outputs de la red                               SHALL       PENDIENTE
+
+         Descripción          El advisory SHALL ser la categoría con la puntuación más alta en el vector de output de la red.
+         Fuentes              Stanford SISL
+         Fundamento           argmax es la selección estándar en ACAS Xu. Thresholding haría el comportamiento
+                              impredecible.
+         Verificación         acas_node.py — np.argmax(network_output).
+
+         ACAS-011            COC como advisory default cuando no hay amenaza                            SHALL        PARCIAL
+
+         Descripción          Cuando rho > rho_activation_threshold o ra_active=False, el advisory SHALL ser COC.
+         Fuentes              DO-386
+         Fundamento           Un advisory activo sin amenaza causaría intervenciones innecesarias.
+         Verificación         TC-FDIR-006 — no false positives. acas_node COC default.
+         Traza impl.          acas_node.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                    Page 4
+FLIGHTMIND — SUB-ACAS: ACAS XU                                                                                          v1.1 · 2026-04-01
+
+
+
+
+         ACAS-012            ra_active=True cuando advisory ≠ COC                                      SHALL     PENDIENTE
+
+         Descripción          ra_active SHALL ser True si y solo si el advisory actual no es COC.
+         Fuentes              DO-386 · SDD Flightmind
+         Fundamento           ra_active es el flag que activa la respuesta del FSM y del controlador de vuelo.
+         Verificación         acas_node.py — ra_active = (advisory != COC).
+
+
+          Coordinación y seguridad
+
+                             ra_active=True    →           publicar      abort_command           en
+         ACAS-013                                                                                      SHALL     PENDIENTE
+                             /fsm/in/abort_command
+
+         Descripción          Cuando ra_active=True, acas_node SHALL publicar abort_command=True.
+         Fuentes              SAF · SDD Flightmind
+         Fundamento           ACAS actúa en los últimos segundos. La respuesta del FSM debe ser inmediata.
+         Verificación         acas_node.py — abort_command_pub.
+
+         ACAS-014            Activación condicionada a alert_level ≥ NEAR (nivel 3)                    SHALL      PARCIAL
+
+         Descripción          ACAS Xu SHALL activar ra_active solo cuando daidalus_alert_level >= 3, o en modo standalone
+                              si DAIDALUS no está disponible.
+         Fuentes              DO-386 · DO-365 · SAF
+         Fundamento           Activar ACAS en niveles FAR/MID solaparía con DAIDALUS y generaría advisories
+                              contradictorios.
+         Verificación         acas_node.py — activation_condition.
+         Traza impl.          acas_node.py
+
+                             Umbral de activación standalone: rho < rho_standalone_m
+         ACAS-015                                                                                      SHALL     PENDIENTE
+                             (default 500m)
+
+         Descripción          En modo standalone (sin DAIDALUS), ACAS SHALL activarse cuando rho < rho_standalone_m.
+         Fuentes              DO-386 · SAF
+         Fundamento           ACAS debe proteger el vehículo incluso si DAIDALUS falla.
+         Verificación         acas_node.py — standalone_activation.
+
+         ACAS-016            Verificación de factibilidad del advisory con Vehicle Model               SHALL     PENDIENTE
+
+         Descripción          Antes de publicar un advisory activo, SHALL verificarse que el turn_rate requerido es ejecutable
+                              por la plataforma actual.
+         Fuentes              SAF · DO-386
+         Fundamento           SL/SR requieren 3°/s. Esto puede ser infactible para ala fija a baja velocidad.
+         Verificación         acas_node.py — vehicle_model.is_feasible(turn_rate).
+
+         ACAS-017            Persistencia del advisory mínima: advisory_hold_s (default 2s)            SHALL     PENDIENTE
+
+         Descripción          Un advisory activo SHALL mantenerse durante al menos advisory_hold_s antes de poder
+                              cambiar a COC.
+         Fuentes              DO-386
+         Fundamento           Un advisory que cambia cada tick produce oscilaciones en el controlador.
+         Verificación         acas_node.py — advisory_hold_timer.
+
+
+          Publicación y mensajes
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 5
+FLIGHTMIND — SUB-ACAS: ACAS XU                                                                                          v1.1 · 2026-04-01
+
+
+
+
+                             ACASAdvisory.msg publicado en /acas/advisory a ≥ 10 Hz, QoS
+         ACAS-018                                                                                    SHALL       PENDIENTE
+                             RELIABLE
+
+         Descripción          ACASAdvisory SHALL publicarse en /acas/advisory a ≥ 10 Hz con reliability=RELIABLE.
+         Fuentes              SYS · DO-386
+         Fundamento           El FSM necesita información actualizada. RELIABLE garantiza entrega.
+         Verificación         acas_node.py — publisher /acas/advisory.
+
+         ACAS-019            Campo ACASAdvisory.advisory: enumerado COC/WL/WR/SL/SR                  SHALL        PARCIAL
+
+         Descripción          ACASAdvisory.advisory SHALL contener el advisory actual como enumerado.
+         Fuentes              DO-386 · SYS
+         Fundamento           El advisory es el campo principal consumido por el controlador de vuelo.
+         Verificación         flightmind_msgs/ACASAdvisory.msg
+         Traza impl.          flightmind_msgs/ACASAdvisory.msg
+
+         ACAS-020            Campo ACASAdvisory.ra_active (bool)                                     SHALL        PARCIAL
+
+         Descripción          ACASAdvisory.ra_active SHALL ser True cuando hay RA activa (advisory ≠ COC).
+         Fuentes              DO-386
+         Fundamento           ra_active es el flag de emergencia consumido por el FSM.
+         Verificación         flightmind_msgs/ACASAdvisory.msg
+         Traza impl.          flightmind_msgs/ACASAdvisory.msg
+
+                             Campos      ACASAdvisory:              threat_class,   time_to_cpa_s,
+         ACAS-021                                                                                    SHALL        PARCIAL
+                             horizontal_miss_dist_m
+
+         Descripción          ACASAdvisory SHALL incluir: threat_class (HEAD_ON/OVERTAKE/CROSSING/GENERIC),
+                              time_to_cpa_s, horizontal_miss_dist_m.
+         Fuentes              DO-386 · USR
+         Fundamento           Los metadatos permiten al operador y al testbench entender la naturaleza de la amenaza.
+         Verificación         flightmind_msgs/ACASAdvisory.msg
+         Traza impl.          flightmind_msgs/ACASAdvisory.msg
+
+         ACAS-022            Latencia input → advisory < 50ms                                        SHALL       PENDIENTE
+
+         Descripción          El tiempo entre recepción del estado del intruso y publicación del advisory SHALL ser < 50ms.
+         Fuentes              DO-386 §7
+         Fundamento           ACAS actúa en emergencia. 50ms a 35s de anticipación es el 0.14% del tiempo.
+         Verificación         Pendiente implementación .nnet. Benchmark de inferencia.
+
+
+          Verificación
+
+                             TCs: activación con rho < threshold, COC default, factibilidad
+         ACAS-023                                                                                    SHALL       PENDIENTE
+                             rechazada
+
+         Descripción          La suite SHALL incluir: TC de activación con rho sintético, TC de COC sin amenaza, TC de
+                              advisory infactible rechazado.
+         Fuentes              DO-178C DAL-C
+         Fundamento           La correcta selección de advisory es crítica para la seguridad.
+         Verificación         Pendiente implementación .nnet.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 6
+

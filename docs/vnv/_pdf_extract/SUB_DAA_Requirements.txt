@@ -1,0 +1,805 @@
+                     SUB-DAA
+                           DAIDALUS DAA
+Detect-and-Avoid — alertas DO-365, bandas continuas, multi-intruso
+
+                     65 requisitos · v1.1 · 2026-04-01
+                  UpNext — Flightmind Autonomy Stack
+    DO-365 · ED-269 · RTCA SC-228 · NASA DAIDALUS v2 · EU 2019/947
+
+
+               CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                               v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      19   SHALL       65
+
+                                      PARCIAL                       35   SHOULD      0
+
+                                      XFAIL                         4    MAY         0
+
+                                      PENDIENTE                     7
+
+                                      N/A-DEMO                      0
+
+                                      TOTAL                         65
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Modelo de alerta y criterio Well-Clear                             15
+
+                 2     Bandas de resolución (heading, GS, VS)                             10
+
+                 3     Soporte multi-intruso                                               8
+
+                 4     Interfaz de tráfico y campos de mensajes                           17
+
+                 5     Coordinación con FSM y ACAS Xu                                      4
+
+                 6     Motor DAIDALUS v2 y configuración                                   4
+
+                 7     Operación degradada                                                 4
+
+                 8     Verificación                                                        3
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                      v1.1 · 2026-04-01
+
+
+
+
+          Modelo de alerta y criterio Well-Clear
+
+         DAA-001             4 niveles de alerta: NONE / FAR / MID / NEAR                            SHALL        CUBIERTO
+
+         Descripción          El sistema SHALL producir alertas en 4 niveles: NONE, FAR (preventiva, time_to_LOS > 55s),
+                              MID (correctiva, 35s < time ≤ 55s), NEAR (advertencia, time ≤ 35s o WC ya perdido).
+         Fuentes              DO-365 §2.2 · ED-269 §3.4 · RTCA SC-228 TD-1
+         Fundamento           Los 4 niveles permiten respuestas graduadas. Una alerta binaria no da tiempo suficiente para
+                              desvíos suaves ni permite graduar la urgencia.
+         Verificación         TC-DAI-001..004 — 4 niveles verificados con mock DAIDALUS.
+         Traza impl.          upnext_icarous_daa/daidalus_node.py — alert_level enum
+
+         DAA-002             NONE: ningún intruso dentro del horizonte de alerting                   SHALL        CUBIERTO
+
+         Descripción          El nivel NONE SHALL publicarse cuando todos los intrusos tienen time_to_LOS >
+                              alerting_time_s.
+         Fuentes              DO-365 §2.2
+         Fundamento           NONE es el estado nominal. El sistema debe publicarlo explícitamente para que los
+                              consumidores distingan "sin datos" de "sin amenaza".
+         Verificación         TC-DAI-001 — sin intrusos → NONE.
+         Traza impl.          daidalus_node.py
+
+                             FAR: alerta preventiva         —   tiempo   a   LOS   entre   35s   y
+         DAA-003                                                                                     SHALL        CUBIERTO
+                             alerting_time_s
+
+         Descripción          FAR SHALL activarse cuando 35s < time_to_LOS ≤ alerting_time_s. Requiere toma de
+                              conciencia del operador.
+         Fuentes              DO-365 §2.3
+         Fundamento           FAR da tiempo para que el operador evalúe la situación y el path planner calcule opciones.
+         Verificación         TC-DAI-002 — intruso en rango FAR → nivel 1.
+         Traza impl.          daidalus_node.py
+
+         DAA-004             MID: alerta correctiva — tiempo a LOS ≤ 35s                             SHALL        CUBIERTO
+
+         Descripción          MID SHALL activarse cuando time_to_LOS ≤ 35s. Requiere acción correctiva del sistema.
+         Fuentes              DO-365 §2.3
+         Fundamento           MID indica que se necesita desvío activo. El replanner debe iniciar la maniobra de evasión.
+         Verificación         TC-DAI-003 — intruso en rango MID → nivel 2.
+         Traza impl.          daidalus_node.py
+
+                             NEAR: alerta de advertencia — pérdida de Well-Clear inminente
+         DAA-005                                                                                     SHALL        CUBIERTO
+                             o ya ocurrida
+
+         Descripción          NEAR SHALL activarse cuando time_to_LOS ≤ 0s o la distancia horizontal < DMOD. Requiere
+                              acción inmediata y escala a ACAS Xu.
+         Fuentes              DO-365 §2.3
+         Fundamento           NEAR es el nivel más crítico. A este nivel DAIDALUS da paso a ACAS Xu para manejo de
+                              emergencia.
+         Verificación         TC-DAI-004 — intruso en NEAR → nivel 3 → escalada ACAS.
+         Traza impl.          daidalus_node.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 3
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                        v1.1 · 2026-04-01
+
+
+
+
+                             Parámetro DWC: DMOD (distancia horizontal mínima) = 2200ft
+         DAA-006                                                                                      SHALL           PARCIAL
+                             configurable
+
+         Descripción          El parámetro DMOD SHALL tener valor default de 2200ft (670m) y ser configurable en el fichero
+                              .conf de DAIDALUS.
+         Fuentes              DO-365 §3.1 · RTCA SC-228
+         Fundamento           DMOD es uno de los 3 parámetros que definen el Well-Clear volume según DO-365.
+         Verificación         config/daidalus_parameters.conf — DMOD.
+         Traza impl.          config/daidalus_parameters.conf
+
+                             Parámetro DWC: ZTHR (separación vertical mínima) = 450ft
+         DAA-007                                                                                      SHALL           PARCIAL
+                             configurable
+
+         Descripción          ZTHR SHALL tener valor default de 450ft (137m) y ser configurable en el .conf.
+         Fuentes              DO-365 §3.1
+         Fundamento           ZTHR define la separación vertical del volumen Well-Clear.
+         Verificación         config/daidalus_parameters.conf — ZTHR.
+         Traza impl.          config/daidalus_parameters.conf
+
+                             Parámetro DWC: TAUMOD (tiempo mínimo modificado) ≥ 35s
+         DAA-008                                                                                      SHALL           PARCIAL
+                             configurable
+
+         Descripción          TAUMOD SHALL tener valor default de 35s y ser configurable en el .conf.
+         Fuentes              DO-365 §3.1
+         Fundamento           TAUMOD captura la dimensión temporal del volumen Well-Clear.
+         Verificación         config/daidalus_parameters.conf — TAUMOD.
+         Traza impl.          config/daidalus_parameters.conf
+
+         DAA-009             Horizonte de alerting configurable (alerting_time_s, default 55s)        SHALL           PARCIAL
+
+         Descripción          El horizonte temporal de alerting SHALL ser configurable en el .conf con default 55s.
+         Fuentes              DO-365 · SDD Flightmind
+         Fundamento           A 55s y 20 m/s el UAS tiene 1100m para completar la maniobra. Menos horizonte puede hacer el
+                              desvío infactible.
+         Verificación         config/daidalus_parameters.conf — alertingTime.
+         Traza impl.          config/daidalus_parameters.conf
+
+         DAA-010             Transición de alerta solo puede escalar (no saltar niveles)              SHALL           PARCIAL
+
+         Descripción          La    transición    de  alerta SHALL ser  siempre monotónica   en    escalada
+                              (NONE→FAR→MID→NEAR). No se permiten saltos (NONE→NEAR directamente) salvo con
+                              hysteresis configurada.
+         Fuentes              DO-365 §5.2
+         Fundamento           Los saltos de nivel confunden al FSM y al operador que no esperan cambios abruptos.
+         Verificación         TC-DAI-005 — escalada gradual verificada.
+         Traza impl.          daidalus_node.py — alert escalation logic
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                   Page 4
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                        v1.1 · 2026-04-01
+
+
+
+
+         DAA-011             Histéresis en desescalada de alerta                                      SHALL           XFAIL
+
+         Descripción          La desescalada (ej. MID→FAR) SHALL requerir que la condición de nivel inferior se mantenga
+                              durante hysteresis_time_s (default 5s) antes de bajar el nivel.
+         Fuentes              DO-365 §5.2
+         Fundamento           Sin histéresis, un intruso en el borde del umbral causa alternancia MID↔FAR que genera
+                              maniobras innecesarias.
+         Verificación         TC-DAI-009 — XFAIL. Histéresis no implementada. ARCH-1.1.
+
+         DAA-012             time_to_violation_s calculado y publicado por intruso                    SHALL         PARCIAL
+
+         Descripción          El sistema SHALL calcular time_to_violation_s (tiempo hasta pérdida de Well-Clear) para cada
+                              intruso activo y publicarlo en DaidalusAlert.
+         Fuentes              DO-365 §4.1
+         Fundamento           Es la métrica principal para graduar urgencia. Sin ella el FSM y el operador no pueden priorizar.
+         Verificación         DaidalusAlert.msg — time_to_violation_s.
+         Traza impl.          flightmind_msgs/DaidalusAlert.msg
+
+         DAA-013             DaidalusAlert publicado en /daidalus/alert a ≥ 10 Hz                     SHALL         PARCIAL
+
+         Descripción          El topic /daidalus/alert SHALL publicarse a frecuencia mínima de 10 Hz con QoS RELIABLE.
+         Fuentes              DO-365 §7.1 · SYS
+         Fundamento           A 10 Hz la información tiene máximo 100ms de antigüedad. Frecuencias menores introducen
+                              latencia inaceptable.
+         Verificación         daidalus_node.py — timer callback a 10Hz.
+         Traza impl.          daidalus_node.py
+
+         DAA-014             Latencia total alerta → FSM transición < 100ms P99                       SHALL        CUBIERTO
+
+         Descripción          El tiempo total desde cálculo de alerta hasta transición del FSM a EVENT SHALL ser < 100ms
+                              P99.
+         Fuentes              DO-365 §7.2 · SYS
+         Fundamento           A 55s de anticipación, 100ms es el 0.18% del tiempo disponible.
+         Verificación         TC-DAI-010 — latencia medida. CUBIERTO.
+         Traza impl.          test/test_m5_daidalus.py — TC-DAI-010
+
+         DAA-015             Latencia de computación DAIDALUS < 50ms por ciclo                        SHALL         PARCIAL
+
+         Descripción          El tiempo de cálculo de alertas y bandas por el motor DAIDALUS SHALL ser < 50ms.
+         Fuentes              SYS · DO-365
+         Fundamento           La computación DAIDALUS debe ser una fracción de la ventana de 100ms disponible.
+         Verificación         daidalus_node.py — profiling del motor DAIDALUS.
+
+
+          Bandas de resolución (heading, GS, VS)
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                   Page 5
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                       v1.1 · 2026-04-01
+
+
+
+
+         DAA-016             Bandas de heading continuas 360° con clasificación por sector           SHALL           PARCIAL
+
+         Descripción          El sistema SHALL generar bandas de heading cubriendo los 360° con clasificación por sector:
+                              NONE (libre), FAR, MID, NEAR (conflictivo).
+         Fuentes              DO-365 §4.2
+         Fundamento           Las bandas continuas permiten al replanner calcular el heading libre óptimo más cercano al
+                              actual.
+         Verificación         DaidalusBands.msg — conflict_bands[] array.
+         Traza impl.          flightmind_msgs/DaidalusBands.msg
+
+         DAA-017             Recovery heading: heading libre más cercano al actual                   SHALL           PARCIAL
+
+         Descripción          Las bandas SHALL incluir el recovery_heading_deg: el heading libre más cercano al heading
+                              actual del UAS.
+         Fuentes              DO-365 §4.2
+         Fundamento           El recovery heading más cercano minimiza el tiempo y energía de la maniobra de evasión.
+         Verificación         DaidalusBands.msg — recovery_heading_deg.
+         Traza impl.          flightmind_msgs/DaidalusBands.msg
+
+         DAA-018             Margen de seguridad en recovery heading (default 5°)                    SHALL           PARCIAL
+
+         Descripción          El recovery_heading_deg SHALL aplicar un margen de safety_margin_deg (default 5°) sobre el
+                              límite de la banda libre.
+         Fuentes              DO-365 · SDD Flightmind
+         Fundamento           Un heading en el borde exacto no tiene margen ante perturbaciones de viento.
+         Verificación         config/daidalus_parameters.conf — safety_margin_deg.
+         Traza impl.          config/daidalus_parameters.conf
+
+         DAA-019             Parámetro safety_margin_deg configurable                                SHALL           PARCIAL
+
+         Descripción          El margen de seguridad SHALL ser configurable en el .conf (default 5°, rango 0-30°).
+         Fuentes              SDD Flightmind
+         Fundamento           Distintas fases operacionales pueden requerir márgenes distintos.
+         Verificación         config/daidalus_parameters.conf.
+
+         DAA-020             Bandas de velocidad horizontal (ground speed)                           SHALL           PARCIAL
+
+         Descripción          El sistema SHALL generar bandas de GS indicando rangos de velocidad conflictivos y el
+                              recovery_gs_ms más cercano al GS actual.
+         Fuentes              DO-365 §4.3
+         Fundamento           En escenarios de overtake o head-on, la resolución por velocidad es más eficiente que por
+                              heading.
+         Verificación         DaidalusBands.msg — gs_bands[], recovery_gs_ms.
+         Traza impl.          flightmind_msgs/DaidalusBands.msg
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                  Page 6
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                     v1.1 · 2026-04-01
+
+
+
+
+         DAA-021             Bandas de velocidad vertical (climb/descent rate)                         SHALL       PARCIAL
+
+         Descripción          El sistema SHALL generar bandas de VS indicando rangos de climb/descent conflictivos y el
+                              recovery_vs_mps más cercano al VS actual.
+         Fuentes              DO-365 §4.3
+         Fundamento           Para VTOL y helicóptero con buena maniobrabilidad vertical, la resolución en VS puede ser la
+                              más rápida.
+         Verificación         DaidalusBands.msg — vs_bands[], recovery_vs_mps.
+         Traza impl.          flightmind_msgs/DaidalusBands.msg
+
+         DAA-022             Bandas publicadas en /daidalus/bands a ≥ 10 Hz                            SHALL       PARCIAL
+
+         Descripción          Las bandas SHALL publicarse en /daidalus/bands (flightmind_msgs/DaidalusBands) a ≥ 10 Hz.
+         Fuentes              SYS
+         Fundamento           El replanner necesita bandas actualizadas en cada ciclo para su función de coste.
+         Verificación         daidalus_node.py — /daidalus/bands publisher.
+         Traza impl.          daidalus_node.py
+
+         DAA-023             Bandas QoS: BEST_EFFORT (pérdida puntual aceptable)                       SHALL      PENDIENTE
+
+         Descripción          Las bandas SHALL usar QoS reliability=BEST_EFFORT para no saturar la red.
+         Fuentes              SYS · ROS2 QoS
+         Fundamento           A 10 Hz, perder una trama de bandas ocasionalmente no es crítico. BEST_EFFORT reduce
+                              overhead.
+         Verificación         daidalus_node.py — QoS BEST_EFFORT para /daidalus/bands.
+         Traza impl.          daidalus_node.py
+
+         DAA-024             Bandas expresadas en frame NED, heading relativo al Norte                 SHALL       PARCIAL
+
+         Descripción          Todas las bandas de heading SHALL expresarse en heading absoluto (0-360°) relativo al Norte.
+         Fuentes              SYS · DO-365
+         Fundamento           El GPP y el replanner operan en NED. Una desalineación de frames resultaría en desvíos hacia
+                              el intruso.
+         Verificación         daidalus_node.py — frame NED verificado.
+         Traza impl.          daidalus_node.py
+
+         DAA-025             Bandas calculadas combinando todos los intrusos activos                   SHALL       PARCIAL
+
+         Descripción          Las bandas de heading/GS/VS SHALL calcularse considerando todos los intrusos activos
+                              simultáneamente, no solo el más amenazante.
+         Fuentes              DO-365 §5.1
+         Fundamento           Una resolución óptima para el intruso A puede crear conflicto con el intruso B.
+         Verificación         DAIDALUS API — getBandsFor() considerando lista completa.
+         Traza impl.          daidalus_node.py
+
+
+
+          Soporte multi-intruso
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                Page 7
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                         v1.1 · 2026-04-01
+
+
+
+
+         DAA-026             Lista de intrusos activos mantenida en memoria                             SHALL          PARCIAL
+
+         Descripción          El sistema SHALL mantener una lista de todos los intrusos activos con sus estados (posición,
+                              velocidad, timestamp de última actualización).
+         Fuentes              DO-365 §5.1
+         Fundamento           El manejo multi-intruso requiere persistencia del estado de cada uno entre ciclos.
+         Verificación         daidalus_node.py — traffic_state_map.
+         Traza impl.          daidalus_node.py
+
+         DAA-027             DaidalusAlert publicado por separado para cada intruso activo              SHALL          PARCIAL
+
+         Descripción          El sistema SHALL publicar un DaidalusAlert individual para cada intruso activo, identificado por
+                              intruder_id.
+         Fuentes              DO-365 · SYS
+         Fundamento           El operador y ACAS Xu necesitan información por intruso, no solo el nivel global.
+         Verificación         daidalus_node.py — multi-alert publication.
+         Traza impl.          daidalus_node.py
+
+                             Primary      threat    identificada         y      publicada        en
+         DAA-028                                                                                        SHALL          PARCIAL
+                             /daidalus/primary_threat
+
+         Descripción          El sistema SHALL identificar el intruso con menor time_to_violation_s como primary threat y
+                              publicarlo en /daidalus/primary_threat.
+         Fuentes              OPS · USR
+         Fundamento           El operador y ACAS Xu necesitan conocer la amenaza principal para dirigir su atención.
+         Verificación         daidalus_node.py — primary_threat selector.
+         Traza impl.          daidalus_node.py
+
+         DAA-029             Máximo de intrusos simultáneos configurable (default 20)                   SHALL         PENDIENTE
+
+         Descripción          El máximo de intrusos simultáneos en la lista SHALL ser configurable (default 20).
+         Fuentes              SYS · OPS
+         Fundamento           En densidades de tráfico muy altas, limitar la lista protege los recursos de cómputo.
+         Verificación         config/daidalus_parameters.conf — max_intruders.
+
+         DAA-030             Intrusos añadidos mediante addTrafficState() de DAIDALUS API               SHALL          PARCIAL
+
+         Descripción          Cada intruso SHALL añadirse al motor DAIDALUS usando la API addTrafficState() con los
+                              campos de estado completos.
+         Fuentes              NASA DAIDALUS v2 API · DO-365
+         Fundamento           La API addTrafficState() es la interfaz oficial de DAIDALUS para insertar tráfico.
+         Verificación         daidalus_node.py — addTrafficState() call.
+         Traza impl.          daidalas_node.py
+
+                             Expiración de intrusos sin actualización tras stale_timeout_s
+         DAA-031                                                                                        SHALL          PARCIAL
+                             (default 10s)
+
+         Descripción          Un intruso sin actualización durante stale_timeout_s SHALL eliminarse de la lista activa.
+         Fuentes              DO-365 · SYS
+         Fundamento           Intrusos obsoletos sobrecargan el cálculo y pueden generar maniobras innecesarias.
+         Verificación         daidalus_node.py — stale timeout logic.
+         Traza impl.          daidalus_node.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                    Page 8
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                       v1.1 · 2026-04-01
+
+
+
+
+         DAA-032             stale_timeout_s configurable (default 10s)                              SHALL         PENDIENTE
+
+         Descripción          El timeout de expiración SHALL ser configurable como parámetro ROS2.
+         Fuentes              SYS
+         Fundamento           Distintas condiciones operacionales (baja frecuencia de actualización de radar) pueden requerir
+                              timeouts mayores.
+         Verificación         daidalus_node.py — declare_parameter stale_timeout_s.
+
+         DAA-033             intruder_id preservado entre actualizaciones sucesivas                  SHALL          PARCIAL
+
+         Descripción          El intruder_id SHALL mantenerse constante entre actualizaciones del mismo intruso para
+                              correlación en logs y alertas.
+         Fuentes              SYS
+         Fundamento           Sin ID consistente, el operador no puede hacer seguimiento de un intruso concreto.
+         Verificación         daidalus_node.py — intruder_id mapping.
+         Traza impl.          daidalus_node.py
+
+
+
+          Interfaz de tráfico y campos de mensajes
+
+         DAA-034             Interfaz de entrada estándar: flightmind_msgs/TrafficIntruder           SHALL          PARCIAL
+
+         Descripción          El sistema SHALL aceptar tráfico exclusivamente en formato flightmind_msgs/TrafficIntruder en
+                              el topic /traffic/intruders.
+         Fuentes              SYS · DO-365 §6.1
+         Fundamento           Una interfaz estándar permite conectar ADS-B, radar o cualquier fuente sin modificar el core
+                              DAA.
+         Verificación         flightmind_msgs/TrafficIntruder.msg — interfaz definida.
+         Traza impl.          flightmind_msgs/TrafficIntruder.msg
+
+         DAA-035             Campo TrafficIntruder.intruder_id: identificador único (string)         SHALL         CUBIERTO
+
+         Descripción          TrafficIntruder.intruder_id SHALL ser un string único por aeronave.
+         Fuentes              SYS
+         Fundamento           El ID es necesario para rastreo multi-intruso y correlación en logs.
+         Verificación         flightmind_msgs/TrafficIntruder.msg
+         Traza impl.          flightmind_msgs/TrafficIntruder.msg
+
+                             Campo TrafficIntruder.position_ned[3]: posición en frame NED
+         DAA-036                                                                                     SHALL         CUBIERTO
+                             (metros)
+
+         Descripción          position_ned SHALL contener [North, East, Down] en metros relativos al origen de misión.
+         Fuentes              SYS · DO-365
+         Fundamento           NED es el frame estándar del stack. Inconsistencias de frame resultan en cálculos erróneos de
+                              separación.
+         Verificación         flightmind_msgs/TrafficIntruder.msg
+         Traza impl.          flightmind_msgs/TrafficIntruder.msg
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                  Page 9
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                     v1.1 · 2026-04-01
+
+
+
+
+         DAA-037             Campo TrafficIntruder.velocity_ned[3]: velocidad en NED (m/s)           SHALL       CUBIERTO
+
+         Descripción          velocity_ned SHALL contener [Vn, Ve, Vd] en m/s.
+         Fuentes              SYS
+         Fundamento           La velocidad es necesaria para proyectar la trayectoria del intruso.
+         Verificación         flightmind_msgs/TrafficIntruder.msg
+         Traza impl.          flightmind_msgs/TrafficIntruder.msg
+
+         DAA-038             Campo TrafficIntruder.cooperative (bool)                                SHALL       CUBIERTO
+
+         Descripción          cooperative SHALL indicar si el intruso es cooperativo (ADS-B/transponder) o no cooperativo
+                              (radar, EO/IR).
+         Fuentes              DO-365 §6.1 · EU 2019/947
+         Fundamento           Los intrusos no cooperativos tienen mayor incertidumbre posicional. El DAA puede ajustar
+                              márgenes.
+         Verificación         flightmind_msgs/TrafficIntruder.msg
+         Traza impl.          flightmind_msgs/TrafficIntruder.msg
+
+                             Campo          TrafficIntruder.source:                    enumerado
+         DAA-039                                                                                     SHALL        PARCIAL
+                             ADS_B/RADAR/VIS/FUSED
+
+         Descripción          source SHALL indicar el tipo de sensor que detectó el intruso.
+         Fuentes              SYS · DO-365
+         Fundamento           La fuente determina la calidad del dato y permite aplicar márgenes de incertidumbre apropiados.
+         Verificación         flightmind_msgs/TrafficIntruder.msg
+         Traza impl.          flightmind_msgs/TrafficIntruder.msg
+
+                             Campo TrafficIntruder.stamp: timestamp de la medición (no de
+         DAA-040                                                                                     SHALL        PARCIAL
+                             publicación)
+
+         Descripción          stamp SHALL ser el timestamp de la medición del sensor, no el de publicación del mensaje.
+         Fuentes              SYS · DO-365
+         Fundamento           El tiempo de medición es necesario para calcular correctamente la proyección de trayectoria.
+         Verificación         flightmind_msgs/TrafficIntruder.msg
+         Traza impl.          flightmind_msgs/TrafficIntruder.msg
+
+         DAA-041             Soporte de tráfico cooperativo ADS-B/transponder                        SHALL        PARCIAL
+
+         Descripción          El sistema SHALL procesar intrusos de fuentes ADS-B y transponder como fuentes
+                              cooperativas.
+         Fuentes              EU 2019/947 · DO-365 §6.1
+         Fundamento           ADS-B es la fuente de tráfico cooperativo estándar en aviación.
+         Verificación         daidalus_node.py — ADS-B input handling.
+         Traza impl.          daidalus_node.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                               Page 10
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                            v1.1 · 2026-04-01
+
+
+
+
+         DAA-042             Soporte de tráfico no cooperativo (radar, EO/IR)                          SHALL         PARCIAL
+
+         Descripción          El sistema SHALL procesar intrusos de fuentes no cooperativas con el mismo pipeline que los
+                              cooperativos.
+         Fuentes              EU 2019/947 · DO-365
+         Fundamento           En entorno urbano el tráfico no cooperativo (drones sin transponder) puede ser mayoritario.
+         Verificación         TrafficIntruder.msg — campo cooperative=false. daidalus_node.py.
+         Traza impl.          daidalus_node.py
+
+         DAA-043             DaidalusAlert.msg: alert_level (int, 0-3)                                 SHALL        CUBIERTO
+
+         Descripción          DaidalusAlert SHALL incluir alert_level con valores 0=NONE, 1=FAR, 2=MID, 3=NEAR.
+         Fuentes              SYS · DO-365
+         Fundamento           alert_level es el campo principal consumido por el FSM para activar transitions.
+         Verificación         flightmind_msgs/DaidalusAlert.msg
+         Traza impl.          flightmind_msgs/DaidalusAlert.msg
+
+         DAA-044             DaidalusAlert.msg: intruder_id (string)                                   SHALL        CUBIERTO
+
+         Descripción          DaidalusAlert SHALL incluir intruder_id para identificar a qué intruso corresponde la alerta.
+         Fuentes              SYS
+         Fundamento           Necesario para correlación multi-intruso.
+         Verificación         flightmind_msgs/DaidalusAlert.msg
+         Traza impl.          flightmind_msgs/DaidalusAlert.msg
+
+         DAA-045             DaidalusAlert.msg: time_to_violation_s (float)                            SHALL         PARCIAL
+
+         Descripción          DaidalusAlert SHALL incluir time_to_violation_s en segundos (negativo si WC ya perdido).
+         Fuentes              DO-365 · SYS
+         Fundamento           Métrica principal de urgencia.
+         Verificación         flightmind_msgs/DaidalusAlert.msg
+         Traza impl.          flightmind_msgs/DaidalusAlert.msg
+
+         DAA-046             DaidalusAlert.msg: min_horizontal_dist_m (float)                          SHALL         PARCIAL
+
+         Descripción          DaidalusAlert SHALL incluir la distancia horizontal mínima proyectada en metros.
+         Fuentes              DO-365 · USR
+         Fundamento           La distancia horizontal es la información de separación más intuitiva para el operador.
+         Verificación         flightmind_msgs/DaidalusAlert.msg
+         Traza impl.          flightmind_msgs/DaidalusAlert.msg
+
+         DAA-047             DaidalusAlert.msg: min_vertical_dist_m (float)                            SHALL         PARCIAL
+
+         Descripción          DaidalusAlert SHALL incluir la distancia vertical mínima proyectada en metros.
+         Fuentes              DO-365
+         Fundamento           La separación vertical es crítica para resolución en el eje Z.
+         Verificación         flightmind_msgs/DaidalusAlert.msg
+         Traza impl.          flightmind_msgs/DaidalusAlert.msg
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                      Page 11
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                      v1.1 · 2026-04-01
+
+
+
+
+                             DaidalusBands.msg: conflict_bands[] array de sectores con
+         DAA-048                                                                                      SHALL         PARCIAL
+                             nivel
+
+         Descripción          DaidalusBands SHALL incluir conflict_bands como lista de (heading_start, heading_end, level)
+                              en grados.
+         Fuentes              DO-365 §4.2 · SYS
+         Fundamento           Los sectores de banda son el input directo de la función de coste del replanner.
+         Verificación         flightmind_msgs/DaidalusBands.msg
+         Traza impl.          flightmind_msgs/DaidalusBands.msg
+
+                             DaidalusBands.msg: recovery_heading_deg, recovery_gs_ms,
+         DAA-049                                                                                      SHALL         PARCIAL
+                             recovery_vs_mps
+
+         Descripción          DaidalusBands SHALL incluir los tres recovery values: heading más cercano libre, GS más
+                              cercano libre, VS más cercano libre.
+         Fuentes              DO-365 · SYS
+         Fundamento           Los tres recovery values dan al replanner opciones en los tres ejes de maniobra.
+         Verificación         flightmind_msgs/DaidalusBands.msg
+         Traza impl.          flightmind_msgs/DaidalusBands.msg
+
+                             DaidalusStatus.msg: daa_active, daa_degraded, source_count,
+         DAA-050                                                                                      SHALL        PENDIENTE
+                             intruder_count
+
+         Descripción          El sistema SHALL publicar DaidalusStatus en /daidalus/status incluyendo: daa_active,
+                              daa_degraded, fuentes activas, intrusos actuales.
+         Fuentes              SYS · USR
+         Fundamento           El status permite al operador y al testbench monitorizar la salud del sistema DAA.
+         Verificación         flightmind_msgs/DaidalusStatus.msg.
+         Traza impl.          flightmind_msgs/DaidalusStatus.msg
+
+
+
+          Coordinación con FSM y ACAS Xu
+
+                             /daidalus/alert_level publicado como std_msgs/Int32 para el
+         DAA-051                                                                                      SHALL        CUBIERTO
+                             FSM
+
+         Descripción          El nivel de alerta global (máximo entre todos los intrusos) SHALL publicarse en
+                              /daidalus/alert_level como std_msgs/Int32.
+         Fuentes              SDD Flightmind · SYS
+         Fundamento           El FSM suscribe /daidalus/alert_level directamente para el átomo builtin daidalus_escalated.
+         Verificación         mission_fsm_node.py — suscribe /daidalus/alert_level.
+         Traza impl.          daidalus_node.py — /daidalus/alert_level publisher
+
+         DAA-052             Escalada a ACAS cuando alert_level = NEAR (nivel 3)                      SHALL        CUBIERTO
+
+         Descripción          Cuando alert_level global alcanza NEAR (3), el sistema SHALL publicar daidalus_alert_level=3
+                              para que ACAS Xu active su lógica de emergencia.
+         Fuentes              DO-365 · DO-386 · SAF
+         Fundamento           DAIDALUS actúa en horizonte medio. ACAS actúa en emergencia. La escalada clara evita
+                              solapamiento.
+         Verificación         TC-DAI-003 — alert NEAR publicado correctamente.
+         Traza impl.          daidalus_node.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                Page 12
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                     v1.1 · 2026-04-01
+
+
+
+
+                             Suspensión     de      recommended_heading         cuando    ACAS
+         DAA-053                                                                                     SHALL       PENDIENTE
+                             ra_active=True
+
+         Descripción          Si /acas/advisory.ra_active=True, el sistema SHALL marcar recommended_heading_deg=NaN
+                              para indicar que ACAS tiene el control de la maniobra.
+         Fuentes              DO-365 · DO-386 · SAF
+         Fundamento           Advisories contradictorios de DAIDALUS y ACAS simultáneamente pueden paralizar al
+                              replanner.
+         Verificación         daidalus_node.py — acas_active subscriber + NaN mask.
+
+                             daidalus_alert_amber param: umbral para daidalus_escalated
+         DAA-054                                                                                     SHALL       CUBIERTO
+                             del FSM
+
+         Descripción          El parámetro daidalus_alert_amber SHALL definir a qué nivel de alerta el FSM activa
+                              daidalus_escalated (default 1 = FAR).
+         Fuentes              SDD Flightmind
+         Fundamento           El umbral de escalada al FSM puede necesitar ajuste según el perfil operacional.
+         Verificación         mission_fsm_node.py — daidalus_alert_amber param.
+         Traza impl.          mission_fsm_node.py
+
+
+
+          Motor DAIDALUS v2 y configuración
+
+         DAA-055             Motor: DAIDALUS v2.x de NASA Langley Research Center                    SHALL       CUBIERTO
+
+         Descripción          El núcleo SHALL usar la biblioteca DAIDALUS v2 de NASA Langley, accedida via
+                              libTrafficMonitor.so.
+         Fuentes              NASA DAIDALUS v2.0.2 · DO-365
+         Fundamento           DAIDALUS v2 es la implementación de referencia del algoritmo, validada por NASA en pruebas
+                              UTM reales.
+         Verificación         upnext_icarous_daa — libTrafficMonitor.so.
+         Traza impl.          src/upnext_icarous_daa/CMakeLists.txt
+
+         DAA-056             Estado propio del UAS actualizado desde NavigationState                 SHALL       CUBIERTO
+
+         Descripción          El motor DAIDALUS SHALL recibir el estado propio (posición, velocidad, heading) desde
+                              /navigation/state en cada ciclo.
+         Fuentes              SDD Flightmind · SYS
+         Fundamento           DAIDALUS necesita el estado propio para calcular las relaciones geométricas con los intrusos.
+         Verificación         daidalus_node.py — navigation_state subscriber.
+         Traza impl.          daidalus_node.py
+
+         DAA-057             Fichero .conf de DAIDALUS versionado en el repositorio                  SHALL        PARCIAL
+
+         Descripción          Todos los parámetros DAIDALUS SHALL estar en un .conf versionado en git, no embebidos en
+                              código Python.
+         Fuentes              DO-178C · SDD Flightmind
+         Fundamento           Los parámetros DWC son datos de certificación. Deben estar bajo control de versiones y ser
+                              auditables.
+         Verificación         config/daidalus_parameters.conf en git.
+         Traza impl.          src/upnext_icarous_daa/config/
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                               Page 13
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                     v1.1 · 2026-04-01
+
+
+
+
+         DAA-058             Parámetros configurables sin recompilar el nodo                         SHALL       PARCIAL
+
+         Descripción          Todos los parámetros DAIDALUS SHALL poder modificarse editando el .conf y reiniciando el
+                              nodo, sin recompilación.
+         Fuentes              DO-178C · OPS
+         Fundamento           El ajuste de parámetros en campo (p.ej. para distintos escenarios operacionales) no puede
+                              requerir compilación.
+         Verificación         daidalus_node.py — carga .conf al startup.
+         Traza impl.          daidalus_node.py
+
+
+
+          Operación degradada
+
+                             Timeout de feed: sin tráfico durante traffic_timeout_s →
+         DAA-059                                                                                     SHALL         XFAIL
+                             daa_degraded=True
+
+         Descripción          Si no se recibe ningún mensaje en /traffic/intruders durante traffic_timeout_s (default 5s),
+                              daa_degraded SHALL activarse y publicarse.
+         Fuentes              SAF · DO-365
+         Fundamento           Asumir cielo despejado ante ausencia de datos es fail-unsafe. Silencio = incertidumbre máxima.
+         Verificación         TC-DAI-006 — XFAIL. Feed timeout no implementado.
+
+         DAA-060             Alerta de degradación cuando fuentes activas = 0                        SHALL      PENDIENTE
+
+         Descripción          Si source_count=0 y no hay modo degradado alternativo, el sistema SHALL publicar
+                              alert_level=NEAR y daa_degraded=True.
+         Fuentes              SAF
+         Fundamento           Sin ninguna fuente de tráfico el sistema no puede garantizar la separación. La respuesta
+                              conservadora es NEAR.
+         Verificación         daidalas_node.py — source_count monitor.
+
+         DAA-061             Modo degradado sin ADS-B: solo sensores propios                         SHALL         XFAIL
+
+         Descripción          El sistema SHALL poder operar usando solo sensores propios cuando no hay feed ADS-B.
+         Fuentes              OPS · STANAG 4671
+         Fundamento           En zonas militares o con jamming ADS-B puede no estar disponible.
+         Verificación         TC-DAI-008 — XFAIL.
+
+         DAA-062             Log de pérdida y recuperación de feed de tráfico                        SHALL      PENDIENTE
+
+         Descripción          El sistema SHALL registrar (INFO) cada evento de pérdida y recuperación del feed de tráfico con
+                              timestamp.
+         Fuentes              DO-178C · SAF
+         Fundamento           El registro de eventos de degradación es necesario para análisis de incidentes.
+         Verificación         daidalus_node.py — feed_status logging.
+
+
+          Verificación
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                               Page 14
+FLIGHTMIND — SUB-DAA: DAIDALUS DAA                                                                                       v1.1 · 2026-04-01
+
+
+
+
+         DAA-063             TC por cada nivel de alerta (4 TCs mínimo)                               SHALL         CUBIERTO
+
+         Descripción          SHALL existir al menos un TC para cada nivel de alerta con un intruso sintético en la posición
+                              correspondiente.
+         Fuentes              DO-178C §6.4
+         Fundamento           Cada nivel de alerta tiene comportamiento diferente. Sin TC por nivel no se puede verificar.
+         Verificación         TC-DAI-001..004.
+         Traza impl.          test/test_m5_daidalus.py
+
+         DAA-064             TC de latencia alerta→FSM < 100ms                                        SHALL         CUBIERTO
+
+         Descripción          SHALL existir un TC que mida la latencia total alerta→FSM y falle si > 100ms.
+         Fuentes              DO-178C · SYS
+         Fundamento           La latencia es un requisito de timing crítico que debe verificarse automáticamente.
+         Verificación         TC-DAI-010.
+         Traza impl.          test/test_m5_daidalus.py
+
+         DAA-065             TC de degradación ante pérdida de feed                                   SHALL          XFAIL
+
+         Descripción          SHALL existir un TC que verifique daa_degraded=True tras traffic_timeout_s sin mensajes.
+         Fuentes              SAF
+         Fundamento           El comportamiento fail-safe ante ausencia de datos debe verificarse explícitamente.
+         Verificación         TC-DAI-006 — XFAIL.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 15
+

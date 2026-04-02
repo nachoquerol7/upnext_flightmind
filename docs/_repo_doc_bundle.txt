@@ -1,0 +1,2819 @@
+######## SECTION: find *.py ########
+/home/ignacio-querol/upnext_uas_ws/src/acas_node/launch/acas_xu.launch.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/fdir/battery_monitor_node.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/fdir/battery_monitor.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/fdir/c2_monitor_node.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/fdir/c2_monitor.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/fdir/fdir_core.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/fdir/fdir_node.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/fdir/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/fdir/severity_table.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/fdir/watchdog_node.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/test/test_battery_monitor.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/test/test_c2_monitor.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/test/test_fdir_phase3.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/test/test_phase0_import.py
+/home/ignacio-querol/upnext_uas_ws/src/fdir/test/test_severity_table.py
+/home/ignacio-querol/upnext_uas_ws/src/flightmind_common/flightmind_common/event_logger.py
+/home/ignacio-querol/upnext_uas_ws/src/flightmind_common/flightmind_common/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/flightmind_common/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/flightmind_common/test/test_event_logger.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/gpp/dubins.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/gpp/fl_assignment.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/gpp/geometry.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/gpp/gpp_node.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/gpp/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/gpp/rrt_star.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/gpp/takeoff_manager.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/conftest.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/demo/test_demo_t1_gpp_nfz.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/m1_fl_assignment/test_fl_assignment_vnv.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/m2_geometry/test_geometry_vnv.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/m3_dubins/test_dubins_vnv.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/m4_rrt_star/test_rrt_star_vnv.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/m5_takeoff_manager/test_takeoff_manager_vnv.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/m6_gpp_node/test_gpp_node_vnv.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/m7_integration/test_gpp_integration_vnv.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/m8_safety_regression/test_gpp_safety_regression.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/test_fl_assignment.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/test_phase0_import.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/test_rrt_star.py
+/home/ignacio-querol/upnext_uas_ws/src/gpp/test/test_takeoff_manager.py
+/home/ignacio-querol/upnext_uas_ws/src/local_replanner/local_replanner/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/local_replanner/local_replanner/local_replanner_node.py
+/home/ignacio-querol/upnext_uas_ws/src/local_replanner/local_replanner/replan_core.py
+/home/ignacio-querol/upnext_uas_ws/src/local_replanner/local_replanner/rrt_local_stub.py
+/home/ignacio-querol/upnext_uas_ws/src/local_replanner/local_replanner/trigger_monitor.py
+/home/ignacio-querol/upnext_uas_ws/src/local_replanner/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/local_replanner/test/test_phase0_import.py
+/home/ignacio-querol/upnext_uas_ws/src/local_replanner/test/test_replan_phase6.py
+/home/ignacio-querol/upnext_uas_ws/src/local_replanner/test/test_repl_rrt_stub.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/launch/flight_demo.launch.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/mission_fsm/fsm.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/mission_fsm/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/mission_fsm/mission_fsm_node.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/mission_fsm/navigation_quality_relay_node.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/conftest.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/m10_e2e_faults/test_e2e_faults.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/m11_performance/test_performance.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/m13_safety_atoms/test_m13_safety_atoms.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/m2_fsm_timeouts/test_fsm_timeouts.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/m3_fsm_integrity/test_fsm_integrity.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/m4_localization/test_localization_interface.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/m6_fdir/test_fdir.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/m7_nav2/test_nav2_interface.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/m8_middleware/test_ros2_middleware.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/m9_e2e_nominal/test_e2e_nominal.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/mocks/fsm_input_injector.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/mocks/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/mocks/mock_daidalus.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/mocks/mock_fastlio2.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/mocks/mock_fdir.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/mocks/mock_nav2.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/mocks/mock_px4_bridge.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/mocks/mock_sensors.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/test_fsm_coverage.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/test_mission_fsm_transitions.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/test_phase0_import.py
+/home/ignacio-querol/upnext_uas_ws/src/mission_fsm/test/test_phase0_vnv_infrastructure.py
+/home/ignacio-querol/upnext_uas_ws/src/navigation_bridge/navigation_bridge/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/navigation_bridge/navigation_bridge/navigation_bridge_node.py
+/home/ignacio-querol/upnext_uas_ws/src/navigation_bridge/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/navigation_bridge/test/test_navigation_bridge.py
+/home/ignacio-querol/upnext_uas_ws/src/perception_bridge/perception_bridge/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/perception_bridge/perception_bridge/point_cloud_utils.py
+/home/ignacio-querol/upnext_uas_ws/src/perception_bridge/perception_bridge/slam_node.py
+/home/ignacio-querol/upnext_uas_ws/src/perception_bridge/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/perception_bridge/test/test_slam_node.py
+/home/ignacio-querol/upnext_uas_ws/src/polycarp_node/polycarp_node/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/polycarp_node/polycarp_node/polycarp_core.py
+/home/ignacio-querol/upnext_uas_ws/src/polycarp_node/polycarp_node/polycarp_node.py
+/home/ignacio-querol/upnext_uas_ws/src/polycarp_node/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/polycarp_node/test/test_phase0_import.py
+/home/ignacio-querol/upnext_uas_ws/src/polycarp_node/test/test_polycarp_core.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosapi/src/rosapi/async_helper.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosapi/src/rosapi/glob_helper.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosapi/src/rosapi/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosapi/src/rosapi/objectutils.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosapi/src/rosapi/params.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosapi/src/rosapi/proxy.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosapi/src/rosapi/stringify_field_types.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosapi/test/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosapi/test/test_stringify_field_types.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosapi/test/test_typedefs.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/doc/conf.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/action_feedback.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/action_result.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/advertise_action.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/advertise.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/advertise_service.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/call_service.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/defragmentation.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/fragmentation.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/publish.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/send_action_goal.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/service_response.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/subscribe.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/unadvertise_action.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capabilities/unadvertise_service.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/capability.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/actions.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/cbor_conversion.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/exceptions.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/message_conversion.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/outgoing_message.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/pngcompression.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/publishers.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/ros_loader.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/services.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/subscribers.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/subscription_modifiers.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/topics.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/internal/type_support.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/protocol.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/rosbridge_protocol.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/util/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/src/rosbridge_library/util/ros.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/capabilities/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/capabilities/test_action_capabilities.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/capabilities/test_advertise.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/capabilities/test_call_service.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/capabilities/test_publish.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/capabilities/test_service_capabilities.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/capabilities/test_subscribe.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/experimental/complex_srv+tcp/test_non-ros_service_client_complex-srv.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/experimental/complex_srv+tcp/test_non-ros_service_server_complex-srv.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/experimental/fragmentation+srv+tcp/test_non-ros_service_client_fragmented.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/experimental/fragmentation+srv+tcp/test_non-ros_service_server_fragmented.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/actions/test_actions.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/publishers/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/publishers/test_multi_publisher.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/publishers/test_publisher_manager.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/services/test_services.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/subscribers/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/subscribers/test_multi_subscriber.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/subscribers/test_subscriber_manager.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/subscribers/test_subscription_modifiers.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/test_cbor_conversion.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/test_compression.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/test_message_conversion.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/test_outgoing_message.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_library/test/internal/test_ros_loader.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/scripts/rosbridge_websocket.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/src/rosbridge_server/client_manager.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/src/rosbridge_server/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/src/rosbridge_server/websocket_handler.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/test/websocket/advertise_action_feedback.test.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/test/websocket/advertise_action.test.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/test/websocket/advertise_service_duplicate.test.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/test/websocket/advertise_service.test.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/test/websocket/best_effort_publisher.test.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/test/websocket/call_service.test.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/test/websocket/common.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/test/websocket/multiple_subscribers_raw.test.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/test/websocket/multiple_subscribers.test.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/test/websocket/send_action_goal.test.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/test/websocket/smoke.test.py
+/home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_server/test/websocket/transient_local_publisher.test.py
+/home/ignacio-querol/upnext_uas_ws/src/slz_detector/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/slz_detector/slz_detector/cloud_io.py
+/home/ignacio-querol/upnext_uas_ws/src/slz_detector/slz_detector/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/slz_detector/slz_detector/slz_node.py
+/home/ignacio-querol/upnext_uas_ws/src/slz_detector/slz_detector/terrain_classifier.py
+/home/ignacio-querol/upnext_uas_ws/src/slz_detector/test/test_slz_node.py
+/home/ignacio-querol/upnext_uas_ws/src/trajectory_gen/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/trajectory_gen/test/test_phase0_import.py
+/home/ignacio-querol/upnext_uas_ws/src/trajectory_gen/test/test_trajectory_waypoints.py
+/home/ignacio-querol/upnext_uas_ws/src/trajectory_gen/test/test_traj_phase7.py
+/home/ignacio-querol/upnext_uas_ws/src/trajectory_gen/trajectory_gen/dubins3d.py
+/home/ignacio-querol/upnext_uas_ws/src/trajectory_gen/trajectory_gen/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/trajectory_gen/trajectory_gen/trajectory_gen_node.py
+/home/ignacio-querol/upnext_uas_ws/src/trajectory_gen/trajectory_gen/waypoint_follower.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/launch/full_stack.launch.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/scripts/daa_dashboard.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/scripts/scenario_crossing.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/scripts/scenario_geofence.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/scripts/scenario_head_on.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/scripts/scenario_overtake.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/test/test_phase0_workspace.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/test/test_phase9_integration.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/uas_stack_tests/dashboard.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/uas_stack_tests/fake_fmu_shim.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/uas_stack_tests/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/uas_stack_tests/scenario_lib.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/uas_stack_tests/scenarios/crossing.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/uas_stack_tests/scenarios/geofence.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/uas_stack_tests/scenarios/head_on.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/uas_stack_tests/scenarios/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/uas_stack_tests/scenarios/overtake.py
+/home/ignacio-querol/upnext_uas_ws/src/uas_stack_tests/uas_stack_tests/stack_integration_feeds.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_airspace/launch/airspace_demo.launch.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_airspace/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_airspace/upnext_airspace/airspace_monitor_node.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_airspace/upnext_airspace/airspace_viz_node.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_airspace/upnext_airspace/geojson_loader.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_airspace/upnext_airspace/geo_utils.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_airspace/upnext_airspace/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_bringup/launch/hil_sitl.launch.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_bringup/launch/px4_sitl.launch.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_bringup/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_bringup/upnext_bringup/fetch_dem_heightmap.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_bringup/upnext_bringup/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_icarous_bridge/launch/upnext_stack.launch.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_icarous_bridge/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_icarous_bridge/upnext_icarous_bridge/bridge_node.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_icarous_bridge/upnext_icarous_bridge/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_icarous_bridge/upnext_icarous_bridge/paths.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_icarous_daa/launch/daa_smoke_demo.launch.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_icarous_daa/launch/daa_smoke_flying.launch.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_icarous_daa/launch/daa_stack.launch.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_icarous_daa/launch/daa_stack_offboard.launch.py
+/home/ignacio-querol/upnext_uas_ws/src/upnext_icarous_daa/launch/daa_traffic_monitor.launch.py
+/home/ignacio-querol/upnext_uas_ws/src/vehicle_model/setup.py
+/home/ignacio-querol/upnext_uas_ws/src/vehicle_model/test/test_phase0_import.py
+/home/ignacio-querol/upnext_uas_ws/src/vehicle_model/test/test_vehicle_model_phase1.py
+/home/ignacio-querol/upnext_uas_ws/src/vehicle_model/vehicle_model/__init__.py
+/home/ignacio-querol/upnext_uas_ws/src/vehicle_model/vehicle_model/model.py
+/home/ignacio-querol/upnext_uas_ws/src/vehicle_model/vehicle_model/vehicle_model_node.py
+
+######## SECTION: mission_fsm/fsm.py ########
+"""Mission FSM: YAML-defined states, entry guards, and ordered transitions."""
+
+from __future__ import annotations
+
+import time
+from typing import Any, Callable, Dict, List, Mapping, MutableMapping, Optional, Tuple, Union
+
+Condition = Union[str, Mapping[str, Any]]
+Inputs = MutableMapping[str, Any]
+Context = Mapping[str, Any]
+
+
+def _builtin_fdir_emergency(i: Inputs, c: Context) -> bool:
+    return bool(i.get("fdir_emergency", False))
+
+
+def _builtin_approach_unstabilized(i: Inputs, c: Context) -> bool:
+    return bool(i.get("approach_not_stabilized", False))
+
+
+def _builtin_daidalus_near(i: Inputs, c: Context) -> bool:
+    return int(i.get("daidalus_alert", 0)) == 3
+
+
+def _builtin_daidalus_recovery(i: Inputs, c: Context) -> bool:
+    return int(i.get("daidalus_alert", 0)) >= 4
+
+
+def _builtin_slz_available(i: Inputs, c: Context) -> bool:
+    """SLZ reciente (/slz/best <5s) y score >0.6 (vía `slz_best_*` alimentados por el nodo)."""
+    age = float(i.get("slz_best_age_sec", 999.0))
+    score = float(i.get("slz_best_score", 0.0))
+    return age < 5.0 and score > 0.6
+
+
+BUILTINS: Dict[str, Callable[[Inputs, Context], bool]] = {
+    "fdir_emergency": _builtin_fdir_emergency,
+    "approach_not_stabilized": _builtin_approach_unstabilized,
+    "daidalus_near": _builtin_daidalus_near,
+    "daidalus_recovery": _builtin_daidalus_recovery,
+    "slz_available": _builtin_slz_available,
+}
+
+
+def eval_condition(cond: Any, inputs: Inputs, ctx: Context) -> bool:
+    """Evaluate YAML condition tree or atomic name."""
+    if cond is None or cond == {}:
+        return True
+    if isinstance(cond, str):
+        if cond in BUILTINS:
+            return BUILTINS[cond](inputs, ctx)
+        if cond in inputs:
+            v = inputs[cond]
+            if isinstance(v, bool):
+                return v
+            return bool(v)
+        raise KeyError(f"unknown condition atom: {cond!r}")
+    if not isinstance(cond, Mapping):
+        raise TypeError(f"invalid condition type: {type(cond)}")
+    if "all" in cond:
+        return all(eval_condition(x, inputs, ctx) for x in cond["all"])
+    if "any" in cond:
+        return any(eval_condition(x, inputs, ctx) for x in cond["any"])
+    if "not" in cond:
+        return not eval_condition(cond["not"], inputs, ctx)
+    raise KeyError(f"unknown condition keys: {cond.keys()}")
+
+
+def default_inputs() -> Dict[str, Any]:
+    return {
+        "quality_flag": 1.0,
+        "daidalus_alert": 0,
+        "fdir_emergency": False,
+        "approach_not_stabilized": False,
+        "preflight_ok": False,
+        "taxi_clear": False,
+        "takeoff_complete": False,
+        "land_command": False,
+        "rtb_command": False,
+        "abort_command": False,
+        "event_cleared": False,
+        "rtb_during_event": False,
+        "touchdown": False,
+        "go_around_complete": False,
+        "missed_approach_climb": False,
+        "abort_rtb_ack": False,
+        "rtb_landing": False,
+        "rtb_cancel": False,
+        "quality_degraded": False,
+        "quality_recovered": False,
+        "daidalus_escalated": False,
+        "state_dwell_timeout": False,
+        "daidalus_feed_lost": False,
+        "gcs_lost": False,
+        "c2_lost": False,
+        "battery_low": False,
+        "battery_critical": False,
+        "geofence_violation": False,
+        "geofence_breach": False,
+        "slz_best_age_sec": 999.0,
+        "slz_best_score": 0.0,
+    }
+
+
+class MissionFsm:
+    """Finite-state machine with first-match transition ordering per source state."""
+
+    def __init__(
+        self,
+        *,
+        initial_state: str,
+        context: Mapping[str, Any],
+        state_entry: Mapping[str, Any],
+        transitions: List[Mapping[str, Any]],
+        max_duration_by_state: Optional[Mapping[str, float]] = None,
+    ) -> None:
+        self._initial_state = initial_state
+        self._state = initial_state
+        self._context = dict(context)
+        self._entry: Dict[str, Any] = {k: v for k, v in state_entry.items()}
+        self._transitions: List[Mapping[str, Any]] = list(transitions)
+        self._max_duration_by_state: Dict[str, float] = dict(max_duration_by_state or {})
+        self._ticks_in_state = 0
+        self._quality_low_streak = 0
+        self._quality_high_streak = 0
+        self._daidalus_mid_streak = 0
+        self._state_enter_mono = time.monotonic()
+        states = set(self._entry.keys())
+        for t in self._transitions:
+            states.add(str(t["from"]))
+            states.add(str(t["to"]))
+        for s in states:
+            self._entry.setdefault(s, {})
+
+    @property
+    def state(self) -> str:
+        return self._state
+
+    @property
+    def max_duration_by_state(self) -> Dict[str, float]:
+        """Límites de morada (s) por estado desde YAML; usado por state_dwell_timeout (ARCH-1.2)."""
+        return dict(self._max_duration_by_state)
+
+    @classmethod
+    def from_fsm_yaml(
+        cls,
+        root: Mapping[str, Any],
+        *,
+        parameter_overlay: Optional[Mapping[str, Any]] = None,
+    ) -> MissionFsm:
+        fsm = root.get("fsm")
+        if not isinstance(fsm, dict):
+            raise ValueError("fsm root missing")
+        states = fsm.get("states")
+        trans = fsm.get("transitions")
+        if not isinstance(states, dict) or not isinstance(trans, list):
+            raise ValueError("fsm.states (map) and fsm.transitions (list) required")
+
+        params = root.get("mission_fsm_node", {})
+        ros_params = params.get("ros__parameters", {}) if isinstance(params, dict) else {}
+        if not isinstance(ros_params, dict):
+            ros_params = {}
+        ctx: Dict[str, Any] = {
+            "quality_flag_threshold": float(ros_params.get("quality_flag_threshold", 0.5)),
+            "daidalus_alert_amber": int(ros_params.get("daidalus_alert_amber", 1)),
+            "tick_hz": float(ros_params.get("tick_hz", 10.0)),
+            "hysteresis_ticks_on": int(ros_params.get("hysteresis_ticks_on", 3)),
+            "hysteresis_ticks_off": int(ros_params.get("hysteresis_ticks_off", 5)),
+            "hysteresis_margin": float(ros_params.get("hysteresis_margin", 0.05)),
+            "daidalus_escalate_ticks": int(ros_params.get("daidalus_escalate_ticks", 2)),
+        }
+        if parameter_overlay:
+            for k, v in parameter_overlay.items():
+                if k in (
+                    "quality_flag_threshold",
+                    "hysteresis_margin",
+                    "tick_hz",
+                ):
+                    ctx[k] = float(v)
+                elif k in (
+                    "daidalus_alert_amber",
+                    "hysteresis_ticks_on",
+                    "hysteresis_ticks_off",
+                    "daidalus_escalate_ticks",
+                ):
+                    ctx[k] = int(v)
+                else:
+                    ctx[k] = v
+
+        initial = str(ros_params.get("initial_state", "PREFLIGHT"))
+
+        entry: Dict[str, Any] = {}
+        max_dur: Dict[str, float] = {}
+        for name, spec in states.items():
+            if not isinstance(spec, dict):
+                raise ValueError(f"state {name} must be a mapping")
+            g = spec.get("entry_guards", {})
+            entry[str(name)] = g if g else {}
+            if "max_duration_sec" in spec:
+                max_dur[str(name)] = float(spec["max_duration_sec"])
+
+        return cls(
+            initial_state=initial,
+            context=ctx,
+            state_entry=entry,
+            transitions=trans,
+            max_duration_by_state=max_dur,
+        )
+
+    def _update_quality_hysteresis(self, merged: Inputs) -> None:
+        q = float(merged.get("quality_flag", 1.0))
+        th = float(self._context["quality_flag_threshold"])
+        margin = float(self._context.get("hysteresis_margin", 0.05))
+        if q < th:
+            self._quality_low_streak += 1
+            self._quality_high_streak = 0
+        elif q > th + margin:
+            self._quality_high_streak += 1
+            self._quality_low_streak = 0
+        else:
+            self._quality_low_streak = 0
+            self._quality_high_streak = 0
+
+    def _update_daidalus_mid_streak(self, merged: Inputs) -> None:
+        a = int(merged.get("daidalus_alert", 0))
+        amber = int(self._context.get("daidalus_alert_amber", 1))
+        if amber <= a <= 2:
+            self._daidalus_mid_streak += 1
+        else:
+            self._daidalus_mid_streak = 0
+
+    def _quality_degraded_effective(self) -> bool:
+        n_on = int(self._context.get("hysteresis_ticks_on", 3))
+        return self._quality_low_streak >= n_on
+
+    def _quality_recovered_effective(self) -> bool:
+        n_off = int(self._context.get("hysteresis_ticks_off", 5))
+        return self._quality_high_streak >= n_off
+
+    def _daidalus_escalated_effective(self, merged: Inputs) -> bool:
+        a = int(merged.get("daidalus_alert", 0))
+        amber = int(self._context.get("daidalus_alert_amber", 1))
+        need = int(self._context.get("daidalus_escalate_ticks", 2))
+        if a >= 3:
+            return False
+        if a >= amber:
+            return self._daidalus_mid_streak >= need
+        return False
+
+    def _reset_hysteresis_streaks(self) -> None:
+        self._quality_low_streak = 0
+        self._quality_high_streak = 0
+        self._daidalus_mid_streak = 0
+
+    def step(self, inputs: Mapping[str, Any]) -> Tuple[str, Optional[str]]:
+        """Apply first matching transition from current state; return (state, trigger_or_none)."""
+        merged: Inputs = {**default_inputs(), **inputs}
+
+        max_d = self._max_duration_by_state.get(self._state)
+        self._ticks_in_state += 1
+        elapsed_wall = time.monotonic() - self._state_enter_mono
+        merged["state_dwell_timeout"] = bool(max_d is not None and elapsed_wall >= float(max_d))
+
+        self._update_quality_hysteresis(merged)
+        self._update_daidalus_mid_streak(merged)
+        merged["quality_degraded"] = self._quality_degraded_effective()
+        merged["quality_recovered"] = self._quality_recovered_effective()
+        merged["daidalus_escalated"] = self._daidalus_escalated_effective(merged)
+
+        prev_state = self._state
+        fired: Optional[str] = None
+        for t in self._transitions:
+            if str(t["from"]) != self._state:
+                continue
+            when = t.get("when", {})
+            target = str(t["to"])
+            trigger = str(t.get("trigger", t.get("name", "")))
+            if not eval_condition(when, merged, self._context):
+                continue
+            entry_guard = self._entry.get(target, {})
+            if not eval_condition(entry_guard, merged, self._context):
+                continue
+            self._state = target
+            fired = trigger or None
+            break
+        if self._state != prev_state:
+            self._ticks_in_state = 0
+            self._reset_hysteresis_streaks()
+            self._state_enter_mono = time.monotonic()
+        return self._state, fired
+
+    def seed(self, state: str) -> None:
+        """Set current state (for tests or operator override)."""
+        self._state = str(state)
+        self._ticks_in_state = 0
+        self._reset_hysteresis_streaks()
+        self._state_enter_mono = time.monotonic()
+
+    def reset(self, state: Optional[str] = None) -> None:
+        self._state = state if state is not None else self._initial_state
+        self._ticks_in_state = 0
+        self._reset_hysteresis_streaks()
+        self._state_enter_mono = time.monotonic()
+
+
+def load_fsm_yaml_dict(path: str) -> MutableMapping[str, Any]:
+    import yaml
+
+    with open(path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    if not isinstance(data, dict):
+        raise ValueError("YAML root must be a mapping")
+    return data
+
+
+def mission_fsm_from_path(path: str, **kwargs: Any) -> MissionFsm:
+    return MissionFsm.from_fsm_yaml(load_fsm_yaml_dict(path), **kwargs)
+
+######## SECTION: mission_fsm_node.py ########
+"""Mission FSM node: inputs on /fsm/in/*, state on /fsm/state and legacy topics.
+
+Supervisión temporal (ARCH-1.2, ARCH-1.7):
+  - Morada por estado: ``max_duration_sec`` en YAML → ``state_dwell_timeout`` vía reloj monotónico en ``MissionFsm``.
+  - GCS ``/gcs_heartbeat``, C2 ``/c2_link_status``, batería ``/battery_state``, geocerca ``/geofence_breach`` +
+    ``/polycarp/violation_imminent`` con timeouts/umbrales en parámetros ROS.
+
+Histéresis calidad (ARCH-1.1):
+  - ``quality_flag`` vía ``hysteresis_ticks_on`` / ``hysteresis_ticks_off`` / ``hysteresis_margin`` en ``MissionFsm.step``.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import time
+from typing import Any, Callable, Dict, Optional, Tuple
+
+import rclpy
+from flightmind_msgs.msg import ACASAdvisory, FSMState
+from geometry_msgs.msg import PoseStamped
+from rclpy.node import Node
+from rclpy.parameter import Parameter
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+from sensor_msgs.msg import BatteryState
+from std_msgs.msg import Bool, Float64, Header, Int32, String
+
+from mission_fsm.fsm import MissionFsm, default_inputs, load_fsm_yaml_dict
+
+try:
+    from flightmind_common.event_logger import EventLogger
+except ImportError:  # pragma: no cover
+    EventLogger = None  # type: ignore[misc, assignment]
+
+try:
+    from ament_index_python.packages import get_package_share_directory
+except ImportError:  # pragma: no cover
+    get_package_share_directory = None  # type: ignore[misc, assignment]
+
+try:
+    from px4_msgs.msg import OffboardControlMode
+
+    _HAS_PX4_OFFBOARD = True
+except ImportError:  # pragma: no cover
+    OffboardControlMode = None  # type: ignore[misc, assignment]
+    _HAS_PX4_OFFBOARD = False
+
+
+_BOOL_TOPICS: Tuple[str, ...] = (
+    "preflight_ok",
+    "taxi_clear",
+    "takeoff_complete",
+    "land_command",
+    "rtb_command",
+    "abort_command",
+    "event_cleared",
+    "rtb_during_event",
+    "touchdown",
+    "go_around_complete",
+    "missed_approach_climb",
+    "rtb_landing",
+    "rtb_cancel",
+    "fdir_emergency",
+    "approach_not_stabilized",
+)
+
+
+class MissionFsmNode(Node):
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__("mission_fsm_node", **kwargs)
+
+        self.declare_parameter("config_file", "")
+        self.declare_parameter("initial_state", "PREFLIGHT")
+        self.declare_parameter("quality_flag_threshold", 0.5)
+        self.declare_parameter("daidalus_alert_amber", 1)
+        self.declare_parameter("tick_hz", 20.0)
+        self.declare_parameter("hysteresis_ticks_on", 3)
+        self.declare_parameter("hysteresis_ticks_off", 5)
+        self.declare_parameter("hysteresis_margin", 0.05)
+        self.declare_parameter("daidalus_escalate_ticks", 2)
+        self.declare_parameter("acas_abort_from_advisory", False)
+        self.declare_parameter("daidalus_feed_timeout_sec", 2.0)
+        self.declare_parameter("gcs_heartbeat_timeout_sec", 2.0)
+        self.declare_parameter("c2_link_loss_sec", 2.0)
+        self.declare_parameter("battery_low_threshold", 0.15)
+        self.declare_parameter("battery_low_sustain_sec", 1.0)
+        self.declare_parameter("geofence_breach_sustain_sec", 0.5)
+        self.declare_parameter("event_log_dir", "")
+        self.declare_parameter("offboard_enable", False)
+        self.declare_parameter("offboard_heartbeat_hz", 10.0)
+
+        cfg = self.get_parameter("config_file").get_parameter_value().string_value.strip()
+        if cfg and os.path.isfile(cfg):
+            path = cfg
+        else:
+            if get_package_share_directory is None:
+                raise RuntimeError("ament_index_python required to resolve default config")
+            path = os.path.join(get_package_share_directory("mission_fsm"), "config", "mission_fsm.yaml")
+            if not os.path.isfile(path):
+                raise FileNotFoundError(f"default mission FSM config not found: {path}")
+
+        root = load_fsm_yaml_dict(path)
+        ros_params = root.setdefault("mission_fsm_node", {}).setdefault("ros__parameters", {})
+        if not isinstance(ros_params, dict):
+            ros_params = {}
+        ros_params["initial_state"] = self.get_parameter("initial_state").get_parameter_value().string_value
+        ros_params["quality_flag_threshold"] = float(
+            self.get_parameter("quality_flag_threshold").get_parameter_value().double_value
+        )
+        ros_params["daidalus_alert_amber"] = int(
+            self.get_parameter("daidalus_alert_amber").get_parameter_value().integer_value
+        )
+        ros_params["tick_hz"] = float(self.get_parameter("tick_hz").get_parameter_value().double_value)
+        ros_params["hysteresis_ticks_on"] = int(
+            self.get_parameter("hysteresis_ticks_on").get_parameter_value().integer_value
+        )
+        ros_params["hysteresis_ticks_off"] = int(
+            self.get_parameter("hysteresis_ticks_off").get_parameter_value().integer_value
+        )
+        ros_params["hysteresis_margin"] = float(
+            self.get_parameter("hysteresis_margin").get_parameter_value().double_value
+        )
+        ros_params["daidalus_escalate_ticks"] = int(
+            self.get_parameter("daidalus_escalate_ticks").get_parameter_value().integer_value
+        )
+        ros_params["daidalus_feed_timeout_sec"] = float(
+            self.get_parameter("daidalus_feed_timeout_sec").get_parameter_value().double_value
+        )
+        ros_params["gcs_heartbeat_timeout_sec"] = float(
+            self.get_parameter("gcs_heartbeat_timeout_sec").get_parameter_value().double_value
+        )
+        ros_params["c2_link_loss_sec"] = float(
+            self.get_parameter("c2_link_loss_sec").get_parameter_value().double_value
+        )
+        ros_params["battery_low_threshold"] = float(
+            self.get_parameter("battery_low_threshold").get_parameter_value().double_value
+        )
+        ros_params["battery_low_sustain_sec"] = float(
+            self.get_parameter("battery_low_sustain_sec").get_parameter_value().double_value
+        )
+        ros_params["geofence_breach_sustain_sec"] = float(
+            self.get_parameter("geofence_breach_sustain_sec").get_parameter_value().double_value
+        )
+
+        acas_yaml = ros_params.get("acas_abort_from_advisory", False)
+        if isinstance(acas_yaml, str):
+            acas_yaml = acas_yaml.lower() in ("true", "1", "yes")
+        self.set_parameters(
+            [Parameter("acas_abort_from_advisory", Parameter.Type.BOOL, bool(acas_yaml))]
+        )
+
+        self._fsm = MissionFsm.from_fsm_yaml(root)
+        self._inputs: Dict[str, Any] = default_inputs()
+        self._acas_ra_active = False
+        self._last_daidalus_msg_time: Optional[float] = None
+        self._last_gcs_time: Optional[float] = None
+        self._c2_false_since: Optional[float] = None
+        self._battery_low_since: Optional[float] = None
+        self._geofence_bad_since: Optional[float] = None
+        self._last_geofence_ok: bool = True
+        self._go_around_count = 0
+        self._event_substate = ""
+        self._ext_atoms: Dict[str, bool] = {
+            "battery_low": False,
+            "battery_critical": False,
+            "c2_lost": False,
+            "geofence_breach": False,
+        }
+        self._ext_polycarp_geofence = False
+        self._slz_last_best_mono: Optional[float] = None
+        self._slz_best_score: float = 0.0
+        log_dir = self.get_parameter("event_log_dir").get_parameter_value().string_value.strip()
+        self._evlog: Any = None
+        if log_dir and EventLogger is not None:
+            self._evlog = EventLogger(log_dir=log_dir, flush_interval_s=1.0)
+
+        fsm_state_qos = QoSProfile(
+            depth=1,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+        )
+        self._fsm_state_pub = self.create_publisher(FSMState, "/fsm/state", fsm_state_qos)
+        self._pub_mode = self.create_publisher(String, "/fsm/current_mode", 10)
+        self._pub_trig = self.create_publisher(String, "/fsm/active_trigger", 10)
+
+        self.create_subscription(Float64, "/fsm/in/quality_flag", self._mk_float("quality_flag"), 10)
+        self.create_subscription(Int32, "/fsm/in/daidalus_alert", self._on_daidalus_alert, 10)
+        for name in _BOOL_TOPICS:
+            self.create_subscription(Bool, f"/fsm/in/{name}", self._mk_bool(name), 10)
+
+        for k in self._ext_atoms:
+            self.create_subscription(Bool, f"/fsm/in/{k}", self._mk_ext_atom(k), 10)
+        self.create_subscription(Bool, "/polycarp/violation_imminent", self._on_polycarp_geofence, 10)
+
+        self.create_subscription(Header, "/gcs_heartbeat", self._on_gcs_heartbeat, 10)
+        self.create_subscription(Bool, "/c2_link_status", self._on_c2_link, 10)
+        self.create_subscription(BatteryState, "/battery_state", self._on_battery, 10)
+        self.create_subscription(Bool, "/geofence_breach", self._on_geofence_breach, 10)
+
+        self.create_subscription(PoseStamped, "/slz/best", self._on_slz_best, 10)
+        self.create_subscription(String, "/slz/status", self._on_slz_status, 10)
+
+        self.create_subscription(ACASAdvisory, "/acas/advisory", self._on_acas_advisory, 10)
+
+        self._fsm_heartbeat_pub = self.create_publisher(Bool, "/fsm/heartbeat", 10)
+        self.create_timer(1.0, self._publish_fsm_heartbeat)
+
+        self._pub_offboard: Any = None
+        if (
+            _HAS_PX4_OFFBOARD
+            and OffboardControlMode is not None
+            and bool(self.get_parameter("offboard_enable").get_parameter_value().bool_value)
+        ):
+            self._pub_offboard = self.create_publisher(
+                OffboardControlMode, "/fmu/in/offboard_control_mode", 10
+            )
+            ob_hz = float(self.get_parameter("offboard_heartbeat_hz").get_parameter_value().double_value)
+            if ob_hz > 1e-3:
+                self.create_timer(1.0 / ob_hz, self._publish_offboard_mode)
+                self.get_logger().info("PX4 OffboardControlMode heartbeat on /fmu/in/offboard_control_mode")
+        elif bool(self.get_parameter("offboard_enable").get_parameter_value().bool_value):
+            self.get_logger().warn(
+                "offboard_enable true pero px4_msgs no disponible; sin publicación OffboardControlMode"
+            )
+
+        hz = float(self.get_parameter("tick_hz").get_parameter_value().double_value)
+        period = 1.0 / hz if hz > 1e-3 else 0.05
+        self.create_timer(period, self._on_tick)
+
+        dwell = self._fsm.max_duration_by_state
+        self.get_logger().info(
+            f"mission_fsm: loaded {path}, initial={self._fsm.state}, max_duration_sec={dwell!s}"
+        )
+        self.get_logger().info(
+            "supervision: gcs_to=%.1fs c2_loss=%.1fs bat_th=%.2f bat_sustain=%.1fs gf_sustain=%.1fs tick_hz=%.1f"
+            % (
+                float(self.get_parameter("gcs_heartbeat_timeout_sec").value),
+                float(self.get_parameter("c2_link_loss_sec").value),
+                float(self.get_parameter("battery_low_threshold").value),
+                float(self.get_parameter("battery_low_sustain_sec").value),
+                float(self.get_parameter("geofence_breach_sustain_sec").value),
+                float(self.get_parameter("tick_hz").value),
+            )
+        )
+
+    def get_parameter_names(self) -> list[str]:
+        """Return declared parameter names (SIL tests expect this helper name)."""
+        return sorted(self.list_parameters([], 10).names)
+
+    def _publish_fsm_heartbeat(self) -> None:
+        self._fsm_heartbeat_pub.publish(Bool(data=True))
+
+    def _publish_offboard_mode(self) -> None:
+        if self._pub_offboard is None or OffboardControlMode is None:
+            return
+        st = self._fsm.state
+        if st not in ("TAKEOFF", "CRUISE", "EVENT", "LANDING"):
+            return
+        msg = OffboardControlMode()
+        msg.timestamp = self.get_clock().now().nanoseconds // 1000
+        msg.position = True
+        msg.velocity = False
+        msg.acceleration = False
+        msg.attitude = False
+        msg.body_rate = False
+        msg.thrust_and_torque = False
+        msg.direct_actuator = False
+        self._pub_offboard.publish(msg)
+
+    def _mk_float(self, key: str) -> Callable[[Float64], None]:
+        def cb(msg: Float64) -> None:
+            self._inputs[key] = float(msg.data)
+
+        return cb
+
+    def _on_daidalus_alert(self, msg: Int32) -> None:
+        self._last_daidalus_msg_time = time.monotonic()
+        self._inputs["daidalus_alert"] = int(msg.data)
+        self._inputs["daidalus_feed_lost"] = False
+
+    def _mk_bool(self, key: str) -> Callable[[Bool], None]:
+        def cb(msg: Bool) -> None:
+            self._inputs[key] = bool(msg.data)
+
+        return cb
+
+    def _mk_ext_atom(self, key: str) -> Callable[[Bool], None]:
+        def cb(msg: Bool) -> None:
+            self._ext_atoms[key] = bool(msg.data)
+
+        return cb
+
+    def _on_polycarp_geofence(self, msg: Bool) -> None:
+        self._ext_polycarp_geofence = bool(msg.data)
+
+    def _on_gcs_heartbeat(self, _msg: Header) -> None:
+        self._last_gcs_time = time.monotonic()
+
+    def _on_c2_link(self, msg: Bool) -> None:
+        now = time.monotonic()
+        if bool(msg.data):
+            self._c2_false_since = None
+        else:
+            if self._c2_false_since is None:
+                self._c2_false_since = now
+
+    def _on_battery(self, msg: BatteryState) -> None:
+        now = time.monotonic()
+        pct = float(msg.percentage) if msg.percentage >= 0.0 else 1.0
+        th = float(self.get_parameter("battery_low_threshold").value)
+        if pct < th:
+            if self._battery_low_since is None:
+                self._battery_low_since = now
+        else:
+            self._battery_low_since = None
+
+    def _on_geofence_breach(self, msg: Bool) -> None:
+        breach = bool(msg.data)
+        now = time.monotonic()
+        if breach:
+            if self._geofence_bad_since is None:
+                self._geofence_bad_since = now
+        else:
+            self._geofence_bad_since = None
+        self._last_geofence_ok = not breach
+
+    def _on_acas_advisory(self, msg: ACASAdvisory) -> None:
+        self._acas_ra_active = bool(msg.ra_active)
+
+    def _on_slz_best(self, _msg: PoseStamped) -> None:
+        self._slz_last_best_mono = time.monotonic()
+
+    def _on_slz_status(self, msg: String) -> None:
+        try:
+            data = json.loads(msg.data)
+            if isinstance(data, dict) and "best_score" in data:
+                self._slz_best_score = float(data["best_score"])
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
+
+    def _update_slz_atoms(self, now: float) -> None:
+        age = 999.0 if self._slz_last_best_mono is None else (now - self._slz_last_best_mono)
+        self._inputs["slz_best_age_sec"] = age
+        self._inputs["slz_best_score"] = float(self._slz_best_score)
+
+    def _update_supervision_atoms(self, now: float) -> None:
+        gcs_to = float(self.get_parameter("gcs_heartbeat_timeout_sec").value)
+        if self._last_gcs_time is not None and gcs_to > 0.0:
+            self._inputs["gcs_lost"] = (now - self._last_gcs_time) > gcs_to
+        else:
+            self._inputs["gcs_lost"] = False
+
+        c2_to = float(self.get_parameter("c2_link_loss_sec").value)
+        if self._c2_false_since is not None and c2_to > 0.0:
+            sup_c2 = (now - self._c2_false_since) > c2_to
+        else:
+            sup_c2 = False
+        self._inputs["c2_lost"] = bool(self._ext_atoms["c2_lost"]) or sup_c2
+
+        bat_to = float(self.get_parameter("battery_low_sustain_sec").value)
+        if self._battery_low_since is not None and bat_to > 0.0:
+            sup_bl = (now - self._battery_low_since) > bat_to
+        else:
+            sup_bl = False
+        self._inputs["battery_low"] = bool(self._ext_atoms["battery_low"]) or sup_bl
+        self._inputs["battery_critical"] = bool(self._ext_atoms["battery_critical"])
+
+        gf_to = float(self.get_parameter("geofence_breach_sustain_sec").value)
+        if self._geofence_bad_since is not None and gf_to > 0.0:
+            self._inputs["geofence_violation"] = (now - self._geofence_bad_since) > gf_to
+        else:
+            self._inputs["geofence_violation"] = False
+
+        self._inputs["geofence_breach"] = (
+            bool(self._ext_atoms["geofence_breach"])
+            or self._ext_polycarp_geofence
+            or bool(self._inputs["geofence_violation"])
+        )
+
+        feed_to = float(self.get_parameter("daidalus_feed_timeout_sec").value)
+        st = self._fsm.state
+        if st in ("CRUISE", "EVENT", "LANDING", "GO_AROUND", "RTB") and feed_to > 0.0:
+            if self._last_daidalus_msg_time is None:
+                self._inputs["daidalus_feed_lost"] = False
+            else:
+                self._inputs["daidalus_feed_lost"] = (now - self._last_daidalus_msg_time) > feed_to
+        else:
+            self._inputs["daidalus_feed_lost"] = False
+
+    def _infer_event_substate(self, trig: Optional[str]) -> str:
+        if self._fsm.state != "EVENT":
+            return ""
+        traffic_triggers = (
+            "to_event_near_fastpath",
+            "to_recovery",
+            "daidalus_feed_timeout",
+        )
+        if trig in traffic_triggers:
+            return "TRAFFIC_CONFLICT"
+        th = float(self.get_parameter("quality_flag_threshold").value)
+        if float(self._inputs.get("quality_flag", 1.0)) < th:
+            return "SENSOR_DEGRADED"
+        return "TRAFFIC_CONFLICT"
+
+    def _on_tick(self) -> None:
+        now = time.monotonic()
+        self._update_supervision_atoms(now)
+        self._update_slz_atoms(now)
+
+        merged: Dict[str, Any] = dict(self._inputs)
+        use_acas_abort = bool(self.get_parameter("acas_abort_from_advisory").value)
+        if use_acas_abort and self._acas_ra_active and self._fsm.state == "CRUISE":
+            merged["abort_command"] = True
+
+        prev = self._fsm.state
+        state, trig = self._fsm.step(merged)
+
+        if self._evlog is not None and state != prev:
+            self._evlog.log_transition(prev, state, trig or "", merged)
+
+        if state == "GO_AROUND" and prev == "LANDING":
+            self._go_around_count += 1
+        if state == "PREFLIGHT":
+            self._go_around_count = 0
+
+        sub = self._infer_event_substate(trig) if state == "EVENT" else ""
+        self._event_substate = sub
+
+        if state == "EVENT" and sub:
+            mode_str = f"EVENT:{sub}"
+        else:
+            mode_str = state
+
+        msg = FSMState()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.current_mode = mode_str
+        msg.active_trigger = trig or ""
+        msg.event_substate = sub
+        msg.go_around_count = int(self._go_around_count)
+        self._fsm_state_pub.publish(msg)
+        self._pub_mode.publish(String(data=mode_str))
+        self._pub_trig.publish(String(data=trig if trig else ""))
+
+
+def main(args: Any = None) -> None:
+    rclpy.init(args=args)
+    node = MissionFsmNode()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+######## SECTION: gpp_node.py ########
+"""GPP ROS 2 node: FL assignment, informed RRT*, takeoff manager."""
+
+from __future__ import annotations
+
+import math
+from typing import Any, Optional, Tuple
+
+import rclpy
+from geometry_msgs.msg import PoseStamped, Quaternion
+from nav_msgs.msg import Path
+from rclpy.node import Node
+from std_msgs.msg import Float64, Float64MultiArray, String
+
+from gpp.fl_assignment import compute_assigned_fl
+from gpp.geometry import parse_geofences_json
+from gpp.rrt_star import RRTStarPlanner
+from gpp.takeoff_manager import TakeoffConfig, TakeoffManager
+
+
+def _yaw_to_quat(yaw: float) -> Quaternion:
+    q = Quaternion()
+    q.x = 0.0
+    q.y = 0.0
+    q.z = math.sin(yaw / 2.0)
+    q.w = math.cos(yaw / 2.0)
+    return q
+
+
+class GppNode(Node):
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__("gpp_node", **kwargs)
+        self.declare_parameter("base_margin_m", 0.0)
+        self.declare_parameter("turn_radius_min_m", 600.0)
+        self.declare_parameter("vr_mps", 28.0)
+        self.declare_parameter("climb_rate_max_mps", 8.0)
+        self.declare_parameter("pitch_max_deg", 12.0)
+
+        self._terrain_m: Optional[float] = None
+        self._ceiling_m: Optional[float] = None
+        self._quality: float = 1.0
+        self._goal: Optional[Tuple[float, float, float]] = None
+        self._nfz_json: str = ""
+        self._nfz_polys: list = []
+
+        self._takeoff_state = [0.0] * 5
+        self._own_n_e_h: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+
+        tr = float(self.get_parameter("turn_radius_min_m").get_parameter_value().double_value)
+        self._rrt = RRTStarPlanner(tr)
+        self._takeoff = TakeoffManager(
+            TakeoffConfig(
+                vr_mps=float(self.get_parameter("vr_mps").get_parameter_value().double_value),
+                climb_rate_max_mps=float(
+                    self.get_parameter("climb_rate_max_mps").get_parameter_value().double_value
+                ),
+                pitch_max_deg=float(self.get_parameter("pitch_max_deg").get_parameter_value().double_value),
+            )
+        )
+
+        self._pub_fl = self.create_publisher(Float64, "/gpp/assigned_fl", 10)
+        self._pub_status = self.create_publisher(String, "/gpp/status", 10)
+        self._pub_path = self.create_publisher(Path, "/gpp/global_path", 10)
+        self._pub_takeoff = self.create_publisher(String, "/gpp/takeoff_phase", 10)
+
+        self.create_subscription(Float64, "/gpp/terrain_max_m", self._on_terrain, 10)
+        self.create_subscription(Float64, "/gpp/ceiling_m", self._on_ceiling, 10)
+        self.create_subscription(Float64, "/nav/quality_flag", self._on_quality, 10)
+        self.create_subscription(Float64MultiArray, "/gpp/goal", self._on_goal, 10)
+        self.create_subscription(String, "/airspace/geofences", self._on_geo, 10)
+        self.create_subscription(Float64MultiArray, "/gpp/takeoff_state", self._on_takeoff, 10)
+        self.create_subscription(Float64MultiArray, "/ownship/state", self._on_ownship, 10)
+
+        self.create_timer(0.1, self._tick)
+        self.get_logger().info("gpp_node started")
+
+    def _on_terrain(self, msg: Float64) -> None:
+        self._terrain_m = float(msg.data)
+
+    def _on_ceiling(self, msg: Float64) -> None:
+        self._ceiling_m = float(msg.data)
+
+    def _on_quality(self, msg: Float64) -> None:
+        self._quality = float(msg.data)
+
+    def _on_goal(self, msg: Float64MultiArray) -> None:
+        if len(msg.data) >= 3:
+            self._goal = (float(msg.data[0]), float(msg.data[1]), float(msg.data[2]))
+
+    def _on_geo(self, msg: String) -> None:
+        self._nfz_json = msg.data
+        try:
+            self._nfz_polys = parse_geofences_json(msg.data)
+        except Exception as exc:
+            self.get_logger().warn(
+                f"geofences JSON inválido ignorado: {str(exc)[:120]}"
+            )
+
+    def _on_takeoff(self, msg: Float64MultiArray) -> None:
+        d = list(msg.data) + [0.0] * 5
+        self._takeoff_state = d[:5]
+
+    def _on_ownship(self, msg: Float64MultiArray) -> None:
+        if len(msg.data) >= 6:
+            vn = float(msg.data[3])
+            ve = float(msg.data[4])
+            h = math.atan2(ve, vn)
+            self._own_n_e_h = (float(msg.data[0]), float(msg.data[1]), h)
+
+    def _tick(self) -> None:
+        bm = float(self.get_parameter("base_margin_m").get_parameter_value().double_value)
+        if self._terrain_m is None or self._ceiling_m is None:
+            self._pub_status.publish(String(data="WAITING"))
+            return
+
+        fl, st = compute_assigned_fl(self._terrain_m, self._ceiling_m, self._quality, bm)
+        self._pub_status.publish(String(data=st))
+        self._pub_fl.publish(Float64(data=fl if st == "OK" else float("nan")))
+
+        if self._goal is not None:
+            start = self._own_n_e_h
+            g = self._goal
+            goal_se2 = (g[0], g[1], g[2])
+            gn, ge, _ = goal_se2
+            pad = 150.0
+            start_n, start_e, _ = self._own_n_e_h
+            # FIX-GPP-G05: bounds must span both start and goal (not clamped to origin)
+            bounds = (
+                min(start_n, gn) - pad,
+                max(start_n, gn) + pad,
+                min(start_e, ge) - pad,
+                max(start_e, ge) + pad,
+            )
+            gt = [g[0], g[1], g[2]]
+            path_states = self._rrt.plan_if_needed(
+                start, goal_se2, self._nfz_polys, bounds, gt, self._nfz_json
+            )
+            path = Path()
+            path.header.frame_id = "map"
+            path.header.stamp = self.get_clock().now().to_msg()
+            for n, e, h in path_states:
+                ps = PoseStamped()
+                ps.header = path.header
+                ps.pose.position.x = n
+                ps.pose.position.y = e
+                ps.pose.position.z = 0.0
+                ps.pose.orientation = _yaw_to_quat(h)
+                path.poses.append(ps)
+            self._pub_path.publish(path)
+
+        v, rw, agl, vs, dcl = self._takeoff_state
+        self._takeoff.update(
+            v, rw, agl, vs, desired_climb_mps=max(0.1, dcl if dcl > 0 else 6.0)
+        )
+        self._pub_takeoff.publish(String(data=self._takeoff.phase))
+
+
+def main(args: Any = None) -> None:
+    rclpy.init(args=args)
+    node = GppNode()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+######## SECTION: rrt_star.py ########
+"""Informed-RRT* in SE2 with Dubins edges and polygon NFZ (NED NE)."""
+
+from __future__ import annotations
+
+import hashlib
+import logging
+import math
+import random
+from typing import List, Sequence, Tuple
+
+from gpp.dubins import dubins_interpolate, dubins_length
+from gpp.geometry import point_in_polygon, segment_hits_nfz
+
+_logger = logging.getLogger(__name__)
+
+State = Tuple[float, float, float]  # n, e, heading rad
+Polygon = Sequence[Tuple[float, float]]
+
+
+def _wrap(a: float) -> float:
+    return (a + math.pi) % (2.0 * math.pi) - math.pi
+
+
+def _dist_se2(a: State, b: State) -> float:
+    return math.hypot(a[0] - b[0], a[1] - b[1]) + 0.3 * abs(_wrap(a[2] - b[2]))
+
+
+def _dubins_collision(
+    a: State,
+    b: State,
+    rho: float,
+    nfz: Sequence[Polygon],
+    samples: int = 28,
+) -> bool:
+    ln, fn = dubins_interpolate(a[0], a[1], a[2], b[0], b[1], b[2], rho)
+    if ln >= 1e8:
+        return True
+    for i in range(samples + 1):
+        s = ln * i / samples
+        n, e, _ = fn(s)
+        for poly in nfz:
+            if point_in_polygon(n, e, poly):
+                return True
+    return False
+
+
+class RRTStarPlanner:
+    """RRT*-style tree with Dubins steering; informed sampling after first solution."""
+
+    def __init__(
+        self,
+        turn_radius_m: float,
+        *,
+        max_iter: int = 1200,
+        step_size_m: float = 55.0,
+        goal_bias: float = 0.18,
+        seed: int = 42,
+    ) -> None:
+        self.rho = max(turn_radius_m, 1.0)
+        self.max_iter = max_iter
+        self.step_size = step_size_m
+        self.goal_bias = goal_bias
+        self._rng = random.Random(seed)
+        self._last_path: List[State] = []
+        self._goal_key: str = ""
+        self._last_start: State = (0.0, 0.0, 0.0)
+        self.replan_calls = 0
+
+    @staticmethod
+    def goal_nfz_key(goal: Sequence[float], nfz_json: str) -> str:
+        g = ",".join(f"{float(x):.6f}" for x in goal)
+        return hashlib.sha256((g + "|" + nfz_json).encode()).hexdigest()[:24]
+
+    def plan_if_needed(
+        self,
+        start: State,
+        goal: State,
+        nfz: Sequence[Polygon],
+        bounds: Tuple[float, float, float, float],
+        goal_tuple: Sequence[float],
+        nfz_json: str,
+    ) -> List[State]:
+        gk = self.goal_nfz_key(goal_tuple, nfz_json)
+        if gk == self._goal_key and gk != "":
+            return list(self._last_path)
+        self.replan_calls += 1
+        self._goal_key = gk
+        path = self._plan(start, goal, nfz, bounds)
+        if len(path) < 2:
+            # No safe path found, return start only and keep cache coherent.
+            self._last_path = [start]
+            return [start]
+        self._last_path = path
+        return list(path)
+
+    def _sample(
+        self,
+        bounds: Tuple[float, float, float, float],
+        goal: State,
+        best_cost: float,
+        informed: bool,
+    ) -> State:
+        nmin, nmax, emin, emax = bounds
+        if informed and best_cost < 1e8:
+            cx = (goal[0] + self._last_start[0]) / 2.0
+            cy = (goal[1] + self._last_start[1]) / 2.0
+            rx = min(best_cost * 0.55, (nmax - nmin) / 2.0)
+            ry = min(best_cost * 0.55, (emax - emin) / 2.0)
+            n = cx + (self._rng.random() * 2.0 - 1.0) * rx
+            e = cy + (self._rng.random() * 2.0 - 1.0) * ry
+        else:
+            n = nmin + self._rng.random() * (nmax - nmin)
+            e = emin + self._rng.random() * (emax - emin)
+        h = -math.pi + 2.0 * math.pi * self._rng.random()
+        return (n, e, h)
+
+    def _steer(self, from_s: State, to_s: State) -> State:
+        L = dubins_length(from_s[0], from_s[1], from_s[2], to_s[0], to_s[1], to_s[2], self.rho)
+        if L >= 1e8:
+            return from_s
+        if L <= self.step_size:
+            return to_s
+        ln, fn = dubins_interpolate(from_s[0], from_s[1], from_s[2], to_s[0], to_s[1], to_s[2], self.rho)
+        return fn(self.step_size)
+
+    def _dense_dubins_fallback(self, start: State, goal: State, samples: int = 48) -> List[State]:
+        """Sample Dubins edge for visualization / execution when a straight chord would cross NFZ."""
+        ln, fn = dubins_interpolate(start[0], start[1], start[2], goal[0], goal[1], goal[2], self.rho)
+        if ln >= 1e8:
+            return [start]
+        return [fn(ln * i / samples) for i in range(samples + 1)]
+
+    def _plan(self, start: State, goal: State, nfz: Sequence[Polygon], bounds: Tuple[float, float, float, float]) -> List[State]:
+        self._last_start = start
+        nodes: List[State] = [start]
+        parent: List[int] = [-1]
+        cost: List[float] = [0.0]
+        best_goal_idx: int | None = None
+        best_cost = float("inf")
+        informed = False
+
+        for _ in range(self.max_iter):
+            if self._rng.random() < self.goal_bias:
+                x_rand = goal
+            else:
+                x_rand = self._sample(bounds, goal, best_cost, informed)
+
+            idx_near = min(range(len(nodes)), key=lambda i: _dist_se2(nodes[i], x_rand))
+            x_new = self._steer(nodes[idx_near], x_rand)
+            if _dubins_collision(nodes[idx_near], x_new, self.rho, nfz):
+                continue
+
+            gamma = 60.0
+            card = len(nodes)
+            r = min(gamma * math.sqrt(math.log(card + 1) / (card + 1)), self.step_size * 4.0)
+            near_idx = [i for i in range(len(nodes)) if _dist_se2(nodes[i], x_new) < r]
+
+            best_p = idx_near
+            el = dubins_length(
+                nodes[idx_near][0],
+                nodes[idx_near][1],
+                nodes[idx_near][2],
+                x_new[0],
+                x_new[1],
+                x_new[2],
+                self.rho,
+            )
+            if el >= 1e8:
+                continue
+            best_pc = cost[idx_near] + el
+            for j in near_idx:
+                c_edge = dubins_length(
+                    nodes[j][0], nodes[j][1], nodes[j][2], x_new[0], x_new[1], x_new[2], self.rho
+                )
+                if c_edge >= 1e8:
+                    continue
+                c = cost[j] + c_edge
+                if c < best_pc and not _dubins_collision(nodes[j], x_new, self.rho, nfz):
+                    best_pc = c
+                    best_p = j
+
+            parent.append(best_p)
+            nodes.append(x_new)
+            cost.append(best_pc)
+            new_i = len(nodes) - 1
+
+            dg = dubins_length(x_new[0], x_new[1], x_new[2], goal[0], goal[1], goal[2], self.rho)
+            if dg < 80.0 and not _dubins_collision(x_new, goal, self.rho, nfz):
+                tc = best_pc + dg
+                if tc < best_cost:
+                    best_cost = tc
+                    best_goal_idx = new_i
+                    informed = True
+
+        if best_goal_idx is None:
+            # Fallback: Dubins edge [start, goal] only if collision-free
+            if not _dubins_collision(start, goal, self.rho, nfz):
+                # FIX-GPP-G03: do not publish only two poses if the straight chord pierces NFZ
+                if segment_hits_nfz(start[0], start[1], goal[0], goal[1], nfz):
+                    _logger.warning(
+                        "WARNING: RRT* failed and direct path hits NFZ — no safe path found; "
+                        "using Dubins-sampled path"
+                    )
+                    return self._dense_dubins_fallback(start, goal)
+                return [start, goal]
+            return [start]  # no safe path found
+
+        chain: List[int] = []
+        i: int | None = best_goal_idx
+        while i is not None and i >= 0:
+            chain.append(i)
+            i = parent[i]
+        chain.reverse()
+        path = [nodes[k] for k in chain]
+        if path[-1] != goal:
+            path.append(goal)
+        return path
+
+######## SECTION: dubins.py ########
+"""Shortest Dubins path (CSC / CCC) in NE plane; heading radians from North (CCW)."""
+
+from __future__ import annotations
+
+import math
+from typing import Callable, List, Tuple
+
+# Path types: (turn1, straight, turn2) with L=-1 R=+1 S=0
+_PATHS = [
+    ("LSL", -1, 0, -1),
+    ("LSR", -1, 0, 1),
+    ("RSL", 1, 0, -1),
+    ("RSR", 1, 0, 1),
+    ("RLR", 1, -1, 1),
+    ("LRL", -1, 1, -1),
+]
+
+
+def _mod2pi(x: float) -> float:
+    return (x + math.pi) % (2.0 * math.pi) - math.pi
+
+
+def _polar(ax: float, ay: float) -> Tuple[float, float]:
+    return math.hypot(ax, ay), math.atan2(ay, ax)
+
+
+def _tau_omega(u: float, v: float, xi: float, eta: float, phi: float) -> Tuple[float, float, float]:
+    delta = _mod2pi(u - v)
+    a1 = 2.0 * math.sin(u) * (math.sin(delta + phi) - 2.0 * math.cos(u) * math.cos(phi))
+    a1 += 2.0 * math.cos(delta) - 2.0 * math.cos(phi) + 1.0
+    if abs(a1) < 1e-12:
+        tau = 0.0
+    else:
+        tau = math.atan2(2.0 * math.cos(u) * (2.0 * math.cos(u) * math.cos(phi) - math.sin(delta + phi)) + 2.0 * math.sin(u) * math.cos(phi) - eta, a1)
+    tau = _mod2pi(tau)
+    omega = _mod2pi(tau - u + v - phi)
+    return tau, omega, delta
+
+
+def _csc_lengths(alpha: float, beta: float, d: float, f1: int, f2: int, f3: int) -> Tuple[float, float, float] | None:
+    sa, ca = math.sin(alpha), math.cos(alpha)
+    sb, cb = math.sin(beta), math.cos(beta)
+    tmp = 2.0 + d * d - 2.0 * (ca * cb + sa * sb - d * (sa - sb))
+    if tmp < -1e-9:
+        return None
+    tmp = max(0.0, tmp)
+    p = math.sqrt(tmp)
+    if f2 == 0:
+        if f1 == -1 and f3 == -1:
+            t = _mod2pi(-alpha + math.atan2(cb - ca, d + sa + sb))
+            q = _mod2pi(beta - math.atan2(cb - ca, d + sa + sb))
+            return t, p, q
+        if f1 == 1 and f3 == 1:
+            t = _mod2pi(alpha - math.atan2(ca - cb, d - sa - sb))
+            q = _mod2pi(-beta + math.atan2(ca - cb, d - sa - sb))
+            return t, p, q
+        if f1 == -1 and f3 == 1:
+            p2 = d * d + 2.0 + 2.0 * (cb * ca + sb * sa - d * (sb + sa))
+            if p2 < -1e-9:
+                return None
+            p2 = max(0.0, p2)
+            p = math.sqrt(p2)
+            t = _mod2pi(-alpha + math.atan2(-cb - ca, d + sb - sa) - math.atan2(-2.0, p))
+            q = _mod2pi(-beta + math.atan2(-cb - ca, d + sb - sa) - math.atan2(-2.0, p))
+            return t, p, q
+        if f1 == 1 and f3 == -1:
+            p2 = d * d + 2.0 + 2.0 * (-cb * ca - sb * sa + d * (sb + sa))
+            if p2 < -1e-9:
+                return None
+            p2 = max(0.0, p2)
+            p = math.sqrt(p2)
+            t = _mod2pi(alpha - math.atan2(cb + ca, d - sb + sa) + math.atan2(2.0, p))
+            q = _mod2pi(beta - math.atan2(cb + ca, d - sb + sa) + math.atan2(2.0, p))
+            return t, p, q
+    return None
+
+
+def _ccc_lengths(alpha: float, beta: float, d: float, f1: int, f2: int, f3: int) -> Tuple[float, float, float] | None:
+    if f1 * f2 != -1 or f2 * f3 != -1:
+        return None
+    tmp = (6.0 - d * d + 2.0 * (math.cos(beta - alpha) + d * (math.sin(alpha) - math.sin(beta)))) / 8.0
+    if abs(tmp) > 1.0 + 1e-6:
+        return None
+    tmp = max(-1.0, min(1.0, tmp))
+    p = _mod2pi(2.0 * math.pi - math.acos(tmp))
+    t = _mod2pi(alpha - math.atan2(math.cos(alpha) - math.cos(beta), d + math.sin(alpha) - math.sin(beta)) + p / 2.0 * f1)
+    q = _mod2pi(alpha - beta - t + p * f2)
+    return t, p, q
+
+
+def dubins_length(n0: float, e0: float, h0: float, n1: float, e1: float, h1: float, rho: float) -> float:
+    """Total path length (m); inf if infeasible."""
+    if rho <= 1e-9:
+        return float("inf")
+    dx = (n1 - n0) / rho
+    dy = (e1 - e0) / rho
+    d, theta = _polar(dx, dy)
+    alpha = _mod2pi(h0 - theta)
+    beta = _mod2pi(h1 - theta)
+    best = float("inf")
+    for name, f1, f2, f3 in _PATHS:
+        seg: Tuple[float, float, float] | None = None
+        if f2 == 0:
+            seg = _csc_lengths(alpha, beta, d, f1, f2, f3)
+        else:
+            seg = _ccc_lengths(alpha, beta, d, f1, f2, f3)
+        if seg is None:
+            continue
+        t, p, q = seg
+        L = abs(t) + abs(p) + abs(q)
+        if L < best:
+            best = L
+    if best >= 1e8:
+        return float("inf")
+    return best * rho
+
+
+def dubins_interpolate(
+    n0: float, e0: float, h0: float, n1: float, e1: float, h1: float, rho: float
+) -> Tuple[float, Callable[[float], Tuple[float, float, float]]]:
+    """Return (length, s -> (n,e,heading))."""
+    if rho <= 1e-9:
+        return float("inf"), lambda s: (n0, e0, h0)
+
+    dx = (n1 - n0) / rho
+    dy = (e1 - e0) / rho
+    d, theta = _polar(dx, dy)
+    alpha = _mod2pi(h0 - theta)
+    beta = _mod2pi(h1 - theta)
+    best = float("inf")
+    best_seg: Tuple[int, int, int, float, float, float] | None = None
+    for _name, f1, f2, f3 in _PATHS:
+        seg: Tuple[float, float, float] | None = None
+        if f2 == 0:
+            seg = _csc_lengths(alpha, beta, d, f1, f2, f3)
+        else:
+            seg = _ccc_lengths(alpha, beta, d, f1, f2, f3)
+        if seg is None:
+            continue
+        t, p, q = seg
+        L = abs(t) + abs(p) + abs(q)
+        if L < best:
+            best = L
+            best_seg = (f1, f2, f3, t, p, q)
+    if best_seg is None:
+        return float("inf"), lambda s: (n0, e0, h0)
+    f1, f2, f3, t, p, q = best_seg
+    length_m = best * rho
+
+    def integrate(s: float) -> Tuple[float, float, float]:
+        """(x,y) in rho-normalized frame (turn radius = 1)."""
+        s = max(0.0, min(s, length_m))
+        u = s / rho
+        x, y, psi = 0.0, 0.0, alpha
+
+        def left(step: float) -> None:
+            nonlocal x, y, psi
+            if abs(step) < 1e-12:
+                return
+            x += math.sin(psi + step) - math.sin(psi)
+            y += -math.cos(psi + step) + math.cos(psi)
+            psi = _mod2pi(psi + step)
+
+        def right(step: float) -> None:
+            nonlocal x, y, psi
+            if abs(step) < 1e-12:
+                return
+            x += -math.sin(psi - step) + math.sin(psi)
+            y += math.cos(psi - step) - math.cos(psi)
+            psi = _mod2pi(psi - step)
+
+        def straight(step: float) -> None:
+            nonlocal x, y
+            x += step * math.cos(psi)
+            y += step * math.sin(psi)
+
+        rem = u
+        segs = ((f1, abs(t), t), (f2, abs(p), p), (f3, abs(q), q))
+        for kind, seg_len, seg_mag in segs:
+            if rem <= 0:
+                break
+            take = min(rem, seg_len)
+            if kind == -1:
+                left(math.copysign(take, seg_mag))
+            elif kind == 1:
+                right(math.copysign(take, seg_mag))
+            else:
+                straight(math.copysign(take, seg_mag))
+            rem -= take
+        gn = n0 + rho * (x * math.cos(theta) - y * math.sin(theta))
+        ge = e0 + rho * (x * math.sin(theta) + y * math.cos(theta))
+        gh = _mod2pi(psi + theta)
+        return gn, ge, gh
+
+    return length_m, integrate
+
+######## SECTION: fdir_node.py ########
+"""FDIR ROS 2 node: detectors, policies, emergency zone JSON."""
+
+from __future__ import annotations
+
+import os
+from typing import Any, Optional
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Bool, Float64, String
+
+from fdir.fdir_core import FdirEngine, FdirSnapshot, config_from_yaml_root, load_fdir_yaml
+
+try:
+    from ament_index_python.packages import get_package_share_directory
+except ImportError:  # pragma: no cover
+    get_package_share_directory = None  # type: ignore[misc, assignment]
+
+try:
+    from px4_msgs.msg import VehicleAttitudeSetpoint, VehicleImu, VehicleStatus
+except ImportError:  # pragma: no cover
+    VehicleImu = None  # type: ignore[misc, assignment]
+    VehicleStatus = None  # type: ignore[misc, assignment]
+    VehicleAttitudeSetpoint = None  # type: ignore[misc, assignment]
+
+
+class FdirNode(Node):
+    def __init__(self) -> None:
+        super().__init__("fdir_node")
+
+        self.declare_parameter("config_file", "")
+        for key, val in (
+            ("nav_mild_below", 0.65),
+            ("nav_severe_below", 0.35),
+            ("nav_critical_below", 0.15),
+            ("motor_loss_window_s", 2.0),
+            ("motor_loss_throttle_min", 0.35),
+            ("motor_loss_vertical_accel_max_m_s2", -1.5),
+            ("sensor_timeout_nav_quality_s", 3.0),
+            ("c2_heartbeat_timeout_s", 1.5),
+            ("link_loss_hold_s", 30.0),
+            ("link_loss_land_s", 120.0),
+            ("glide_ratio", 18.0),
+            ("vehicle_lat", 40.0),
+            ("vehicle_lon", -3.0),
+            ("vehicle_altitude_amsl_m", 2000.0),
+        ):
+            self.declare_parameter(key, val)
+
+        cfg_path = self.get_parameter("config_file").get_parameter_value().string_value.strip()
+        if cfg_path and os.path.isfile(cfg_path):
+            path = cfg_path
+        else:
+            if get_package_share_directory is None:
+                raise RuntimeError("ament_index_python required for default FDIR config")
+            path = os.path.join(get_package_share_directory("fdir"), "config", "fdir.yaml")
+            if not os.path.isfile(path):
+                raise FileNotFoundError(f"FDIR config not found: {path}")
+
+        root = load_fdir_yaml(path)
+        ros_params = root.setdefault("fdir_node", {}).setdefault("ros__parameters", {})
+        for p in (
+            "nav_mild_below",
+            "nav_severe_below",
+            "nav_critical_below",
+            "motor_loss_window_s",
+            "motor_loss_throttle_min",
+            "motor_loss_vertical_accel_max_m_s2",
+            "sensor_timeout_nav_quality_s",
+            "c2_heartbeat_timeout_s",
+            "link_loss_hold_s",
+            "link_loss_land_s",
+            "glide_ratio",
+            "vehicle_lat",
+            "vehicle_lon",
+            "vehicle_altitude_amsl_m",
+        ):
+            ros_params[p] = self.get_parameter(p).get_parameter_value().double_value
+        self._engine = FdirEngine(config_from_yaml_root(root))
+
+        self._quality: Optional[float] = None
+        self._last_quality_rx: Optional[float] = None
+        self._c2_last_rx: Optional[float] = None
+        self._fsm_mode: str = "PREFLIGHT"
+        self._throttle_cmd: float = 0.0
+        self._vert_accel: float = 0.0
+        self._armed: bool = False
+        self._failure_motor: bool = False
+
+        self._pub_fault = self.create_publisher(String, "/fdir/active_fault", 10)
+        self._pub_policy = self.create_publisher(String, "/fdir/policy_action", 10)
+        self._pub_zone = self.create_publisher(String, "/fdir/emergency_landing_target", 10)
+
+        self.create_subscription(Float64, "/nav/quality_flag", self._on_quality, 10)
+        self.create_subscription(String, "/fsm/current_mode", self._on_fsm, 10)
+        self.create_subscription(Bool, "/fdir/in/c2_heartbeat", self._on_c2, 10)
+
+        if VehicleImu is None or VehicleStatus is None or VehicleAttitudeSetpoint is None:
+            raise RuntimeError("px4_msgs is required (VehicleImu, VehicleStatus, VehicleAttitudeSetpoint)")
+
+        self.create_subscription(VehicleImu, "/fmu/out/vehicle_imu", self._on_imu, 10)
+        self.create_subscription(VehicleStatus, "/fmu/out/vehicle_status", self._on_status, 10)
+        self.create_subscription(
+            VehicleAttitudeSetpoint,
+            "/fmu/out/vehicle_attitude_setpoint",
+            self._on_att_sp,
+            10,
+        )
+
+        self.create_timer(0.05, self._tick)
+        self.get_logger().info(f"FDIR node started (config {path})")
+
+    def _now(self) -> float:
+        return self.get_clock().now().nanoseconds / 1e9
+
+    def _on_quality(self, msg: Float64) -> None:
+        self._quality = float(msg.data)
+        self._last_quality_rx = self._now()
+
+    def _on_fsm(self, msg: String) -> None:
+        self._fsm_mode = msg.data
+
+    def _on_c2(self, _msg: Bool) -> None:
+        self._c2_last_rx = self._now()
+
+    def _on_imu(self, msg: Any) -> None:
+        dt = max(1e-6, float(msg.delta_velocity_dt) / 1e6)
+        dvz = float(msg.delta_velocity[2])
+        az_down = dvz / dt
+        self._vert_accel = float(-az_down)
+
+    def _on_status(self, msg: Any) -> None:
+        self._armed = int(msg.arming_state) == 2
+        self._failure_motor = (int(msg.failure_detector_status) & 128) != 0
+
+    def _on_att_sp(self, msg: Any) -> None:
+        tb = msg.thrust_body
+        self._throttle_cmd = max(0.0, min(1.0, float(tb[0])))
+
+    def _tick(self) -> None:
+        now = self._now()
+        lat = float(self.get_parameter("vehicle_lat").get_parameter_value().double_value)
+        lon = float(self.get_parameter("vehicle_lon").get_parameter_value().double_value)
+        alt = float(self.get_parameter("vehicle_altitude_amsl_m").get_parameter_value().double_value)
+
+        snap = FdirSnapshot(
+            time_sec=now,
+            quality_flag=self._quality,
+            last_quality_rx_time=self._last_quality_rx,
+            c2_heartbeat_last_rx=self._c2_last_rx,
+            throttle_commanded=self._throttle_cmd,
+            vertical_accel_m_s2=self._vert_accel,
+            armed=self._armed,
+            failure_motor_px4=self._failure_motor,
+            fsm_mode=self._fsm_mode,
+            vehicle_lat=lat,
+            vehicle_lon=lon,
+            vehicle_altitude_amsl_m=alt,
+        )
+        out = self._engine.evaluate(snap)
+        self._pub_fault.publish(String(data=out.active_fault))
+        self._pub_policy.publish(String(data=out.policy_action))
+        self._pub_zone.publish(String(data=out.emergency_landing_target_json))
+
+
+def main(args: Any = None) -> None:
+    rclpy.init(args=args)
+    node = FdirNode()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+######## SECTION: acas_node.py (requested path — NOT FOUND; stub note) ########
+No existe /src/acas_node/acas_node/acas_node.py — el nodo ACAS es C++ en src/acas_node/src/acas_node.cpp
+
+######## SECTION: navigation_bridge_node.py ########
+#!/usr/bin/env python3
+"""Republish PX4 VehicleOdometry as FlightMind NavigationState + quality_flag.
+
+quality_flag (0..1) desde pose_covariance[0] (varianza posición NED ~x):
+  > 5.0  -> 0.3  (degradación fuerte; FSM suele reaccionar si < umbral YAML)
+  > 1.0  -> 0.7
+  else   -> 1.0
+Sin odometría reciente (>1 s) -> 0.0
+"""
+
+from __future__ import annotations
+
+import time
+
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy
+
+from flightmind_msgs.msg import NavigationState
+from std_msgs.msg import Bool, Float64
+
+# Calidad también va en NavigationState.quality_flag; el FSM puede alimentarse
+# vía navigation_quality_relay_node (launch) o mocks SIL.
+
+try:
+    from px4_msgs.msg import VehicleOdometry
+except ImportError as exc:  # pragma: no cover
+    raise ImportError(
+        "navigation_bridge requires px4_msgs in the overlay or an underlay "
+        "(e.g. clone PX4/px4_msgs and colcon build)."
+    ) from exc
+
+
+def _upper_triangle_21_to_flat36(pc21: list[float]) -> list[float]:
+    """Unpack PX4 upper-triangle pose covariance (21) into row-major 6x6 (36)."""
+    out = [0.0] * 36
+    k = 0
+    for i in range(6):
+        for j in range(i, 6):
+            if k < len(pc21):
+                out[i * 6 + j] = float(pc21[k])
+                if i != j:
+                    out[j * 6 + i] = float(pc21[k])
+            k += 1
+    return out
+
+
+class NavigationBridgeNode(Node):
+    def __init__(self) -> None:
+        super().__init__("navigation_bridge")
+        qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT)
+        self._last_odom_time: float | None = None
+        self._last_odom: VehicleOdometry | None = None
+        self.create_subscription(VehicleOdometry, "/fmu/out/vehicle_odometry", self._on_odom, qos)
+        self._pub_q = self.create_publisher(Float64, "/nav/quality_flag", 10)
+        self._pub_nav = self.create_publisher(NavigationState, "/navigation/state", 10)
+        self._pub_nav_hb = self.create_publisher(Bool, "/navigation/heartbeat", 10)
+        self._timer = self.create_timer(1.0 / 50.0, self._tick)
+        self.create_timer(1.0, self._publish_nav_heartbeat)
+
+    def _publish_nav_heartbeat(self) -> None:
+        self._pub_nav_hb.publish(Bool(data=True))
+
+    def _on_odom(self, msg: VehicleOdometry) -> None:
+        self._last_odom = msg
+        self._last_odom_time = time.monotonic()
+
+    def _quality_from_cov(self, c0: float) -> float:
+        c0 = max(0.0, float(c0))
+        if c0 > 5.0:
+            return 0.3
+        if c0 > 1.0:
+            return 0.7
+        return 1.0
+
+    def _tick(self) -> None:
+        now = time.monotonic()
+        if self._last_odom is None or self._last_odom_time is None:
+            q = 0.0
+            self._pub_q.publish(Float64(data=q))
+            return
+        if now - self._last_odom_time > 1.0:
+            q = 0.0
+            self._pub_q.publish(Float64(data=q))
+            return
+
+        msg = self._last_odom
+        pc = list(getattr(msg, "pose_covariance", []) or [])
+        c0 = float(pc[0]) if len(pc) > 0 else 0.0  # upper-tri pose cov; [0] ~ var pos primera componente
+        q = self._quality_from_cov(c0)
+        self._pub_q.publish(Float64(data=q))
+
+        nav = NavigationState()
+        nav.header.stamp = self.get_clock().now().to_msg()
+        nav.header.frame_id = "ned"
+        pos = list(getattr(msg, "position", [0.0, 0.0, 0.0]))
+        while len(pos) < 3:
+            pos.append(0.0)
+        nav.position_ned = [float(pos[0]), float(pos[1]), float(pos[2])]
+        vel = list(getattr(msg, "velocity", [0.0, 0.0, 0.0]))
+        while len(vel) < 3:
+            vel.append(0.0)
+        nav.velocity_ned = [float(vel[0]), float(vel[1]), float(vel[2])]
+        quat = list(getattr(msg, "q", [1.0, 0.0, 0.0, 0.0]))
+        while len(quat) < 4:
+            quat.append(0.0)
+        nav.orientation_quat = [float(quat[0]), float(quat[1]), float(quat[2]), float(quat[3])]
+        nav.covariance_6x6 = _upper_triangle_21_to_flat36(pc) if len(pc) >= 21 else [0.0] * 36
+        nav.quality_flag = float(q)
+        nav.fuel_consumed_kg = 0.0
+        nav.gnss_available = bool(q > 0.5)
+        self._pub_nav.publish(nav)
+
+
+def main() -> None:
+    rclpy.init()
+    node = NavigationBridgeNode()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
+
+######## SECTION: config yaml (first 10 with grep -l .) ########
+=== /home/ignacio-querol/upnext_uas_ws/src/acas_node/config/acas.yaml ===
+/**:
+  ros__parameters:
+    traffic_topic: "/traffic/intruders"
+    navigation_topic: "/navigation/state"
+    ownship_topic: "/ownship/state"
+    use_ownship_fallback: true
+    nnet_subdir: "nnets"
+    rho_norm_m: 185200.0
+    v_norm_mps: 250.0
+    timer_period_s: 0.05
+
+=== /home/ignacio-querol/upnext_uas_ws/src/local_replanner/config/local_replanner.yaml ===
+/**:
+  ros__parameters:
+    w1: 1.0
+    w2: 1.0
+    w3: 0.5
+    qf_threshold: 0.65
+    track_deviation_threshold_m: 80.0
+    terrain_max_m: 500.0
+    replan_dt_s: 0.5
+    ref_lat_deg: 40.0
+    ref_lon_deg: -3.0
+    ref_n_m: 0.0
+    ref_e_m: 0.0
+
+=== /home/ignacio-querol/upnext_uas_ws/src/mission_fsm/config/mission_fsm_vtol.yaml ===
+mission_fsm_node:
+  ros__parameters:
+    config_file: ''
+    initial_state: PREFLIGHT
+    quality_flag_threshold: 0.5
+    daidalus_alert_amber: 1
+    acas_abort_from_advisory: true
+    go_around_max_attempts: 3
+    takeoff_max_duration_sec: 60
+fsm:
+  states:
+    PREFLIGHT:
+      entry_guards: {}
+    AUTOTAXI:
+      entry_guards: {}
+    TAKEOFF:
+      entry_guards:
+        all:
+        - taxi_clear
+    CRUISE:
+      entry_guards: {}
+    EVENT:
+      entry_guards:
+        any:
+        - quality_degraded
+        - daidalus_escalated
+    LANDING:
+      entry_guards: {}
+    GO_AROUND:
+      entry_guards:
+        all:
+        - approach_not_stabilized
+    ABORT:
+      entry_guards:
+        any:
+        - fdir_emergency
+        - abort_command
+    RTB:
+      entry_guards: {}
+  transitions:
+  - from: PREFLIGHT
+    to: AUTOTAXI
+    trigger: to_autotaxi
+    when:
+      all:
+      - preflight_ok
+  - from: AUTOTAXI
+    to: TAKEOFF
+    trigger: to_takeoff
+    when:
+      all:
+      - taxi_clear
+  - from: TAKEOFF
+    to: CRUISE
+    trigger: to_cruise
+    when:
+      all:
+      - takeoff_complete
+  - from: CRUISE
+    to: ABORT
+    trigger: cruise_to_abort
+    when:
+      any:
+      - abort_command
+      - fdir_emergency
+  - from: CRUISE
+    to: EVENT
+    trigger: to_event
+    when:
+      any:
+      - quality_degraded
+      - daidalus_escalated
+  - from: CRUISE
+    to: RTB
+    trigger: cruise_to_rtb
+    when:
+      all:
+      - rtb_command
+  - from: CRUISE
+    to: LANDING
+    trigger: to_landing
+    when:
+      all:
+      - land_command
+  - from: EVENT
+    to: CRUISE
+    trigger: event_to_cruise
+    when:
+      all:
+      - event_cleared
+  - from: EVENT
+    to: ABORT
+    trigger: event_to_abort
+    when:
+      all:
+      - fdir_emergency
+  - from: EVENT
+    to: RTB
+    trigger: event_to_rtb
+    when:
+      all:
+      - rtb_during_event
+  - from: LANDING
+    to: GO_AROUND
+    trigger: landing_to_goaround
+    when:
+      all:
+      - approach_not_stabilized
+  - from: LANDING
+    to: AUTOTAXI
+    trigger: landing_complete
+    when:
+      all:
+      - touchdown
+  - from: GO_AROUND
+    to: LANDING
+    trigger: goaround_to_landing
+    when:
+      all:
+      - go_around_complete
+  - from: GO_AROUND
+    to: CRUISE
+    trigger: goaround_to_cruise
+    when:
+      all:
+      - missed_approach_climb
+  - from: ABORT
+    to: RTB
+    trigger: abort_to_rtb
+    when:
+      all: []
+  - from: RTB
+    to: LANDING
+    trigger: rtb_to_landing
+    when:
+      all:
+      - rtb_landing
+  - from: RTB
+    to: CRUISE
+    trigger: rtb_to_cruise
+    when:
+      all:
+      - rtb_cancel
+
+=== /home/ignacio-querol/upnext_uas_ws/src/mission_fsm/config/mission_fsm.yaml ===
+# Mission FSM — states, entry guards, transitions (first match wins per source state).
+mission_fsm_node:
+  ros__parameters:
+    config_file: ""
+    initial_state: PREFLIGHT
+    quality_flag_threshold: 0.5
+    daidalus_alert_amber: 1
+    tick_hz: 20.0
+    hysteresis_ticks_on: 3
+    hysteresis_ticks_off: 5
+    hysteresis_margin: 0.05
+    daidalus_escalate_ticks: 2
+    acas_abort_from_advisory: false
+    daidalus_feed_timeout_sec: 2.0
+    gcs_heartbeat_timeout_sec: 2.0
+    c2_link_loss_sec: 2.0
+    battery_low_threshold: 0.15
+    battery_low_sustain_sec: 2.0
+    geofence_breach_sustain_sec: 0.5
+
+fsm:
+  states:
+    PREFLIGHT:
+      entry_guards: {}
+      max_duration_sec: 5.0
+    AUTOTAXI:
+      entry_guards: {}
+      max_duration_sec: 5.0
+    TAKEOFF:
+      entry_guards:
+        all: [taxi_clear]
+      max_duration_sec: 5.0
+    CRUISE:
+      entry_guards: {}
+      max_duration_sec: 5.0
+    EVENT:
+      entry_guards: {}
+      max_duration_sec: 5.0
+    LANDING:
+      entry_guards: {}
+    GO_AROUND:
+      entry_guards:
+        all: [approach_not_stabilized]
+    ABORT:
+      entry_guards: {}
+    RTB:
+      entry_guards: {}
+
+  transitions:
+    - from: PREFLIGHT
+      to: ABORT
+      trigger: preflight_dwell_timeout
+      when:
+        all: [state_dwell_timeout]
+
+    - from: PREFLIGHT
+      to: AUTOTAXI
+      trigger: to_autotaxi
+      when:
+        all: [preflight_ok]
+
+    - from: AUTOTAXI
+      to: ABORT
+      trigger: autotaxi_dwell_timeout
+      when:
+        all: [state_dwell_timeout]
+
+    - from: AUTOTAXI
+      to: TAKEOFF
+      trigger: to_takeoff
+      when:
+        all: [taxi_clear]
+
+    - from: TAKEOFF
+      to: ABORT
+      trigger: takeoff_dwell_timeout
+      when:
+        all: [state_dwell_timeout]
+
+    - from: TAKEOFF
+      to: CRUISE
+      trigger: to_cruise
+      when:
+        all: [takeoff_complete]
+
+    - from: CRUISE
+      to: ABORT
+      trigger: cruise_to_abort
+      when:
+        any: [abort_command, fdir_emergency, battery_low, geofence_breach]
+
+    - from: CRUISE
+      to: ABORT
+      trigger: battery_abort
+      when:
+        all: [battery_critical]
+
+    - from: CRUISE
+      to: RTB
+      trigger: cruise_gcs_lost_rtb
+      when:
+        all: [gcs_lost]
+
+    - from: CRUISE
+      to: RTB
+      trigger: battery_rtb
+      when:
+        all: [c2_lost]
+
+    - from: CRUISE
+      to: EVENT
+      trigger: daidalus_feed_timeout
+      when:
+        all: [daidalus_feed_lost]
+
+    - from: CRUISE
+      to: EVENT
+      trigger: to_recovery
+      when:
+        all: [daidalus_recovery]
+
+    - from: CRUISE
+      to: EVENT
+      trigger: to_event_near_fastpath
+      when:
+        all: [daidalus_near]
+
+    - from: CRUISE
+      to: EVENT
+      trigger: to_event
+      when:
+        any: [quality_degraded, daidalus_escalated]
+
+    - from: CRUISE
+      to: RTB
+      trigger: cruise_to_rtb
+      when:
+        all: [rtb_command]
+
+    - from: CRUISE
+      to: LANDING
+      trigger: to_landing
+      when:
+        all: [land_command]
+
+    - from: CRUISE
+      to: ABORT
+      trigger: cruise_dwell_timeout
+      when:
+        all: [state_dwell_timeout]
+
+    - from: EVENT
+      to: CRUISE
+      trigger: event_to_cruise
+      when:
+        all: [event_cleared]
+
+    - from: EVENT
+      to: ABORT
+      trigger: event_to_abort
+      when:
+        all: [fdir_emergency]
+
+    - from: EVENT
+      to: RTB
+      trigger: event_to_rtb
+      when:
+        all: [rtb_during_event]
+
+    - from: EVENT
+      to: ABORT
+      trigger: event_dwell_timeout
+      when:
+        all: [state_dwell_timeout]
+
+    - from: LANDING
+      to: GO_AROUND
+      trigger: landing_to_goaround
+      when:
+        all: [approach_not_stabilized]
+
+    - from: LANDING
+      to: AUTOTAXI
+      trigger: landing_complete
+      when:
+        all: [touchdown]
+
+    - from: GO_AROUND
+      to: LANDING
+      trigger: goaround_to_landing
+      when:
+        all: [go_around_complete]
+
+    - from: GO_AROUND
+      to: CRUISE
+      trigger: goaround_to_cruise
+      when:
+        all: [missed_approach_climb]
+
+    - from: ABORT
+      to: LANDING
+      trigger: abort_slz_emergency_land
+      when:
+        all: [slz_available, fdir_emergency]
+
+    - from: ABORT
+      to: RTB
+      trigger: abort_to_rtb
+      when:
+        all: []
+
+    - from: RTB
+      to: LANDING
+      trigger: rtb_to_landing
+      when:
+        all: [rtb_landing]
+
+    - from: RTB
+      to: CRUISE
+      trigger: rtb_to_cruise
+      when:
+        all: [rtb_cancel]
+
+=== /home/ignacio-querol/upnext_uas_ws/src/mission_fsm/config/mission_fsm_heli.yaml ===
+mission_fsm_node:
+  ros__parameters:
+    config_file: ''
+    initial_state: PREFLIGHT
+    quality_flag_threshold: 0.5
+    daidalus_alert_amber: 1
+    go_around_max_attempts: 5
+fsm:
+  states:
+    PREFLIGHT:
+      entry_guards: {}
+    AUTOTAXI:
+      entry_guards: {}
+    TAKEOFF:
+      entry_guards:
+        all:
+        - taxi_clear
+    CRUISE:
+      entry_guards: {}
+    EVENT:
+      entry_guards:
+        any:
+        - quality_degraded
+        - daidalus_escalated
+    LANDING:
+      entry_guards: {}
+    GO_AROUND:
+      entry_guards:
+        all:
+        - approach_not_stabilized
+    ABORT:
+      entry_guards:
+        any:
+        - fdir_emergency
+        - abort_command
+    RTB:
+      entry_guards: {}
+  transitions:
+  - from: PREFLIGHT
+    to: AUTOTAXI
+    trigger: to_autotaxi
+    when:
+      all:
+      - preflight_ok
+  - from: AUTOTAXI
+    to: TAKEOFF
+    trigger: to_takeoff
+    when:
+      all:
+      - taxi_clear
+  - from: TAKEOFF
+    to: CRUISE
+    trigger: to_cruise
+    when:
+      all:
+      - takeoff_complete
+  - from: CRUISE
+    to: ABORT
+    trigger: cruise_to_abort
+    when:
+      any:
+      - abort_command
+      - fdir_emergency
+  - from: CRUISE
+    to: EVENT
+    trigger: to_event
+    when:
+      any:
+      - quality_degraded
+      - daidalus_escalated
+  - from: CRUISE
+    to: RTB
+    trigger: cruise_to_rtb
+    when:
+      all:
+      - rtb_command
+  - from: CRUISE
+    to: LANDING
+    trigger: to_landing
+    when:
+      all:
+      - land_command
+  - from: EVENT
+    to: CRUISE
+    trigger: event_to_cruise
+    when:
+      all:
+      - event_cleared
+  - from: EVENT
+    to: ABORT
+    trigger: event_to_abort
+    when:
+      all:
+      - fdir_emergency
+  - from: EVENT
+    to: RTB
+    trigger: event_to_rtb
+    when:
+      all:
+      - rtb_during_event
+  - from: LANDING
+    to: GO_AROUND
+    trigger: landing_to_goaround
+    when:
+      all:
+      - approach_not_stabilized
+  - from: LANDING
+    to: AUTOTAXI
+    trigger: landing_complete
+    when:
+      all:
+      - touchdown
+  - from: GO_AROUND
+    to: LANDING
+    trigger: goaround_to_landing
+    when:
+      all:
+      - go_around_complete
+  - from: GO_AROUND
+    to: CRUISE
+    trigger: goaround_to_cruise
+    when:
+      all:
+      - missed_approach_climb
+  - from: ABORT
+    to: RTB
+    trigger: abort_to_rtb
+    when:
+      all: []
+  - from: RTB
+    to: LANDING
+    trigger: rtb_to_landing
+    when:
+      all:
+      - rtb_landing
+  - from: RTB
+    to: CRUISE
+    trigger: rtb_to_cruise
+    when:
+      all:
+      - rtb_cancel
+
+=== /home/ignacio-querol/upnext_uas_ws/src/mission_fsm/config/mission_fsm_male.yaml ===
+mission_fsm_node:
+  ros__parameters:
+    config_file: ''
+    initial_state: PREFLIGHT
+    quality_flag_threshold: 0.5
+    daidalus_alert_amber: 1
+    c2_timeout_sec: 30
+    bvlos_mode: true
+fsm:
+  states:
+    PREFLIGHT:
+      entry_guards: {}
+    AUTOTAXI:
+      entry_guards: {}
+    TAKEOFF:
+      entry_guards:
+        all:
+        - taxi_clear
+    CRUISE:
+      entry_guards: {}
+    EVENT:
+      entry_guards:
+        any:
+        - quality_degraded
+        - daidalus_escalated
+    LANDING:
+      entry_guards: {}
+    GO_AROUND:
+      entry_guards:
+        all:
+        - approach_not_stabilized
+    ABORT:
+      entry_guards:
+        any:
+        - fdir_emergency
+        - abort_command
+    RTB:
+      entry_guards: {}
+  transitions:
+  - from: PREFLIGHT
+    to: AUTOTAXI
+    trigger: to_autotaxi
+    when:
+      all:
+      - preflight_ok
+  - from: AUTOTAXI
+    to: TAKEOFF
+    trigger: to_takeoff
+    when:
+      all:
+      - taxi_clear
+  - from: TAKEOFF
+    to: CRUISE
+    trigger: to_cruise
+    when:
+      all:
+      - takeoff_complete
+  - from: CRUISE
+    to: ABORT
+    trigger: cruise_to_abort
+    when:
+      any:
+      - abort_command
+      - fdir_emergency
+  - from: CRUISE
+    to: EVENT
+    trigger: to_event
+    when:
+      any:
+      - quality_degraded
+      - daidalus_escalated
+  - from: CRUISE
+    to: RTB
+    trigger: cruise_to_rtb
+    when:
+      all:
+      - rtb_command
+  - from: CRUISE
+    to: LANDING
+    trigger: to_landing
+    when:
+      all:
+      - land_command
+  - from: EVENT
+    to: CRUISE
+    trigger: event_to_cruise
+    when:
+      all:
+      - event_cleared
+  - from: EVENT
+    to: ABORT
+    trigger: event_to_abort
+    when:
+      all:
+      - fdir_emergency
+  - from: EVENT
+    to: RTB
+    trigger: event_to_rtb
+    when:
+      all:
+      - rtb_during_event
+  - from: LANDING
+    to: GO_AROUND
+    trigger: landing_to_goaround
+    when:
+      all:
+      - approach_not_stabilized
+  - from: LANDING
+    to: AUTOTAXI
+    trigger: landing_complete
+    when:
+      all:
+      - touchdown
+  - from: GO_AROUND
+    to: LANDING
+    trigger: goaround_to_landing
+    when:
+      all:
+      - go_around_complete
+  - from: GO_AROUND
+    to: CRUISE
+    trigger: goaround_to_cruise
+    when:
+      all:
+      - missed_approach_climb
+  - from: ABORT
+    to: RTB
+    trigger: abort_to_rtb
+    when:
+      all: []
+  - from: RTB
+    to: LANDING
+    trigger: rtb_to_landing
+    when:
+      all:
+      - rtb_landing
+  - from: RTB
+    to: CRUISE
+    trigger: rtb_to_cruise
+    when:
+      all:
+      - rtb_cancel
+
+=== /home/ignacio-querol/upnext_uas_ws/src/vehicle_model/config/vehicle_model.yaml ===
+# Vehicle envelope (fixed-wing proxy). Used by vehicle_model_node and tests.
+vehicle_model_node:
+  ros__parameters:
+    config_file: ""
+    # If config_file empty, these defaults apply (can override via params):
+    v_min_ms: 30.0
+    v_max_ms: 57.0
+    turn_radius_min_m: 600.0
+    climb_rate_max_ms: 8.0
+    descent_rate_max_ms: 5.0
+    glide_ratio: 18.0
+    mtow_kg: 750.0
+    fuel_mass_initial_kg: 120.0
+    fuel_burn_kgh: 50.0
+    # As fuel reserve drops, minimum IAS is raised (operational SOP proxy).
+    v_min_reserve_gain_ms: 5.0
+
+=== /home/ignacio-querol/upnext_uas_ws/src/gpp/config/gpp.yaml ===
+/**:
+  ros__parameters:
+    base_margin_m: 0.0
+    turn_radius_min_m: 600.0
+    vr_mps: 28.0
+    climb_rate_max_mps: 8.0
+    pitch_max_deg: 12.0
+
+=== /home/ignacio-querol/upnext_uas_ws/src/fdir/config/fdir.yaml ===
+# FDIR policies and emergency zones (overridable via ROS parameters / config_file).
+#
+# ROS I/O (fdir_node):
+#   Subscribes: /nav/quality_flag, /fsm/current_mode, /fmu/out/vehicle_imu,
+#     /fmu/out/vehicle_status, /fmu/out/vehicle_attitude_setpoint (FW throttle ~ thrust_body[0]),
+#     /fdir/in/c2_heartbeat (std_msgs/Bool — any message refreshes C2 link time).
+#   Publishes: /fdir/active_fault, /fdir/policy_action, /fdir/emergency_landing_target (JSON).
+#   Vehicle lat/lon/alt AMSL: ROS parameters (refresh on tick); override for glide reachability.
+fdir_node:
+  ros__parameters:
+    config_file: ""
+    # Navigation quality (0..1), higher is better
+    nav_mild_below: 0.65
+    nav_severe_below: 0.35
+    nav_critical_below: 0.15
+    # Motor loss: thrust vs vertical accel mismatch window (seconds)
+    motor_loss_window_s: 2.0
+    motor_loss_throttle_min: 0.35
+    motor_loss_vertical_accel_max_m_s2: -1.5
+    # IMU: derive linear accel from delta_velocity / dt (FRD body, m/s^2)
+    # Sensor / link
+    sensor_timeout_nav_quality_s: 3.0
+    c2_heartbeat_timeout_s: 1.5
+    link_loss_hold_s: 30.0
+    link_loss_rtb_s: 30.0
+    link_loss_land_s: 120.0
+    # Glide reachability: horizontal reach ~ glide_ratio * altitude_amsl_m
+    glide_ratio: 18.0
+    # Vehicle approximate position for zone ranking (set from external nav in node)
+    vehicle_lat: 40.0
+    vehicle_lon: -3.0
+    vehicle_altitude_amsl_m: 2000.0
+
+emergency_landing_zones:
+  - lat: 40.05
+    lon: -3.02
+    longitud_pista: 900
+    calidad: 0.95
+  - lat: 40.5
+    lon: -3.5
+    longitud_pista: 1200
+    calidad: 0.85
+  - lat: 41.2
+    lon: -2.0
+    longitud_pista: 800
+    calidad: 0.7
+
+=== /home/ignacio-querol/upnext_uas_ws/src/fdir/config/fdir_severity.yaml ===
+# FDIR severity / action table (FDIR-003..020, ARCH-FDIR-SEV)
+faults:
+  IMU_FAILED: { severity: CRITICAL, action: ABORT }
+  GPS_FAILED: { severity: HIGH, action: RTB }
+  BARO_FAILED: { severity: HIGH, action: RTB }
+  LIDAR_FAILED: { severity: MEDIUM, action: DEGRADE }
+  BATTERY_LOW: { severity: MEDIUM, action: RTB }
+  BATTERY_CRITICAL: { severity: HIGH, action: RTB }
+  C2_LOST: { severity: HIGH, action: RTB }
+  GCS_LOST: { severity: MEDIUM, action: RTB }
+  MOTOR_DEGRADED: { severity: HIGH, action: RTB }
+  THERMAL_CRITICAL: { severity: CRITICAL, action: ABORT }
+
+
+######## SECTION: all .msg files ########
+=== /home/ignacio-querol/upnext_uas_ws/src/flightmind_msgs/msg/ACASAdvisory.msg ===
+std_msgs/Header header
+bool ra_active
+int32 threat_class            # 0=NONE 1=HEAD_ON 2=OVERTAKE 3=GENERIC
+float64 climb_rate_mps        # RA: tasa de ascenso requerida
+float64 heading_delta_deg     # RA: cambio de heading requerido
+float64 time_to_cpa_s         # tiempo al punto de máximo acercamiento
+float64 horizontal_miss_dist_m
+
+=== /home/ignacio-querol/upnext_uas_ws/src/flightmind_msgs/msg/DaidalusAlert.msg ===
+std_msgs/Header header
+int32 alert_level             # 0=NONE 1=FAR 2=MID 3=NEAR 4=RECOVERY
+float64 time_to_violation_s   # segundos hasta pérdida de well-clear (-1 si no hay)
+float64 min_horizontal_dist_m
+float64 min_vertical_dist_m
+int32 num_conflict_traffic
+
+=== /home/ignacio-querol/upnext_uas_ws/src/flightmind_msgs/msg/DaidalusBands.msg ===
+std_msgs/Header header
+float64[] heading_bands_deg     # heading conflict bands [from1, to1, from2, to2, ...]
+float64[] gs_bands_ms           # ground speed conflict bands
+float64[] vs_bands_ms           # vertical speed conflict bands
+float64 recommended_heading_deg # heading libre más cercano al actual
+float64 recommended_gs_ms
+float64 recommended_vs_ms
+
+=== /home/ignacio-querol/upnext_uas_ws/src/flightmind_msgs/msg/FSMState.msg ===
+std_msgs/Header header
+string current_mode           # PREFLIGHT/AUTOTAXI/TAKEOFF/CRUISE/EVENT/LANDING/GO_AROUND/RTB/ABORT
+string active_trigger         # nombre del trigger que disparó la última transición
+string event_substate         # SENSOR_DEGRADED/TRAFFIC_CONFLICT/EMPTY
+int32 go_around_count         # número de go-arounds en el intento actual de landing
+
+=== /home/ignacio-querol/upnext_uas_ws/src/flightmind_msgs/msg/GeofenceStatus.msg ===
+std_msgs/Header header
+bool violation_imminent
+float64 time_to_violation_s   # -1 si no hay violación prevista
+string zone_id                # id de la zona que se va a violar
+
+=== /home/ignacio-querol/upnext_uas_ws/src/flightmind_msgs/msg/NavigationState.msg ===
+std_msgs/Header header
+float64[3] position_ned       # [north_m, east_m, down_m]
+float64[3] velocity_ned       # [vn_ms, ve_ms, vd_ms]
+float64[4] orientation_quat   # [w, x, y, z]
+float64[36] covariance_6x6    # pose covariance flattened
+float64 quality_flag          # [0.0..1.0]
+float64 fuel_consumed_kg      # acumulado desde despegue
+bool gnss_available
+
+=== /home/ignacio-querol/upnext_uas_ws/src/flightmind_msgs/msg/TrafficIntruder.msg ===
+string intruder_id
+float64[3] position_ned       # [north_m, east_m, down_m]
+float64[3] velocity_ned       # [vn_ms, ve_ms, vd_ms]
+bool cooperative              # true si tiene ADS-B/transponder
+float64 timestamp_s
+
+=== /home/ignacio-querol/upnext_uas_ws/src/flightmind_msgs/msg/TrafficReport.msg ===
+std_msgs/Header header
+flightmind_msgs/TrafficIntruder[] intruders
+
+=== /home/ignacio-querol/upnext_uas_ws/src/flightmind_msgs/msg/TrajectorySetpoint.msg ===
+std_msgs/Header header
+float64[3] position_ned   # north, east, down [m]
+float64[3] velocity_ned   # vn, ve, vd [m/s]
+
+=== /home/ignacio-querol/upnext_uas_ws/src/flightmind_msgs/msg/VehicleModelState.msg ===
+std_msgs/Header header
+float64 current_weight_kg
+float64 v_min_ms              # velocidad mínima actual (dinámica)
+float64 v_max_ms
+float64 turn_radius_min_m     # radio mínimo de giro actual
+float64 climb_rate_max_mps
+float64 descent_rate_max_mps
+float64 glide_ratio
+float64 elapsed_mission_h
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosapi_msgs/msg/TypeDef.msg ===
+string type
+string[] fieldnames
+string[] fieldtypes
+int32[] fieldarraylen
+string[] examples
+string[] constnames
+string[] constvalues
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_msgs/msg/ConnectedClient.msg ===
+string ip_address
+builtin_interfaces/Time connection_time
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_msgs/msg/ConnectedClients.msg ===
+ConnectedClient[] clients
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_test_msgs/msg/Num.msg ===
+int64 num
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_test_msgs/msg/TestChar.msg ===
+char[] data
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_test_msgs/msg/TestDurationArray.msg ===
+builtin_interfaces/Duration[] durations
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_test_msgs/msg/TestFloat32Array.msg ===
+float32[] data
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_test_msgs/msg/TestFloat32BoundedArray.msg ===
+float32[16] data
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_test_msgs/msg/TestHeaderArray.msg ===
+std_msgs/Header[] header
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_test_msgs/msg/TestHeader.msg ===
+std_msgs/Header header
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_test_msgs/msg/TestHeaderTwo.msg ===
+std_msgs/Header header
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_test_msgs/msg/TestNestedBoundedArray.msg ===
+TestFloat32BoundedArray data
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_test_msgs/msg/TestTimeArray.msg ===
+builtin_interfaces/Time[] times
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_test_msgs/msg/TestUInt8FixedSizeArray16.msg ===
+uint8[16] data
+
+=== /home/ignacio-querol/upnext_uas_ws/src/rosbridge_suite/rosbridge_test_msgs/msg/TestUInt8.msg ===
+uint8[] data
+

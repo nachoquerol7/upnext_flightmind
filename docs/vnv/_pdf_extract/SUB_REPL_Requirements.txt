@@ -1,0 +1,250 @@
+                  SUB-REPL
+                         Local Replanner
+Replanificación táctica ante DAA, geofence y obstáculos dinámicos
+
+                   20 requisitos · v1.1 · 2026-04-01
+                 UpNext — Flightmind Autonomy Stack
+             DO-365 · SAF · EU 2019/947 · SDD Flightmind
+
+
+               CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-REPL: LOCAL REPLANNER                                                           v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      0    SHALL       20
+
+                                      PARCIAL                       1    SHOULD      0
+
+                                      XFAIL                         0    MAY         0
+
+                                      PENDIENTE                     19
+
+                                      N/A-DEMO                      0
+
+                                      TOTAL                         20
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Triggers de activación                                              5
+
+                 2     Algoritmo RRT* local y coste DAA                                    5
+
+                 3     Seguridad y verificación                                            3
+
+                 4     Publicación, rendimiento e integración                              5
+
+                 5     Continuidad y logging                                               2
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-REPL: LOCAL REPLANNER                                                                                v1.1 · 2026-04-01
+
+
+
+
+          Triggers de activación
+
+         REPL-001            Trigger 1: DAA alert_level >= MID (nivel 2)                               SHALL   PENDIENTE
+
+         Descripción          El replanner SHALL activarse al recibir daidalus_alert_level >= 2.
+         Fuentes              DO-365
+         Fundamento           MID indica que se necesita acción correctiva.
+         Verificación         local_replanner_node.py — daa_trigger.
+
+         REPL-002            Trigger 2: violation_imminent=True del airspace monitor                   SHALL   PENDIENTE
+
+         Descripción          El replanner SHALL activarse al recibir violation_imminent=True.
+         Fuentes              SAF
+         Fundamento           Violación de geofence inminente requiere desvío inmediato.
+         Verificación         local_replanner_node.py — geofence_trigger.
+
+         REPL-003            Trigger 3: obstáculo dinámico detectado por sensor local                  SHALL   PENDIENTE
+
+         Descripción          El replanner SHALL activarse cuando un sensor detecte un obstáculo no en el mapa NFZ.
+         Fuentes              OPS
+         Fundamento           Obstáculos dinámicos no están en el mapa estático.
+         Verificación         local_replanner_node.py — obstacle_trigger.
+
+         REPL-004            Trigger 4: comando explícito del operador                                 SHALL   PENDIENTE
+
+         Descripción          El replanner SHALL activarse por comando del operador.
+         Fuentes              OPS
+         Fundamento           El operador debe poder forzar replanning manualmente.
+         Verificación         local_replanner_node.py — operator_cmd.
+
+         REPL-005            Cancelación si el trigger se desactiva antes de completar                 SHALL   PENDIENTE
+
+         Descripción          Si el trigger deja de ser activo antes de publicar la ruta, SHALL cancelarse.
+         Fuentes              SYS
+         Fundamento           Una evasión completada antes del replanning no debe ejecutarse.
+         Verificación         local_replanner_node.py — trigger_cancel.
+
+
+          Algoritmo RRT* local y coste DAA
+
+         REPL-006            RRT* local en ventana de replan_window_m (default 500m)                   SHALL   PENDIENTE
+
+         Descripción          El algoritmo SHALL limitarse a una ventana espacial.
+         Fuentes              SDD Flightmind
+         Fundamento           Replanning global sería demasiado lento para reacción táctica.
+         Verificación         local_replanner — spatial window.
+
+         REPL-007            replan_window_m configurable (default 500m)                               SHALL   PENDIENTE
+
+         Descripción          La ventana SHALL ser configurable.
+         Fuentes              SYS
+         Fundamento           Distintas velocidades requieren distintos radios.
+         Verificación         declare_parameter replan_window_m.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                               Page 3
+FLIGHTMIND — SUB-REPL: LOCAL REPLANNER                                                                             v1.1 · 2026-04-01
+
+
+
+
+         REPL-008            max_iter_local configurable (default 1000)                               SHALL   PENDIENTE
+
+         Descripción          El número máximo de iteraciones SHALL ser configurable.
+         Fuentes              SYS
+         Fundamento           Menos iteraciones que el planner global garantizan tiempo acotado.
+         Verificación         declare_parameter max_iter_local.
+
+                             Función de coste:         longitud     +   penalización   por   bandas
+         REPL-009                                                                                     SHALL   PENDIENTE
+                             conflictivas DAA
+
+         Descripción          La función de coste SHALL incluir término de bandas DAA.
+         Fuentes              DO-365
+         Fundamento           Sin bandas DAA el replanner puede elegir ruta conflictiva.
+         Verificación         local_replanner — daa_cost_term.
+
+         REPL-010            daa_cost_weight configurable                                             SHALL   PENDIENTE
+
+         Descripción          El peso del término DAA SHALL ser configurable.
+         Fuentes              SYS
+         Fundamento           Equilibrar distancia vs. seguridad DAA.
+         Verificación         declare_parameter daa_cost_weight.
+
+
+          Seguridad y verificación
+
+         REPL-011            Verificación de ruta contra NFZ antes de publicar                        SHALL   PENDIENTE
+
+         Descripción          Ninguna ruta SHALL publicarse si intersecta una NFZ.
+         Fuentes              SAF
+         Fundamento           Maniobra de evasión DAA no puede cruzar NFZ.
+         Verificación         local_replanner — PolyCARP check.
+
+         REPL-012            Verificación cinemática con Vehicle Model is_feasible()                  SHALL   PENDIENTE
+
+         Descripción          Cada waypoint de la ruta SHALL verificarse con is_feasible().
+         Fuentes              SAF
+         Fundamento           Maniobra infactible es inútil.
+         Verificación         local_replanner — is_feasible.
+
+         REPL-013            Si no hay ruta factible: publicar FAILED y alertar                       SHALL   PENDIENTE
+
+         Descripción          Si RRT* no converge, SHALL publicarse status=FAILED.
+         Fuentes              SAF
+         Fundamento           Fallo de replanning debe comunicarse al FSM.
+         Verificación         local_replanner — failure_handler.
+
+
+          Publicación, rendimiento e integración
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                            Page 4
+FLIGHTMIND — SUB-REPL: LOCAL REPLANNER                                                                                 v1.1 · 2026-04-01
+
+
+
+
+         REPL-014            Ruta alternativa publicada en /local_replanner/path                     SHALL   PENDIENTE
+
+         Descripción          La ruta SHALL publicarse en /local_replanner/path.
+         Fuentes              SYS
+         Fundamento           trajectory_gen suscribe este topic.
+         Verificación         local_replanner_node.py — publisher.
+
+                             Estado            en                        /local_replanner/status:
+         REPL-015                                                                                    SHALL   PENDIENTE
+                             IDLE/ACTIVE/COMPUTING/FAILED
+
+         Descripción          El estado SHALL publicarse para coordinación con trajectory_gen.
+         Fuentes              SYS
+         Fundamento           trajectory_gen necesita saber cuándo el replanner terminó.
+         Verificación         local_replanner_node.py — status publisher.
+
+         REPL-016            Tiempo de cálculo < 500ms desde trigger                                 SHALL   PENDIENTE
+
+         Descripción          La ruta SHALL calcularse y publicarse en < 500ms.
+         Fuentes              OPS
+         Fundamento           500ms a 20 m/s = 10m de avance. Con margen de 50m, es suficiente.
+         Verificación         local_replanner — benchmark.
+
+         REPL-017            Timeout replan_timeout_s (default 2s) → FAILED                          SHALL   PENDIENTE
+
+         Descripción          Si excede replan_timeout_s SHALL publicarse FAILED.
+         Fuentes              SAF
+         Fundamento           Replanning infinito bloquea la misión.
+         Verificación         local_replanner — timeout guard.
+
+                             Prioridad de       /local_replanner/path     sobre    /gpp/path   en
+         REPL-018                                                                                    SHALL   PENDIENTE
+                             trajectory_gen
+
+         Descripción          Mientras status=ACTIVE, trajectory_gen SHALL usar la ruta del replanner.
+         Fuentes              SYS
+         Fundamento           La maniobra táctica tiene prioridad sobre el plan estratégico.
+         Verificación         trajectory_gen_node.py — route_source.
+
+
+          Continuidad y logging
+
+                             Continuidad: retomar ruta GPP desde waypoint de mayor
+         REPL-019                                                                                    SHALL     PARCIAL
+                             progreso
+
+         Descripción          Al completar la maniobra SHALL calcularse retorno al waypoint más avanzado alcanzable.
+         Fuentes              OPS
+         Fundamento           Descartar el progreso haría que el UAS volviera al punto de partida.
+         Verificación         TC-E2E-006.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                Page 5
+FLIGHTMIND — SUB-REPL: LOCAL REPLANNER                                                                           v1.1 · 2026-04-01
+
+
+
+
+                             Log de cada activación:                trigger_type,   calc_time_ms,
+         REPL-020                                                                                   SHALL   PENDIENTE
+                             detour_distance_m
+
+         Descripción          Cada activación SHALL registrarse.
+         Fuentes              DO-178C
+         Fundamento           Logs de replanning permiten evaluar efectividad post-vuelo.
+         Verificación         local_replanner_node.py — activation_logger.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                          Page 6
+

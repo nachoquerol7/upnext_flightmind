@@ -1,0 +1,496 @@
+                            SUB-GPP
+                               Global Path Planner
+Informed-RRT* con curvas Dubins, restricciones NFZ 3D y contingencias BVLOS
+
+                           39 requisitos · v1.1 · 2026-04-01
+                        UpNext — Flightmind Autonomy Stack
+            SAF · EU 2019/947 · Gammell 2014 · Dubins 1957 · STANAG 4671
+
+
+                      CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-GPP: GLOBAL PATH PLANNER                                                        v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      11   SHALL       37
+
+                                      PARCIAL                       13   SHOULD      2
+
+                                      XFAIL                         0    MAY         0
+
+                                      PENDIENTE                     15
+
+                                      N/A-DEMO                      0
+
+                                      TOTAL                         39
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Algoritmo Informed-RRT* y Dubins                                    8
+
+                 2     Restricciones NFZ                                                   8
+
+                 3     Correcciones y fallback seguro                                      2
+
+                 4     Restricciones cinemáticas y altitudinales                           5
+
+                 5     Rendimiento y función de coste                                      4
+
+                 6     Interfaz ROS2                                                       6
+
+                 7     Contingencias y LZ de emergencia                                    3
+
+                 8     Verificación                                                        4
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-GPP: GLOBAL PATH PLANNER                                                                               v1.1 · 2026-04-01
+
+
+
+
+          Algoritmo Informed-RRT* y Dubins
+
+         GPP-001             Informed-RRT* como algoritmo base de planificación                      SHALL       CUBIERTO
+
+         Descripción          El planificador SHALL usar Informed-RRT* (Gammell et al. 2014) para búsqueda de ruta en el
+                              espacio de configuración 3D.
+         Fuentes              SDD Flightmind · IROS 2014
+         Fundamento           Informed-RRT* es asintóticamente óptimo y maneja obstáculos arbitrarios. Estándar de facto
+                              para path planning en UAV.
+         Verificación         src/gpp/gpp/rrt_star.py
+         Traza impl.          src/gpp/gpp/rrt_star.py
+
+                             Muestreo aleatorio dentro del elipsoide informado tras primera
+         GPP-002                                                                                     SHALL        PARCIAL
+                             solución
+
+         Descripción          Una vez encontrada la primera solución, el muestreo SHALL restringirse al elipsoide prolate que
+                              contiene todas las soluciones mejores que la actual.
+         Fuentes              Gammell 2014 — Informed RRT*
+         Fundamento           El muestreo informado acelera la convergencia a la solución óptima respecto a RRT* estándar.
+         Verificación         src/gpp/gpp/rrt_star.py — _sample_informed().
+         Traza impl.          src/gpp/gpp/rrt_star.py
+
+         GPP-003             Curvas Dubins para conexión de waypoints                                SHALL       CUBIERTO
+
+         Descripción          La conexión entre waypoints SHALL usar curvas Dubins (RSR, LSL, RSL, LSR, RLR, LRL)
+                              seleccionando el tipo de menor longitud.
+         Fuentes              Dubins 1957 · SDD Flightmind
+         Fundamento           Dubins garantiza que los segmentos son ejecutables con radio de giro mínimo.
+         Verificación         src/gpp/gpp/dubins.py
+         Traza impl.          src/gpp/gpp/dubins.py
+
+                             Radio     de       giro    en           curvas       Dubins        =
+         GPP-004                                                                                     SHALL        PARCIAL
+                             vehicle_model.turn_radius_min_m
+
+         Descripción          El radio mínimo de giro en Dubins SHALL leerse de VehicleModelState.turn_radius_min_m en
+                              cada planificación.
+         Fuentes              SAF · STANAG 4671
+         Fundamento           Un radio menor al mínimo de la plataforma resulta en pérdida de control.
+         Verificación         gpp_node.py — query Vehicle Model.
+         Traza impl.          src/gpp/gpp/dubins.py — min_radius
+
+         GPP-005             Selección del tipo de curva Dubins de menor longitud total              SHALL       CUBIERTO
+
+         Descripción          De los 6 tipos Dubins posibles, SHALL seleccionarse el que produce la curva de menor longitud
+                              total.
+         Fuentes              Dubins 1957
+         Fundamento           Minimizar la longitud de la curva reduce el tiempo de maniobra y el consumo energético.
+         Verificación         src/gpp/gpp/dubins.py — all_paths() + argmin.
+         Traza impl.          src/gpp/gpp/dubins.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 3
+FLIGHTMIND — SUB-GPP: GLOBAL PATH PLANNER                                                                                 v1.1 · 2026-04-01
+
+
+
+
+         GPP-006             Parámetro max_iter configurable (default 5000)                           SHALL         PARCIAL
+
+         Descripción          El número máximo de iteraciones RRT* SHALL ser configurable.
+         Fuentes              SYS
+         Fundamento           Más iteraciones producen rutas de mejor calidad a costa de tiempo de cómputo.
+         Verificación         config/gpp_params.yaml — max_iter.
+         Traza impl.          src/gpp/config/gpp_params.yaml
+
+         GPP-007             Parámetro step_size configurable (default 20m)                           SHALL         PARCIAL
+
+         Descripción          La longitud del paso de expansión RRT* SHALL ser configurable.
+         Fuentes              SYS
+         Fundamento           Pasos más pequeños producen rutas más suaves pero tardan más en converger.
+         Verificación         config/gpp_params.yaml — step_size.
+         Traza impl.          src/gpp/config/gpp_params.yaml
+
+         GPP-008             Parámetro neighbor_radius configurable (default 50m)                     SHALL         PARCIAL
+
+         Descripción          El radio de búsqueda de vecinos para rewiring SHALL ser configurable.
+         Fuentes              SYS
+         Fundamento           El radio de vecinos determina el equilibrio entre calidad de solución y coste de cómputo.
+         Verificación         config/gpp_params.yaml — neighbor_radius.
+         Traza impl.          src/gpp/config/gpp_params.yaml
+
+
+
+          Restricciones NFZ
+
+         GPP-009             NFZ como restricciones hard (no penalizaciones)                          SHALL        CUBIERTO
+
+         Descripción          Cualquier ruta que intersecte una NFZ SHALL rechazarse. Las NFZ son restricciones absolutas.
+         Fuentes              SAF · EU 2019/947 · ICAO
+         Fundamento           Una penalización puede ser superada por una ruta corta. NFZ son prohibiciones absolutas.
+         Verificación         TC-NAV-004 — waypoint en NFZ rechazado.
+         Traza impl.          src/gpp/gpp/rrt_star.py — _is_collision_free()
+
+         GPP-010             Verificación de cada segmento con muestreo adaptativo                    SHALL        CUBIERTO
+
+         Descripción          La verificación de colisión SHALL muestrear cada segmento con steps = max(24, int(length_m /
+                              5.0)) puntos.
+         Fuentes              SAF
+         Fundamento           NFZ pequeñas pueden pasar entre puntos de muestreo con steps fijo en segmentos largos. Fix
+                              GPP-G02.
+         Verificación         Fix GPP-G02 aplicado. TC-NAV-004.
+         Traza impl.          src/gpp/gpp/rrt_star.py — collision_check steps
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                   Page 4
+FLIGHTMIND — SUB-GPP: GLOBAL PATH PLANNER                                                                               v1.1 · 2026-04-01
+
+
+
+
+         GPP-011             NFZ cargadas desde /airspace/status (GeofenceStatus)                    SHALL          PARCIAL
+
+         Descripción          El planificador SHALL suscribirse a /airspace/status y actualizar su lista de NFZ en cada
+                              mensaje recibido.
+         Fuentes              SYS · OPS
+         Fundamento           Las NFZ pueden cambiar durante la misión (UTM dinámico). El planner debe tenerlas siempre
+                              actualizadas.
+         Verificación         gpp_node.py — /airspace/status subscriber.
+         Traza impl.          src/gpp/gpp/gpp_node.py
+
+                             Margen de separación de NFZ configurable (nfz_margin_m,
+         GPP-012                                                                                     SHALL          PARCIAL
+                             default 50m)
+
+         Descripción          El planificador SHALL aplicar un margen de nfz_margin_m alrededor de cada NFZ antes de la
+                              verificación de colisión.
+         Fuentes              SAF · OPS
+         Fundamento           El vehículo necesita margen de seguridad más allá del límite geométrico de la NFZ.
+         Verificación         config/gpp_params.yaml — nfz_margin_m.
+
+         GPP-013             NFZ 3D: verificar altitud min y max por zona                            SHALL         PENDIENTE
+
+         Descripción          La verificación de colisión SHALL considerar las altitudes alt_min_m y alt_max_m de cada NFZ.
+                              Una ruta que pasa por encima/debajo de la zona es válida.
+         Fuentes              EU 2021/665 · ICAO
+         Fundamento           Las NFZ reales tienen altura definida. Sin verificación 3D el planner evitará zonas aunque pueda
+                              sobrevolarlas.
+         Verificación         gpp_node.py — 3D NFZ check.
+
+                             Bounds     del      espacio      de    búsqueda:    min(start,goal),
+         GPP-014                                                                                     SHALL         CUBIERTO
+                             max(start,goal)
+
+         Descripción          Los límites del espacio de búsqueda SHALL calcularse como min(start,goal) y max(start,goal) en
+                              cada dimensión, más un margen de search_margin_m.
+         Fuentes              SYS
+         Fundamento           Bounds con min(0,goal) fallan cuando el UAS está en coordenadas positivas. Fix GPP-G05.
+         Verificación         Fix GPP-G05 aplicado.
+         Traza impl.          src/gpp/gpp/rrt_star.py — bounds
+
+         GPP-015             Margen adicional en bounds: search_margin_m (default 200m)              SHALL          PARCIAL
+
+         Descripción          Los bounds SHALL expandirse en search_margin_m en todas las dimensiones para permitir
+                              rodeos alrededor de NFZ.
+         Fuentes              SYS
+         Fundamento           Sin margen, el espacio de búsqueda puede ser demasiado estrecho para rodear una NFZ
+                              lateral.
+         Verificación         config/gpp_params.yaml — search_margin_m.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 5
+FLIGHTMIND — SUB-GPP: GLOBAL PATH PLANNER                                                                               v1.1 · 2026-04-01
+
+
+
+
+         GPP-016             Fallback: Dubins directo solo si libre de NFZ                           SHALL       CUBIERTO
+
+         Descripción          Si RRT* no converge, el fallback SHALL verificar que la ruta Dubins directa es libre de NFZ. Si
+                              no lo es, retornar None.
+         Fuentes              SAF
+         Fundamento           Retornar la ruta directa sin verificar puede enviar el UAS a través de una NFZ. Fix GPP-G03.
+         Verificación         Fix GPP-G03 aplicado.
+         Traza impl.          src/gpp/gpp/rrt_star.py — fallback
+
+
+
+          Correcciones y fallback seguro
+
+                             Retornar None si no hay ruta factible: sin ruta en lugar de ruta
+         GPP-017                                                                                     SHALL        PARCIAL
+                             insegura
+
+         Descripción          Si ni RRT* ni el fallback Dubins encuentran ruta libre de NFZ, SHALL retornarse None y
+                              publicarse un error explícito.
+         Fuentes              SAF · DO-178C
+         Fundamento           Una ruta insegura es peor que ninguna ruta.
+         Verificación         gpp_node.py — None return + /gpp/error topic.
+
+         GPP-018             Altitud mínima AGL enforced en todos los waypoints                      SHALL       PENDIENTE
+
+         Descripción          Todos los waypoints SHALL tener altitud >= terrain_agl_floor_m sobre el terreno en esa
+                              posición.
+         Fuentes              SAF · EU 2019/947
+         Fundamento           El CFIT (Controlled Flight Into Terrain) es la causa más común de accidentes.
+         Verificación         gpp_node.py — AGL floor check.
+
+
+          Restricciones cinemáticas y altitudinales
+
+         GPP-018             Altitud mínima AGL enforced en todos los waypoints                      SHALL       PENDIENTE
+
+         Descripción          Todos los waypoints SHALL tener altitud >= terrain_agl_floor_m sobre el terreno en esa
+                              posición.
+         Fuentes              SAF · EU 2019/947
+         Fundamento           El CFIT (Controlled Flight Into Terrain) es la causa más común de accidentes.
+         Verificación         gpp_node.py — AGL floor check.
+
+         GPP-019             Altitud máxima de espacio aéreo enforced (airspace_ceiling_m)           SHALL       PENDIENTE
+
+         Descripción          Ningún waypoint SHALL superar la altitud máxima de espacio aéreo autorizado.
+         Fuentes              EU 2019/947 · ICAO Annex 2
+         Fundamento           Sobrepasar el techo de espacio aéreo es una infracción regulatoria.
+         Verificación         gpp_node.py — ceiling check.
+
+         GPP-020             v_min y v_max del Vehicle Model respetados                              SHALL       PENDIENTE
+
+         Descripción          Las velocidades de crucero de la ruta SHALL estar dentro del rango [v_min, v_max] del Vehicle
+                              Model activo.
+         Fuentes              SAF · STANAG 4671
+         Fundamento           Volar por debajo de v_min o por encima de v_max pone en riesgo la estabilidad de vuelo.
+         Verificación         gpp_node.py — velocity bounds check.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 6
+FLIGHTMIND — SUB-GPP: GLOBAL PATH PLANNER                                                                                v1.1 · 2026-04-01
+
+
+
+
+         GPP-021             climb_rate_max respetado en segmentos de ascenso                          SHALL      PENDIENTE
+
+         Descripción          Los segmentos de ascenso SHALL tener climb_rate <= vehicle_model.climb_rate_max_mps.
+         Fuentes              SAF · STANAG 4671
+         Fundamento           Exceder el climb_rate máximo puede causar pérdida de sustentación en ala fija.
+         Verificación         gpp_node.py — climb rate check.
+
+         GPP-022             descent_rate_max respetado en segmentos de descenso                       SHALL      PENDIENTE
+
+         Descripción          Los      segmentos       de    descenso             SHALL       tener       descent_rate      <=
+                              vehicle_model.descent_rate_max_mps.
+         Fuentes              SAF · STANAG 4671
+         Fundamento           Descensos excesivos pueden superar la envolvente estructural.
+         Verificación         gpp_node.py — descent rate check.
+
+
+          Rendimiento y función de coste
+
+                             Tiempo de planificación < 2s para rutas de hasta 10km con 5
+         GPP-023                                                                                       SHALL       PARCIAL
+                             NFZ
+
+         Descripción          El tiempo de planificación SHALL ser < 2s en hardware de referencia.
+         Fuentes              OPS · USR
+         Fundamento           En operaciones urgentes el operador no puede esperar. Informed-RRT* converge en ~200ms
+                              típico.
+         Verificación         TC-PERF-007.
+         Traza impl.          test/test_m11_performance.py
+
+         GPP-024             Tiempo de planificación < 500ms para rutas de hasta 2km                   SHALL      PENDIENTE
+
+         Descripción          Para rutas cortas (hasta 2km), el tiempo SHALL ser < 500ms.
+         Fuentes              OPS
+         Fundamento           El replanning local en vuelo debe ser muy rápido.
+         Verificación         TC-PERF-007b — ruta 2km.
+
+         GPP-025             Función de coste: longitud total del camino Dubins                        SHALL      CUBIERTO
+
+         Descripción          La función de coste SHALL ser la longitud total de la ruta Dubins resultante.
+         Fuentes              SDD Flightmind
+         Fundamento           Minimizar la distancia reduce tiempo de vuelo y consumo energético.
+         Verificación         src/gpp/gpp/rrt_star.py — cost = dubins_length.
+         Traza impl.          src/gpp/gpp/rrt_star.py
+
+         GPP-026             Capas de coste adicionales: densidad de población (SHOULD)               SHOULD      PENDIENTE
+
+         Descripción          El planificador SHOULD soportar una capa de coste de densidad de población para rutas de
+                              menor riesgo sobre el suelo.
+         Fuentes              EU 2019/947 SORA · OPS Urbano
+         Fundamento           El SORA requiere evaluar el riesgo sobre el suelo. Rutas sobre zonas despobladas tienen menor
+                              riesgo.
+         Verificación         Pendiente para fase post-demo.
+
+
+          Interfaz ROS2
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                  Page 7
+FLIGHTMIND — SUB-GPP: GLOBAL PATH PLANNER                                                                                v1.1 · 2026-04-01
+
+
+
+
+         GPP-027             Input: start_pose y goal_pose en frame NED                                SHALL      PARCIAL
+
+         Descripción          El planificador SHALL aceptar start_pose y goal_pose como geometry_msgs/PoseStamped en
+                              frame NED.
+         Fuentes              SYS
+         Fundamento           NED es el frame estándar del stack.
+         Verificación         gpp_node.py — service request.
+
+         GPP-028             Servicio /gpp/plan: request-response síncrono                             SHALL     PENDIENTE
+
+         Descripción          El nodo SHALL exponer el servicio /gpp/plan que recibe start+goal+NFZ y retorna la ruta.
+         Fuentes              SYS · OPS
+         Fundamento           El servicio síncrono permite al llamante saber cuándo la ruta está disponible.
+         Verificación         gpp_node.py — /gpp/plan service.
+
+         GPP-029             Output: nav_msgs/Path en /gpp/path en frame NED                           SHALL      PARCIAL
+
+         Descripción          La ruta planificada SHALL publicarse en /gpp/path como nav_msgs/Path con waypoints en NED.
+         Fuentes              SYS · ROS2 nav_msgs
+         Fundamento           nav_msgs/Path es el tipo estándar. Compatible con Nav2 y herramientas de visualización.
+         Verificación         gpp_node.py — /gpp/path publisher.
+         Traza impl.          src/gpp/gpp/gpp_node.py
+
+         GPP-030             Cada waypoint incluye metadata de tipo en header.frame_id                SHOULD     PENDIENTE
+
+         Descripción          Cada PoseStamped en la ruta SHALL indicar en header.frame_id el tipo de waypoint: MISSION /
+                              DAA_AVOIDANCE / NFZ_AVOIDANCE / LZ_CONTINGENCY.
+         Fuentes              DO-178C · SYS
+         Fundamento           La trazabilidad de waypoints permite diagnóstico post-incidente.
+         Verificación         gpp_node.py — waypoint_type metadata.
+
+         GPP-031             Servicio /gpp/replan: replanificación con nuevas restricciones            SHALL     PENDIENTE
+
+         Descripción          SHALL existir el servicio /gpp/replan para replanificación dinámica ante NFZ añadidas.
+         Fuentes              SYS · OPS
+         Fundamento           Las NFZ UTM pueden activarse durante el vuelo. El sistema debe poder adaptar la ruta.
+         Verificación         gpp_node.py — /gpp/replan service.
+
+         GPP-032             Publicación de error en /gpp/error cuando no hay ruta factible            SHALL     PENDIENTE
+
+         Descripción          Si no se encuentra ruta, SHALL publicarse un mensaje de error en /gpp/error con la causa
+                              (NFZ_BLOCKING / NO_CONVERGENCE / KINEMATIC_INFEASIBLE).
+         Fuentes              SYS · OPS
+         Fundamento           El operador y el FSM necesitan saber por qué el planificador falló.
+         Verificación         gpp_node.py — /gpp/error publisher.
+
+
+          Contingencias y LZ de emergencia
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                  Page 8
+FLIGHTMIND — SUB-GPP: GLOBAL PATH PLANNER                                                                                  v1.1 · 2026-04-01
+
+
+
+
+         GPP-033             Lista de Landing Zones de contingencia cargada desde config               SHALL        PENDIENTE
+
+         Descripción          El planificador SHALL cargar una lista de LZ de contingencia desde config/contingency_lz.yaml.
+         Fuentes              OPS BVLOS · EU 2019/947
+         Fundamento           En BVLOS el UAS siempre debe tener una LZ alcanzable ante battery_critical.
+         Verificación         config/contingency_lz.yaml.
+
+         GPP-034             Ruta a LZ más cercana accesible en < 500ms                                SHALL        PENDIENTE
+
+         Descripción          Ante battery_critical, el planificador SHALL calcular ruta a la LZ más cercana en < 500ms.
+         Fuentes              OPS BVLOS · SAF
+         Fundamento           La respuesta a batería crítica debe ser rápida. Más de 500ms puede ser demasiado tarde.
+         Verificación         gpp_node.py — emergency_lz_planning().
+
+                             Alcanzabilidad de LZ verificada con energy_model (batería
+         GPP-035                                                                                       SHALL        PENDIENTE
+                             restante)
+
+         Descripción          Una LZ SHALL considerarse alcanzable solo si la energía restante es suficiente para completar
+                              la ruta más el margen de aterrizaje.
+         Fuentes              SAF · OPS
+         Fundamento           Intentar alcanzar una LZ con energía insuficiente resulta en crash en ruta.
+         Verificación         gpp_node.py — energy_feasibility_check().
+
+
+          Verificación
+
+         GPP-036             TC: ruta evita todas las NFZ                                              SHALL        CUBIERTO
+
+         Descripción          SHALL existir TCs que verifiquen que ningún punto de la ruta generada intersecta una NFZ.
+         Fuentes              DO-178C §6.4
+         Fundamento           La evasión de NFZ es el requisito de seguridad más crítico del GPP.
+         Verificación         TC-NAV-004 — CUBIERTO.
+         Traza impl.          test/test_m7_nav2.py
+
+         GPP-037             TC: fallback rechaza ruta directa que pasa por NFZ                        SHALL        CUBIERTO
+
+         Descripción          SHALL existir TC que verifique que el fallback retorna None cuando la ruta directa pasa por NFZ.
+         Fuentes              SAF · DO-178C
+         Fundamento           El comportamiento del fallback es crítico para la seguridad.
+         Verificación         TC-GPP-003 — fix GPP-G03 verificado.
+         Traza impl.          test/
+
+         GPP-038             TC: bounds correctos con start > goal                                     SHALL        CUBIERTO
+
+         Descripción          SHALL existir TC que planifique con start en coordenadas positivas respecto a goal.
+         Fuentes              SYS
+         Fundamento           El bug GPP-G05 solo se manifestaba con start > goal.
+         Verificación         TC-GPP-002 — fix GPP-G05 verificado.
+         Traza impl.          test/
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                    Page 9
+FLIGHTMIND — SUB-GPP: GLOBAL PATH PLANNER                                                                         v1.1 · 2026-04-01
+
+
+
+
+         GPP-039             TC: tiempo de planificación < 2s (benchmark)                             SHALL   PARCIAL
+
+         Descripción          SHALL existir TC que mida el tiempo de planificación y falle si > 2s.
+         Fuentes              SYS
+         Fundamento           El rendimiento es un requisito verificable.
+         Verificación         TC-PERF-007.
+         Traza impl.          test/test_m11_performance.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                          Page 10
+

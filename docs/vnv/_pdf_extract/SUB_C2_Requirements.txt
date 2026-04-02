@@ -1,0 +1,174 @@
+                          SUB-C2
+                                 Enlace C2
+Canal de mando y control — detección, contingencias BVLOS, MAVLink 2.0
+
+                       14 requisitos · v1.1 · 2026-04-01
+                    UpNext — Flightmind Autonomy Stack
+                  STANAG 4586 · EU 2019/947 · MAVLink 2.0
+
+
+                  CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-C2: ENLACE C2                                                                   v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      1    SHALL       13
+
+                                      PARCIAL                       0    SHOULD      1
+
+                                      XFAIL                         2    MAY         0
+
+                                      PENDIENTE                     7
+
+                                      N/A-DEMO                      4
+
+                                      TOTAL                         14
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Detección y contingencias                                           7
+
+                 2     Protocolo MAVLink 2.0                                               3
+
+                 3     Rendimiento y seguridad (HIL)                                       4
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-C2: ENLACE C2                                                                                        v1.1 · 2026-04-01
+
+
+
+
+          Detección y contingencias
+
+         C2-001              Detección de pérdida de enlace C2 en < 2s                                SHALL   PENDIENTE
+
+         Descripción          El nodo SHALL detectar pérdida de C2 en < 2s desde la última comunicación válida.
+         Fuentes              EU 2019/947 · STANAG 4586
+         Fundamento           A 2s y 20 m/s el UAS avanza 40m antes de contingencia. Aceptable para BVLOS.
+         Verificación         c2_monitor_node.py — heartbeat timeout.
+
+         C2-002              c2_timeout_s configurable (default 2.0)                                  SHALL   PENDIENTE
+
+         Descripción          El timeout SHALL ser configurable.
+         Fuentes              EU 2019/947
+         Fundamento           Distintas tecnologías de enlace tienen distintas latencias nominales.
+         Verificación         declare_parameter c2_timeout_s.
+
+         C2-003              c2_lost=True publicado en /fsm/in/c2_lost al detectar pérdida            SHALL   PENDIENTE
+
+         Descripción          SHALL publicarse inmediatamente c2_lost=True.
+         Fuentes              SDD Flightmind
+         Fundamento           El FSM es el árbitro de la respuesta.
+         Verificación         c2_monitor_node.py — /fsm/in/c2_lost.
+
+         C2-004              c2_lost=False publicado al recuperar el enlace                           SHALL   PENDIENTE
+
+         Descripción          SHALL publicarse c2_lost=False al recuperarse.
+         Fuentes              SDD Flightmind
+         Fundamento           El FSM debe saber cuándo el enlace se recupera.
+         Verificación         c2_monitor_node.py.
+
+                             Procedimiento de contingencia: continuar c2_continue_s, luego
+         C2-005                                                                                       SHALL        XFAIL
+                             RTB
+
+         Descripción          Ante pérdida de C2 el FSM SHALL continuar c2_continue_s (default 30s) y luego RTB.
+         Fuentes              EU 2019/947 Annex III
+         Fundamento           EU 2019/947 requiere procedimiento automatizado.
+         Verificación         TC-FAULT-004 — XFAIL. ARCH-1.7.
+
+         C2-006              c2_continue_s configurable por plataforma                                SHALL       CUBIERTO
+
+         Descripción          El tiempo de continuación SHALL ser configurable.
+         Fuentes              EU 2019/947
+         Fundamento           MALE BVLOS puede continuar 30s; VTOL urbano respuesta más rápida.
+         Verificación         mission_fsm_male.yaml — c2_timeout_sec=30. CUBIERTO.
+         Traza impl.          config/mission_fsm_male.yaml
+
+                             /c2/status a 1       Hz:   link_ok,    latency_ms,   signal_strength,
+         C2-007                                                                                       SHALL   PENDIENTE
+                             last_rx_stamp
+
+         Descripción          El estado del enlace SHALL publicarse a 1 Hz.
+         Fuentes              USR
+         Fundamento           El operador necesita monitorizar la calidad del enlace.
+         Verificación         c2_monitor_node.py — /c2/status.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                               Page 3
+FLIGHTMIND — SUB-C2: ENLACE C2                                                                                      v1.1 · 2026-04-01
+
+
+
+
+          Protocolo MAVLink 2.0
+
+         C2-008              Protocolo MAVLink 2.0                                                   SHALL     PENDIENTE
+
+         Descripción          El enlace SHALL usar MAVLink 2.0.
+         Fuentes              PX4 Protocol · STANAG 4586
+         Fundamento           MAVLink 2.0 es el protocolo estándar. Compatibilidad con PX4 y QGroundControl.
+         Verificación         PX4 nativo.
+
+         C2-009              HEARTBEAT MAVLink enviado cada 1s                                       SHALL     PENDIENTE
+
+         Descripción          El nodo SHALL enviar HEARTBEAT MAVLink cada 1s.
+         Fuentes              MAVLink 2.0
+         Fundamento           El HEARTBEAT es el mecanismo de keep-alive estándar.
+         Verificación         c2_monitor_node.py — heartbeat_sender.
+
+         C2-010              gcs_lost detectado tras gcs_timeout_s (default 60s)                     SHALL       XFAIL
+
+         Descripción          Si no se recibe confirmación de GCS, SHALL publicarse gcs_lost=True.
+         Fuentes              EU 2019/947
+         Fundamento           Pérdida de GCS es diferente a pérdida del enlace de control directo.
+         Verificación         c2_monitor_node.py — gcs_timeout. XFAIL. ARCH-1.7.
+
+
+          Rendimiento y seguridad (HIL)
+
+         C2-011              Latencia C2 round-trip < 500ms (verificación HIL)                       SHALL     N/A-DEMO
+
+         Descripción          La latencia round-trip SHALL ser < 500ms.
+         Fuentes              STANAG 4586
+         Fundamento           Latencia > 500ms hace los comandos llegar con retraso inaceptable.
+         Verificación         Fuera del scope SIL.
+
+         C2-012              Encriptación AES-256                                                    SHALL     N/A-DEMO
+
+         Descripción          El enlace SHALL encriptarse con AES-256.
+         Fuentes              STANAG 4586
+         Fundamento           Sin encriptación el enlace es vulnerable.
+         Verificación         Fuera del scope SIL.
+
+         C2-013              Autenticación de comandos                                               SHALL     N/A-DEMO
+
+         Descripción          Comandos no autenticados SHALL ignorarse y loguearse.
+         Fuentes              SAF
+         Fundamento           Inyección de comandos maliciosos.
+         Verificación         Fuera del scope SIL.
+
+         C2-014              Canal C2 redundante con failover < 1s (SHOULD)                          SHOULD    N/A-DEMO
+
+         Descripción          SHOULD soportarse canal primario + backup.
+         Fuentes              OPS BVLOS
+         Fundamento           En BVLOS largo alcance, único enlace es SPOF.
+         Verificación         Fuera del scope SIL.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                             Page 4
+

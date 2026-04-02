@@ -1,0 +1,435 @@
+Subsystem,Req_ID,Description,Verification_Method,Implemented_File,Test_File,Status
+ACAS,ACAS-001,acas_node SHALL ser un nodo ROS2 independiente. Su lógica no SHALL importar ni depender del módulo daidalus_node.,"acas_node — proceso independiente, suscribe directamente NavigationState y TrafficIntruder.",src/acas_node/acas_node/acas_node.py,,PARTIAL
+ACAS,ACAS-002,"La lógica de decisión SHALL implementarse con las 45 redes .nnet del prototipo HorizontalCAS, indexadas por tau (9 bins, 0-8s) y advisory previo (5 categorías).",PENDIENTE — integración .nnet.,,,GAP
+ACAS,ACAS-003,El nodo SHALL cargar las 45 redes .nnet desde el directorio configurado en el parámetro nnet_dir al arrranque.,acas_node.py — _load_networks() en __init__.,,,GAP
+ACAS,ACAS-004,"La selección de red SHALL usar: tau_bin = int(min(tau_s, 8)), prev_adv_idx = advisory_to_idx[prev_advisory].",acas_node.py — _select_network(). Cálculo de inputs (5 variables),,,GAP
+ACAS,ACAS-005,"El nodo SHALL calcular: rho (dist. relativa m), theta (bearing relativo rad), psi (heading relativo rad), v_own (m/s), v_int (m/s) desde NavigationState + TrafficIntruder.",acas_node.py — _compute_inputs(). : ACAS XU,,,GAP
+ACAS,ACAS-006,rho SHALL calcularse como sqrt((dNorth)²+(dEast)²) en metros.,acas_node.py — _compute_rho().,,,GAP
+ACAS,ACAS-007,"theta SHALL calcularse como atan2(dEast, dNorth) - heading_own, normalizado [-π, π].",acas_node.py — _compute_theta().,,,GAP
+ACAS,ACAS-008,"psi SHALL calcularse como heading_int - heading_own, normalizado en [-π, π].","acas_node.py — _compute_psi(). Advisories y categorías 5 categorías de output: COC, WL, WR, SL, SR con turn rates",,,GAP
+ACAS,ACAS-009,"La red neuronal SHALL mapearse a: COC (0°/s), WL (-1.5°/s), WR (+1.5°/s), SL (-3.0°/s), SR (+3.0°/s).",acas_node.py — advisory_enum.,,,GAP
+ACAS,ACAS-010,El advisory SHALL ser la categoría con la puntuación más alta en el vector de output de la red.,acas_node.py — np.argmax(network_output).,,,GAP
+ACAS,ACAS-011,"Cuando rho > rho_activation_threshold o ra_active=False, el advisory SHALL ser COC.",TC-FDIR-006 — no false positives. acas_node COC default.,src/acas_node.py,src/mission_fsm/test/m6_fdir/test_fdir.py,PARTIAL
+ACAS,ACAS-012,ra_active SHALL ser True si y solo si el advisory actual no es COC.,acas_node.py — ra_active = (advisory != COC). Coordinación y seguridad ra_active=True → publicar abort_command en,,,GAP
+ACAS,ACAS-013,"Cuando ra_active=True, acas_node SHALL publicar abort_command=True.",acas_node.py — abort_command_pub.,,,GAP
+ACAS,ACAS-014,"ACAS Xu SHALL activar ra_active solo cuando daidalus_alert_level >= 3, o en modo standalone si DAIDALUS no está disponible.",acas_node.py — activation_condition.,src/acas_node.py,,PARTIAL
+ACAS,ACAS-015,"En modo standalone (sin DAIDALUS), ACAS SHALL activarse cuando rho < rho_standalone_m.",acas_node.py — standalone_activation.,,,GAP
+ACAS,ACAS-016,"Antes de publicar un advisory activo, SHALL verificarse que el turn_rate requerido es ejecutable por la plataforma actual.",acas_node.py — vehicle_model.is_feasible(turn_rate).,,,GAP
+ACAS,ACAS-017,Un advisory activo SHALL mantenerse durante al menos advisory_hold_s antes de poder cambiar a COC.,"acas_node.py — advisory_hold_timer. Publicación y mensajes : ACAS XU ACASAdvisory.msg publicado en /acas/advisory a ≥ 10 Hz, QoS",,,GAP
+ACAS,ACAS-018,ACASAdvisory SHALL publicarse en /acas/advisory a ≥ 10 Hz con reliability=RELIABLE.,acas_node.py — publisher /acas/advisory.,,,GAP
+ACAS,ACAS-019,ACASAdvisory.advisory SHALL contener el advisory actual como enumerado.,flightmind_msgs/ACASAdvisory.msg,src/flightmind_msgs/msg/ACASAdvisory.msg,,PARTIAL
+ACAS,ACAS-020,ACASAdvisory.ra_active SHALL ser True cuando hay RA activa (advisory ≠ COC).,flightmind_msgs/ACASAdvisory.msg,src/flightmind_msgs/msg/ACASAdvisory.msg,,PARTIAL
+ACAS,ACAS-021,"ACASAdvisory SHALL incluir: threat_class (HEAD_ON/OVERTAKE/CROSSING/GENERIC), time_to_cpa_s, horizontal_miss_dist_m.",flightmind_msgs/ACASAdvisory.msg,src/flightmind_msgs/msg/ACASAdvisory.msg,,PARTIAL
+ACAS,ACAS-022,El tiempo entre recepción del estado del intruso y publicación del advisory SHALL ser < 50ms.,"Pendiente implementación .nnet. Benchmark de inferencia. Verificación TCs: activación con rho < threshold, COC default, factibilidad",,,GAP
+ACAS,ACAS-023,"La suite SHALL incluir: TC de activación con rho sintético, TC de COC sin amenaza, TC de advisory infactible rechazado.",Pendiente implementación .nnet.,,,GAP
+AIR,AIR-001,El monitor SHALL usar PolyCARP para verificar contención en polígonos.,upnext_airspace — PolyCARP.,src/upnext_airspace/upnext_airspace/airspace_monitor_node.py,,PASS
+AIR,AIR-002,PolyCARP SHALL calcular la distancia mínima al borde de cada NFZ activa.,airspace_monitor_node.py — distanceToPolygon().,src/upnext_airspace/upnext_airspace/airspace_monitor_node.py,,PARTIAL
+AIR,AIR-003,El monitor SHALL detectar si la posición actual está dentro de una NFZ.,airspace_monitor_node.py — inside_nfz check.,,,PARTIAL
+AIR,AIR-004,Las NFZ SHALL definirse en GeoJSON estándar.,upnext_airspace — GeoJSON loader.,nfz_zones.geojson,,PASS
+AIR,AIR-005,El cargador SHALL soportar Polygon.,airspace_monitor_node.py.,,,PASS
+AIR,AIR-006,El cargador SHALL soportar MultiPolygon.,airspace_monitor_node.py — MultiPolygon. Propiedades 3D y altitud : AIRSPACE MONITOR,,,PARTIAL
+AIR,AIR-007,Cada Feature SHALL poder incluir alt_min_m.,GeoJSON — alt_min_m.,,,PARTIAL
+AIR,AIR-008,Cada Feature SHALL poder incluir alt_max_m.,GeoJSON — alt_max_m.,,,PARTIAL
+AIR,AIR-009,La vigilancia SHALL considerar alt_min y alt_max.,airspace_monitor_node.py — 3D containment. Identificadores y clasificación,,,PARTIAL
+AIR,AIR-010,Cada Feature SHALL incluir zone_id único.,"GeoJSON — zone_id. Propiedad zone_class: NFZ_GENERIC, CTR, DANGER,",,,PARTIAL
+AIR,AIR-011,Cada Feature SHALL incluir zone_class ICAO.,GeoJSON — zone_class. Vigilancia y alerting,,,GAP
+AIR,AIR-012,La proyección SHALL calcularse linealmente.,airspace_monitor_node.py — linear projection.,src/upnext_airspace/upnext_airspace/airspace_monitor_node.py,,PASS
+AIR,AIR-013,El horizonte de predicción SHALL ser configurable.,config/airspace_params.yaml.,config/,,PASS
+AIR,AIR-014,violation_imminent=True SHALL publicarse cuando la trayectoria cruzará una NFZ.,TC-FAULT-009.,src/upnext_airspace/upnext_airspace/airspace_monitor_node.py,src/mission_fsm/test/m10_e2e_faults/test_e2e_faults.py,PASS
+AIR,AIR-015,inside_nfz=True SHALL publicarse cuando hay violación activa.,airspace_monitor_node.py. GeofenceStatus publicado a ≥ 10 Hz en,,,PARTIAL
+AIR,AIR-016,GeofenceStatus SHALL publicarse con todos los campos a 10 Hz.,airspace_monitor_node.py — /polycarp/geofence_status.,src/upnext_airspace/upnext_airspace/airspace_monitor_node.py,,PARTIAL
+AIR,AIR-017,GeofenceStatus SHALL usar RELIABLE.,airspace_monitor_node.py.,,,GAP
+AIR,AIR-018,time_to_violation_s SHALL calcularse como distancia al borde dividida por velocidad.,airspace_monitor_node.py.,,,PARTIAL
+AIR,AIR-019,nearest_nfz_dist_m SHALL ser la distancia mínima a cualquier NFZ activa.,airspace_monitor_node.py. : AIRSPACE MONITOR NFZ dinámicas y temporales,,,GAP
+AIR,AIR-020,SHALL existir servicio de actualización dinámica.,TC-NAV-008 — XFAIL.,,src/mission_fsm/test/m7_nav2/test_nav2_interface.py,GAP
+AIR,AIR-021,NFZ con ventana temporal SHALL activarse/desactivarse automáticamente.,airspace_monitor_node.py — temporal_scheduler.,,,GAP
+AIR,AIR-022,Violación inminente de CTR SHALL generar alerta diferenciada.,airspace_monitor_node.py — CTR alert.,,,GAP
+AIR,AIR-023,El nodo SHALL cargar el GeoJSON configurado al arranque.,airspace_monitor_node.py — startup load.,src/upnext_airspace/upnext_airspace/airspace_monitor_node.py,,PASS
+C2,C2-001,El nodo SHALL detectar pérdida de C2 en < 2s desde la última comunicación válida.,c2_monitor_node.py — heartbeat timeout.,,,GAP
+C2,C2-002,El timeout SHALL ser configurable.,declare_parameter c2_timeout_s.,,,GAP
+C2,C2-003,SHALL publicarse inmediatamente c2_lost=True.,c2_monitor_node.py — /fsm/in/c2_lost.,,,GAP
+C2,C2-004,SHALL publicarse c2_lost=False al recuperarse.,"c2_monitor_node.py. Procedimiento de contingencia: continuar c2_continue_s, luego",,,GAP
+C2,C2-005,Ante pérdida de C2 el FSM SHALL continuar c2_continue_s (default 30s) y luego RTB.,TC-FAULT-004 — XFAIL. ARCH-1.7.,,src/mission_fsm/test/m10_e2e_faults/test_e2e_faults.py,GAP
+C2,C2-006,El tiempo de continuación SHALL ser configurable.,mission_fsm_male.yaml — c2_timeout_sec=30. CUBIERTO.,src/mission_fsm/config/mission_fsm.yaml,,PASS
+C2,C2-007,El estado del enlace SHALL publicarse a 1 Hz.,c2_monitor_node.py — /c2/status. : ENLACE C2 Protocolo MAVLink 2.0,,,GAP
+C2,C2-008,El enlace SHALL usar MAVLink 2.0.,PX4 nativo.,,,GAP
+C2,C2-009,El nodo SHALL enviar HEARTBEAT MAVLink cada 1s.,c2_monitor_node.py — heartbeat_sender.,,,GAP
+C2,C2-010,"Si no se recibe confirmación de GCS, SHALL publicarse gcs_lost=True.",c2_monitor_node.py — gcs_timeout. XFAIL. ARCH-1.7. Rendimiento y seguridad (HIL),,,GAP
+C2,C2-011,La latencia round-trip SHALL ser < 500ms.,Fuera del scope SIL.,,,PARTIAL
+C2,C2-012,El enlace SHALL encriptarse con AES-256.,Fuera del scope SIL.,,,PARTIAL
+C2,C2-013,Comandos no autenticados SHALL ignorarse y loguearse.,Fuera del scope SIL.,,,PARTIAL
+C2,C2-014,SHOULD soportarse canal primario + backup.,Fuera del scope SIL.,,,PARTIAL
+DAA,DAA-001,"El sistema SHALL producir alertas en 4 niveles: NONE, FAR (preventiva, time_to_LOS > 55s), MID (correctiva, 35s < time ≤ 55s), NEAR (advertencia, time ≤ 35s o WC ya perdido).",TC-DAI-001..004 — 4 niveles verificados con mock DAIDALUS.,upnext_icarous_daa/daidalus_node.py,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,PASS
+DAA,DAA-002,El nivel NONE SHALL publicarse cuando todos los intrusos tienen time_to_LOS > alerting_time_s.,TC-DAI-001 — sin intrusos → NONE.,src/daidalus_node.py,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,PASS
+DAA,DAA-003,FAR SHALL activarse cuando 35s < time_to_LOS ≤ alerting_time_s. Requiere toma de conciencia del operador.,TC-DAI-002 — intruso en rango FAR → nivel 1.,src/daidalus_node.py,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,PASS
+DAA,DAA-004,MID SHALL activarse cuando time_to_LOS ≤ 35s. Requiere acción correctiva del sistema.,TC-DAI-003 — intruso en rango MID → nivel 2.,src/daidalus_node.py,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,PASS
+DAA,DAA-005,NEAR SHALL activarse cuando time_to_LOS ≤ 0s o la distancia horizontal < DMOD. Requiere acción inmediata y escala a ACAS Xu.,TC-DAI-004 — intruso en NEAR → nivel 3 → escalada ACAS.,src/daidalus_node.py,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,PASS
+DAA,DAA-006,El parámetro DMOD SHALL tener valor default de 2200ft (670m) y ser configurable en el fichero .conf de DAIDALUS.,config/daidalus_parameters.conf — DMOD.,config/daidalus_parameters.conf,,PARTIAL
+DAA,DAA-007,ZTHR SHALL tener valor default de 450ft (137m) y ser configurable en el .conf.,config/daidalus_parameters.conf — ZTHR.,config/daidalus_parameters.conf,,PARTIAL
+DAA,DAA-008,TAUMOD SHALL tener valor default de 35s y ser configurable en el .conf.,config/daidalus_parameters.conf — TAUMOD.,config/daidalus_parameters.conf,,PARTIAL
+DAA,DAA-009,El horizonte temporal de alerting SHALL ser configurable en el .conf con default 55s.,config/daidalus_parameters.conf — alertingTime.,config/daidalus_parameters.conf,,PARTIAL
+DAA,DAA-010,La transición de alerta SHALL ser siempre monotónica en escalada (NONE→FAR→MID→NEAR). No se permiten saltos (NONE→NEAR directamente) salvo con hysteresis configurada.,TC-DAI-005 — escalada gradual verificada.,daidalus_node.py,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,PARTIAL (ARCH-DAI-RECOVERY)
+DAA,DAA-011,La desescalada (ej. MID→FAR) SHALL requerir que la condición de nivel inferior se mantenga durante hysteresis_time_s (default 5s) antes de bajar el nivel.,TC-DAI-009 — XFAIL. Histéresis no implementada. ARCH-1.1.,,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,GAP (ARCH-DAI-ADV)
+DAA,DAA-012,El sistema SHALL calcular time_to_violation_s (tiempo hasta pérdida de Well-Clear) para cada intruso activo y publicarlo en DaidalusAlert.,DaidalusAlert.msg — time_to_violation_s.,src/flightmind_msgs/msg/DaidalusAlert.msg,,PARTIAL
+DAA,DAA-013,El topic /daidalus/alert SHALL publicarse a frecuencia mínima de 10 Hz con QoS RELIABLE.,daidalus_node.py — timer callback a 10Hz.,src/daidalus_node.py,,PARTIAL
+DAA,DAA-014,El tiempo total desde cálculo de alerta hasta transición del FSM a EVENT SHALL ser < 100ms P99.,TC-DAI-010 — latencia medida. CUBIERTO.,test/test_m5_daidalus.py,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,PARTIAL (ARCH-DAI-ADV)
+DAA,DAA-015,El tiempo de cálculo de alertas y bandas por el motor DAIDALUS SHALL ser < 50ms.,"daidalus_node.py — profiling del motor DAIDALUS. Bandas de resolución (heading, GS, VS) : DAIDALUS DAA",,,PARTIAL
+DAA,DAA-016,"El sistema SHALL generar bandas de heading cubriendo los 360° con clasificación por sector: NONE (libre), FAR, MID, NEAR (conflictivo).",DaidalusBands.msg — conflict_bands[] array.,src/flightmind_msgs/msg/DaidalusBands.msg,,PARTIAL
+DAA,DAA-017,Las bandas SHALL incluir el recovery_heading_deg: el heading libre más cercano al heading actual del UAS.,DaidalusBands.msg — recovery_heading_deg.,src/flightmind_msgs/msg/DaidalusBands.msg,,PARTIAL
+DAA,DAA-018,El recovery_heading_deg SHALL aplicar un margen de safety_margin_deg (default 5°) sobre el límite de la banda libre.,config/daidalus_parameters.conf — safety_margin_deg.,config/daidalus_parameters.conf,,PARTIAL
+DAA,DAA-019,"El margen de seguridad SHALL ser configurable en el .conf (default 5°, rango 0-30°).",config/daidalus_parameters.conf.,,,PARTIAL
+DAA,DAA-020,El sistema SHALL generar bandas de GS indicando rangos de velocidad conflictivos y el recovery_gs_ms más cercano al GS actual.,"DaidalusBands.msg — gs_bands[], recovery_gs_ms.",src/flightmind_msgs/msg/DaidalusBands.msg,,PARTIAL
+DAA,DAA-021,El sistema SHALL generar bandas de VS indicando rangos de climb/descent conflictivos y el recovery_vs_mps más cercano al VS actual.,"DaidalusBands.msg — vs_bands[], recovery_vs_mps.",src/flightmind_msgs/msg/DaidalusBands.msg,,PARTIAL
+DAA,DAA-022,Las bandas SHALL publicarse en /daidalus/bands (flightmind_msgs/DaidalusBands) a ≥ 10 Hz.,daidalus_node.py — /daidalus/bands publisher.,src/daidalus_node.py,,PARTIAL
+DAA,DAA-023,Las bandas SHALL usar QoS reliability=BEST_EFFORT para no saturar la red.,daidalus_node.py — QoS BEST_EFFORT para /daidalus/bands.,src/daidalus_node.py,,GAP
+DAA,DAA-024,Todas las bandas de heading SHALL expresarse en heading absoluto (0-360°) relativo al Norte.,daidalus_node.py — frame NED verificado.,src/daidalus_node.py,,PARTIAL
+DAA,DAA-025,"Las bandas de heading/GS/VS SHALL calcularse considerando todos los intrusos activos simultáneamente, no solo el más amenazante.",DAIDALUS API — getBandsFor() considerando lista completa.,src/daidalus_node.py,,PARTIAL
+DAA,DAA-026,"El sistema SHALL mantener una lista de todos los intrusos activos con sus estados (posición, velocidad, timestamp de última actualización).",daidalus_node.py — traffic_state_map.,src/daidalus_node.py,,PARTIAL
+DAA,DAA-027,"El sistema SHALL publicar un DaidalusAlert individual para cada intruso activo, identificado por intruder_id.",daidalus_node.py — multi-alert publication.,src/daidalus_node.py,,PARTIAL
+DAA,DAA-028,El sistema SHALL identificar el intruso con menor time_to_violation_s como primary threat y publicarlo en /daidalus/primary_threat.,daidalus_node.py — primary_threat selector.,src/daidalus_node.py,,PARTIAL
+DAA,DAA-029,El máximo de intrusos simultáneos en la lista SHALL ser configurable (default 20).,config/daidalus_parameters.conf — max_intruders.,,,GAP
+DAA,DAA-030,Cada intruso SHALL añadirse al motor DAIDALUS usando la API addTrafficState() con los campos de estado completos.,daidalus_node.py — addTrafficState() call.,src/daidalas_node.py,,PARTIAL
+DAA,DAA-031,Un intruso sin actualización durante stale_timeout_s SHALL eliminarse de la lista activa.,daidalus_node.py — stale timeout logic.,src/daidalus_node.py,,PARTIAL
+DAA,DAA-032,El timeout de expiración SHALL ser configurable como parámetro ROS2.,daidalus_node.py — declare_parameter stale_timeout_s.,,,GAP
+DAA,DAA-033,El intruder_id SHALL mantenerse constante entre actualizaciones del mismo intruso para correlación en logs y alertas.,daidalus_node.py — intruder_id mapping.,src/daidalus_node.py,,PARTIAL
+DAA,DAA-034,El sistema SHALL aceptar tráfico exclusivamente en formato flightmind_msgs/TrafficIntruder en el topic /traffic/intruders.,flightmind_msgs/TrafficIntruder.msg — interfaz definida.,src/flightmind_msgs/msg/TrafficIntruder.msg,,PARTIAL
+DAA,DAA-035,TrafficIntruder.intruder_id SHALL ser un string único por aeronave.,flightmind_msgs/TrafficIntruder.msg,src/flightmind_msgs/msg/TrafficIntruder.msg,,PASS
+DAA,DAA-036,"position_ned SHALL contener [North, East, Down] en metros relativos al origen de misión.",flightmind_msgs/TrafficIntruder.msg,src/flightmind_msgs/msg/TrafficIntruder.msg,,PASS
+DAA,DAA-037,"velocity_ned SHALL contener [Vn, Ve, Vd] en m/s.",flightmind_msgs/TrafficIntruder.msg,src/flightmind_msgs/msg/TrafficIntruder.msg,,PASS
+DAA,DAA-038,"cooperative SHALL indicar si el intruso es cooperativo (ADS-B/transponder) o no cooperativo (radar, EO/IR).",flightmind_msgs/TrafficIntruder.msg,src/flightmind_msgs/msg/TrafficIntruder.msg,,PASS
+DAA,DAA-039,source SHALL indicar el tipo de sensor que detectó el intruso.,flightmind_msgs/TrafficIntruder.msg,src/flightmind_msgs/msg/TrafficIntruder.msg,,PARTIAL
+DAA,DAA-040,"stamp SHALL ser el timestamp de la medición del sensor, no el de publicación del mensaje.",flightmind_msgs/TrafficIntruder.msg,src/flightmind_msgs/msg/TrafficIntruder.msg,,PARTIAL
+DAA,DAA-041,El sistema SHALL procesar intrusos de fuentes ADS-B y transponder como fuentes cooperativas.,daidalus_node.py — ADS-B input handling.,src/daidalus_node.py,,PARTIAL
+DAA,DAA-042,El sistema SHALL procesar intrusos de fuentes no cooperativas con el mismo pipeline que los cooperativos.,TrafficIntruder.msg — campo cooperative=false. daidalus_node.py.,src/daidalus_node.py,,PARTIAL
+DAA,DAA-043,"DaidalusAlert SHALL incluir alert_level con valores 0=NONE, 1=FAR, 2=MID, 3=NEAR.",flightmind_msgs/DaidalusAlert.msg,src/flightmind_msgs/msg/DaidalusAlert.msg,,PASS
+DAA,DAA-044,DaidalusAlert SHALL incluir intruder_id para identificar a qué intruso corresponde la alerta.,flightmind_msgs/DaidalusAlert.msg,src/flightmind_msgs/msg/DaidalusAlert.msg,,PASS
+DAA,DAA-045,DaidalusAlert SHALL incluir time_to_violation_s en segundos (negativo si WC ya perdido).,flightmind_msgs/DaidalusAlert.msg,src/flightmind_msgs/msg/DaidalusAlert.msg,,PARTIAL
+DAA,DAA-046,DaidalusAlert SHALL incluir la distancia horizontal mínima proyectada en metros.,flightmind_msgs/DaidalusAlert.msg,src/flightmind_msgs/msg/DaidalusAlert.msg,,PARTIAL
+DAA,DAA-047,DaidalusAlert SHALL incluir la distancia vertical mínima proyectada en metros.,flightmind_msgs/DaidalusAlert.msg,src/flightmind_msgs/msg/DaidalusAlert.msg,,PARTIAL
+DAA,DAA-048,"DaidalusBands SHALL incluir conflict_bands como lista de (heading_start, heading_end, level) en grados.",flightmind_msgs/DaidalusBands.msg,src/flightmind_msgs/msg/DaidalusBands.msg,,PARTIAL
+DAA,DAA-049,"DaidalusBands SHALL incluir los tres recovery values: heading más cercano libre, GS más cercano libre, VS más cercano libre.",flightmind_msgs/DaidalusBands.msg,src/flightmind_msgs/msg/DaidalusBands.msg,,PARTIAL
+DAA,DAA-050,"El sistema SHALL publicar DaidalusStatus en /daidalus/status incluyendo: daa_active, daa_degraded, fuentes activas, intrusos actuales.",flightmind_msgs/DaidalusStatus.msg.,src/flightmind_msgs/msg/DaidalusStatus.msg,,GAP
+DAA,DAA-051,El nivel de alerta global (máximo entre todos los intrusos) SHALL publicarse en /daidalus/alert_level como std_msgs/Int32.,mission_fsm_node.py — suscribe /daidalus/alert_level.,daidalus_node.py,,PASS
+DAA,DAA-052,"Cuando alert_level global alcanza NEAR (3), el sistema SHALL publicar daidalus_alert_level=3 para que ACAS Xu active su lógica de emergencia.",TC-DAI-003 — alert NEAR publicado correctamente.,src/daidalus_node.py,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,PASS
+DAA,DAA-053,"Si /acas/advisory.ra_active=True, el sistema SHALL marcar recommended_heading_deg=NaN para indicar que ACAS tiene el control de la maniobra.",daidalus_node.py — acas_active subscriber + NaN mask. daidalus_alert_amber param: umbral para daidalus_escalated,,,GAP
+DAA,DAA-054,El parámetro daidalus_alert_amber SHALL definir a qué nivel de alerta el FSM activa daidalus_escalated (default 1 = FAR).,mission_fsm_node.py — daidalus_alert_amber param.,src/mission_fsm_node.py,,PASS
+DAA,DAA-055,"El núcleo SHALL usar la biblioteca DAIDALUS v2 de NASA Langley, accedida via libTrafficMonitor.so.",upnext_icarous_daa — libTrafficMonitor.so.,src/upnext_icarous_daa/CMakeLists.txt,,PASS
+DAA,DAA-056,"El motor DAIDALUS SHALL recibir el estado propio (posición, velocidad, heading) desde /navigation/state en cada ciclo.",daidalus_node.py — navigation_state subscriber.,src/daidalus_node.py,,PASS
+DAA,DAA-057,"Todos los parámetros DAIDALUS SHALL estar en un .conf versionado en git, no embebidos en código Python.",config/daidalus_parameters.conf en git.,src/upnext_icarous_daa/config/,,PARTIAL
+DAA,DAA-058,"Todos los parámetros DAIDALUS SHALL poder modificarse editando el .conf y reiniciando el nodo, sin recompilación.",daidalus_node.py — carga .conf al startup.,src/daidalus_node.py,,PARTIAL
+DAA,DAA-059,"Si no se recibe ningún mensaje en /traffic/intruders durante traffic_timeout_s (default 5s), daa_degraded SHALL activarse y publicarse.",TC-DAI-006 — XFAIL. Feed timeout no implementado.,,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,GAP
+DAA,DAA-060,"Si source_count=0 y no hay modo degradado alternativo, el sistema SHALL publicar alert_level=NEAR y daa_degraded=True.",daidalas_node.py — source_count monitor.,,,GAP
+DAA,DAA-061,El sistema SHALL poder operar usando solo sensores propios cuando no hay feed ADS-B.,TC-DAI-008 — XFAIL.,,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,GAP (ARCH-DAI-FEED)
+DAA,DAA-062,El sistema SHALL registrar (INFO) cada evento de pérdida y recuperación del feed de tráfico con timestamp.,daidalus_node.py — feed_status logging. Verificación : DAIDALUS DAA,,,GAP
+DAA,DAA-063,SHALL existir al menos un TC para cada nivel de alerta con un intruso sintético en la posición correspondiente.,TC-DAI-001..004.,test/test_m5_daidalus.py,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,PASS
+DAA,DAA-064,SHALL existir un TC que mida la latencia total alerta→FSM y falle si > 100ms.,TC-DAI-010.,test/test_m5_daidalus.py,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,PARTIAL (ARCH-DAI-ADV)
+DAA,DAA-065,SHALL existir un TC que verifique daa_degraded=True tras traffic_timeout_s sin mensajes.,TC-DAI-006 — XFAIL.,,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,GAP
+FDIR,FDIR-001,"El FDIR SHALL monitorizar los datos del IMU (acelerómetro 3-axis, giróscopo 3-axis) con detección por timeout y rango físico.",fdir_node.py — imu_monitor.,src/fdir/fdir/fdir_node.py,,PARTIAL
+FDIR,FDIR-002,"Si no se recibe mensaje IMU durante imu_timeout_ms (default 100ms), SHALL generarse fault event CRITICAL.",fdir_node.py — imu_timeout_monitor.,src/fdir/fdir/fdir_node.py,,PARTIAL
+FDIR,FDIR-003,"Una aceleración fuera del rango [-98m/s², +98m/s²] en cualquier eje SHALL generar fault CRITICAL.",fdir_node.py — imu_range_check.,src/fdir/fdir/fdir_node.py,,PARTIAL
+FDIR,FDIR-004,"El FDIR SHALL monitorizar el GPS por timeout (default 500ms) y calidad (PDOP, número de satélites).",fdir_node.py — gps_monitor.,src/fdir/fdir/fdir_node.py,,PARTIAL
+FDIR,FDIR-005,Si el PDOP supera pdop_threshold SHALL generarse fault MEDIUM.,fdir_node.py — pdop_check. : FDIR Detección de pérdida de GPS: < min_satellites (default 6),,,GAP
+FDIR,FDIR-006,"Si el número de satélites tracked cae por debajo de min_satellites, SHALL generarse fault HIGH.",fdir_node.py — satellite_count_check.,,,GAP
+FDIR,FDIR-007,El FDIR SHALL monitorizar el barómetro por timeout (default 200ms) y rango (altitud entre -500m y 10000m).,fdir_node.py — baro_monitor.,,,GAP
+FDIR,FDIR-008,El FDIR SHALL monitorizar el magnetómetro por timeout y coherencia con el giróscopo.,fdir_node.py — mag_monitor.,,,GAP
+FDIR,FDIR-009,"Si la plataforma incluye LiDAR, SHALL monitorizarse por timeout (default 500ms).",fdir_node.py — lidar_monitor (condicional por plataforma).,,,GAP
+FDIR,FDIR-010,"Si la plataforma expone telemetría ESC, SHALL monitorizarse RPM por motor con umbral > 110% o < 50% de nominal.",fdir_node.py — esc_telemetry_monitor.,,,GAP
+FDIR,FDIR-011,El FDIR SHALL monitorizar el enlace RC/C2 por timeout (default 2s) y publicar c2_link_lost.,fdir_node.py — c2_timeout_monitor. Consistencia entre fuentes redundantes: desacuerdo >,,,GAP
+FDIR,FDIR-012,"Si dos fuentes del mismo tipo (p.ej. dos IMU, dos GPS) difieren en más de consistency_threshold, SHALL generarse fault HIGH.",fdir_node.py — consistency_check (para plataformas con sensores redundantes). : FDIR,,,GAP
+FDIR,FDIR-013,El FDIR SHOULD analizar el espectro de frecuencias del acelerómetro para detectar vibraciones asociadas a desequilibrio de rotor.,fdir_node.py — FFT vibration analysis. Pendiente HIL. Clasificación y tabla de severidades,,,GAP
+FDIR,FDIR-014,"Cada fault event SHALL clasificarse en: LOW (log+telemetría), MEDIUM (degradar quality_flag), HIGH (activar RTB), CRITICAL (activar ABORT).",TC-FDIR-010 — XFAIL. Tabla de severidad pendiente.,src/fdir/fdir/fdir_node.py,src/mission_fsm/test/m6_fdir/test_fdir.py,GAP
+FDIR,FDIR-015,"La asignación de sensor_id → severity SHALL estar en un YAML externo, no hardcodeada en Python.",config/fdir_severity_table.yaml.,,,GAP
+FDIR,FDIR-016,El nodo SHALL cargar fdir_severity_table.yaml al arranque y validar que todos los sensores monitorizados tienen severidad asignada.,"fdir_node.py — _load_severity_table(). Políticas de respuesta por severidad Política LOW: log INFO y publicar en active_faults, no",,,GAP
+FDIR,FDIR-017,Fallos LOW SHALL loguearse y añadirse a active_faults sin afectar quality_flag ni activar contingencias.,fdir_node.py — LOW policy. : FDIR Política MEDIUM: reducir quality_flag según tabla de,,,GAP
+FDIR,FDIR-018,"Fallos MEDIUM SHALL reducir quality_flag según la tabla: magnetómetro → 0.7, GPS PDOP alto → 0.6, barómetro degradado → 0.5.",fdir_node.py — MEDIUM policy → quality_flag. Política HIGH: publicar rtb_command=True en,,,GAP
+FDIR,FDIR-019,"Fallos HIGH (GPS perdido, motor degradado) SHALL publicar rtb_command=True.",fdir_node.py — HIGH policy → /fsm/in/rtb_command. Política CRITICAL: publicar fdir_emergency=True en,,,PARTIAL
+FDIR,FDIR-020,"Fallos CRITICAL (IMU total, doble fallo) SHALL publicar fdir_emergency=True síncronamente, sin esperar el siguiente ciclo de monitorización.",TC-FDIR-001 — fdir_emergency → ABORT. CUBIERTO.,src/fdir/fdir/fdir_node.py,src/mission_fsm/test/m6_fdir/test_fdir.py,PASS
+FDIR,FDIR-021,El tiempo entre ocurrencia del fallo y publicación del fault event SHALL ser < 500ms P99.,TC-FDIR-011 — CUBIERTO.,test/test_m6_fdir.py,src/mission_fsm/test/m6_fdir/test_fdir.py,PASS
+FDIR,FDIR-022,"Para fallos CRITICAL, el tiempo SHALL ser < 100ms P99.",TC-FDIR-012 — latencia CRITICAL. Reset y persistencia de emergencias : FDIR,,src/mission_fsm/test/m6_fdir/test_fdir.py,GAP
+FDIR,FDIR-023,fdir_emergency SHALL permanecer activo hasta que el operador publique reset_emergency=True en /fdir/reset.,TC-FDIR-009 — CUBIERTO.,src/fdir/fdir/fdir_node.py,src/mission_fsm/test/m6_fdir/test_fdir.py,PASS
+FDIR,FDIR-024,El comando reset_emergency SHALL rechazarse con error si el FSM no está en ABORT o PREFLIGHT.,fdir_node.py — reset_guard. active_faults se limpia en reset_emergency si ya no hay fallos,,,GAP
+FDIR,FDIR-025,"Al recibir reset_emergency, el nodo SHALL verificar si los fallos originales siguen activos. Si no, limpiar active_faults.",fdir_node.py — reset_emergency handler.,,,GAP
+FDIR,FDIR-026,El FDIR NO SHALL generar ningún fault event durante 30s de operación nominal.,TC-FDIR-006 — CUBIERTO.,test/test_m6_fdir.py,src/mission_fsm/test/m6_fdir/test_fdir.py,PASS
+FDIR,FDIR-027,"El topic /fdir/active_fault (std_msgs/String) SHALL publicar un JSON array con todos los fallos activos: {subsystem, fault_name, severity, timestamp_s}.","TC-FDIR-003, TC-FDIR-005 — CUBIERTOS.",src/fdir/fdir/fdir_node.py,src/mission_fsm/test/m6_fdir/test_fdir.py,PASS
+FDIR,FDIR-028,"/fdir/summary SHALL publicar: highest_severity, fault_count, fdir_emergency, quality_flag_override.",fdir_node.py — /fdir/summary publisher.,,,GAP
+FDIR,FDIR-029,"SHALL existir un nodo watchdog que monitorice los heartbeats de FSM, DAIDALUS y Nav bridge. Un nodo sin heartbeat durante watchdog_timeout_s → safe_mode.","TC-FDIR-007, TC-FDIR-008 — XFAIL. ARCH-FDIR.",,src/mission_fsm/test/m6_fdir/test_fdir.py,GAP
+FDIR,FDIR-030,"Los nodos FSM, DAIDALUS y Nav bridge SHALL publicar std_msgs/Header en /*/heartbeat al menos cada 1s.",ARCH-FDIR — pendiente. safe_mode: safe_mode=True en /fdir/safe_mode cuando,,,GAP
+FDIR,FDIR-031,Cuando el watchdog detecte un nodo crítico muerto SHALL publicar safe_mode=True para que el FSM active procedimiento de contingencia.,"/fdir/safe_mode publisher. Pendiente. Aislamiento, logging y verificación Validación de rango en mensajes de sensores antes de",,,GAP
+FDIR,FDIR-032,El FDIR SHALL verificar que los valores de cada topic de sensor están dentro de rangos físicamente plausibles antes de forwarding.,"fdir_node.py — range validators. Log de cada fault event con timestamp, sensor, severity,",,,GAP
+FDIR,FDIR-033,"Cada fault event SHALL registrarse con: timestamp, sensor_id, fault_type, severity, fsm_state en ese momento.","fdir_node.py — _log_fault_event(). : FDIR Log de recovery: cuando un fallo se resuelve, registrar tiempo",,,GAP
+FDIR,FDIR-034,"Al resolverse un fallo (condición ya no activa), SHALL registrarse la duración total del fallo.",fdir_node.py — fault_duration logging. TC por cada sensor monitorizado con inyección de fallo,,,GAP
+FDIR,FDIR-035,"SHALL existir al menos un TC por sensor que inyecte el tipo de fallo correspondiente (timeout, rango, consistencia).",TC-FDIR-001..004 — parcial.,test/test_m6_fdir.py,src/mission_fsm/test/m6_fdir/test_fdir.py,PARTIAL
+FDIR,FDIR-036,TC-FDIR-006 SHALL verificar 30s sin fault events en condiciones nominales.,TC-FDIR-006 — CUBIERTO.,test/test_m6_fdir.py,src/mission_fsm/test/m6_fdir/test_fdir.py,PASS
+FSM,FSM-001,"El sistema SHALL implementar una HFSM donde EVENT contiene los subestados SENSOR_DEGRADED y TRAFFIC_CONFLICT, heredando todas las transiciones de seguridad del nivel raíz.",TC-FSM-021 — event_substate verificado. Análisis estático fsm.py.,src/mission_fsm/mission_fsm/fsm.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,GAP
+FSM,FSM-002,"El grafo FSM (estados, subestados, transiciones, condiciones de guarda, acciones de entrada/salida) SHALL estar íntegramente en un fichero YAML externo. Ningún estado ni transición SHALL estar hardcodeado en Python.",TC-FSM-018 — carga YAML sin excepción. TC-FSM-019 — YAML inválido lanza ValidationError.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-003,"Al cargar el YAML, el nodo SHALL verificar: (a) estados referenciados en transiciones existen, (b) condiciones usan átomos declarados, (c) no hay estados huérfanos sin transición de entrada.",TC-FSM-019 — YAML con estado inexistente en transición lanza ValidationError al startup.,fsm.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-004,"El FSM SHALL implementar exactamente los estados: PREFLIGHT, AUTOTAXI, TAKEOFF, CRUISE, EVENT, LANDING, GO_AROUND, RTB, ABORT.",grep de estados en YAML. TC-FSM-001..022 visitan todos los estados.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-005,Las transiciones de cada estado SHALL evaluarse en el orden exacto de definición del YAML. La primera con condición verdadera se ejecuta y las restantes no se evalúan.,TC-FSM-011 — ABORT y EVENT simultáneos: ABORT gana. TC-FSM-012 — EVENT y RTB simultáneos: EVENT gana.,src/mission_fsm/mission_fsm/fsm.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-006,"El motor SHALL soportar condiciones booleanas compuestas: all (AND lógico), any (OR lógico), not (negación). Deben poder anidarse a profundidad arbitraria.",TC-FSM-008 — condición any verificada. TC-FSM-009 — condición all. TC-FSM-010 — not anidado.,fsm.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-007,El YAML SHALL soportar listas de acciones on_enter y on_exit por estado. El motor SHALL ejecutarlas al entrar y salir respectivamente.,Análisis estático del YAML. TC-FSM-015 — on_enter de GO_AROUND publica go_around_cmd.,fsm.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PARTIAL
+FSM,FSM-008,FSMState.trigger_type SHALL indicar si la transición fue AUTO (condición) o MANUAL (comando de operador).,FSMState.msg — trigger_type field.,src/flightmind_msgs/msg/FSMState.msg,,GAP
+FSM,FSM-009,El nodo SHALL suscribirse a cualquier topic /fsm/in/ de tipo std_msgs/Bool cuyos nombres estén declarados en el YAML bajo la sección atoms.,M1 completo — mocks publican en /fsm/in/* y FSM responde.,mission_fsm_node.py,,PASS
+FSM,FSM-010,"El nodo SHALL suscribirse a topics std_msgs/Float64 para átomos numéricos (quality_flag, daidalus_alert_level) que se comparan con umbrales.",TC-FSM-003 — quality_flag=0.3 desde /fsm/in/quality_flag (Float64).,mission_fsm_node.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-011,El tiempo entre publicación de un átomo en /fsm/in/* y su uso en la evaluación del siguiente step() SHALL ser inferior a 1 tick (1/tick_hz segundos).,TC-MW-003 — latencia átomo→step < 100ms a 10Hz.,mission_fsm_node.py,src/mission_fsm/test/m8_middleware/test_ros2_middleware.py,PASS
+FSM,FSM-012,El FSM SHALL calcular quality_degraded internamente como quality_flag < quality_flag_threshold (default 0.5). No requiere publicación externa del booleano.,TC-FSM-003 — quality_flag=0.3 → quality_degraded=True → EVENT.,fsm.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-013,"El umbral de quality_degraded SHALL ser configurable como parámetro ROS2 quality_flag_threshold, default 0.5.",mission_fsm_node.py — declare_parameter quality_flag_threshold.,src/mission_fsm/mission_fsm/mission_fsm_node.py,,PASS
+FSM,FSM-014,"El FSM SHALL calcular daidalus_escalated como daidalus_alert_level >= daidalus_alert_amber (default 1, escalada a EVENT).",TC-DAI-002 — daidalus_alert_level=1 → daidalus_escalated=True → EVENT.,fsm.py,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,PASS
+FSM,FSM-015,"El umbral de escalada DAIDALUS SHALL ser configurable como parámetro ROS2 daidalus_alert_amber, default 1.",mission_fsm_node.py — declare_parameter daidalus_alert_amber.,src/mission_fsm/mission_fsm/mission_fsm_node.py,,PASS
+FSM,FSM-016,El FSM SHALL suscribirse a /fdir/emergency (std_msgs/Bool) y usarlo como átomo builtin fdir_emergency con prioridad máxima.,TC-FDIR-001 — fdir_emergency=True → ABORT desde CRUISE.,mission_fsm_node.py,src/mission_fsm/test/m6_fdir/test_fdir.py,PASS
+FSM,FSM-017,El FSM SHALL soportar el átomo approach_not_stabilized para triggear GO_AROUND desde LANDING cuando la aproximación no cumple los criterios de estabilización.,TC-E2E-005 — approach_not_stabilized → GO_AROUND.,fsm.py,,PASS
+FSM,FSM-018,"El átomo abort_command SHALL poder publicarse en /fsm/in/abort_command desde la GCS, ACAS Xu o cualquier otro sistema de seguridad.",TC-FSM-008 — abort_command → ABORT.,src/mission_fsm/mission_fsm/mission_fsm_node.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-019,El átomo battery_low SHALL activarse cuando battery_remaining_pct < battery_low_threshold (default 30%). SHALL triggear transición configurable (default: continuar misión con aviso).,mission_fsm.yaml — battery_low transitions. ARCH-1.7.,,,GAP
+FSM,FSM-020,El átomo battery_critical SHALL activarse cuando battery_remaining_pct < battery_critical_threshold (default 15%). SHALL triggear RTB inmediato.,TC-FAULT-005 — XFAIL. ARCH-1.6.,,src/mission_fsm/test/m10_e2e_faults/test_e2e_faults.py,GAP (ARCH-1.6)
+FSM,FSM-021,El átomo c2_lost SHALL activarse cuando el nodo C2 detecte pérdida de enlace y lo publique en /fsm/in/c2_lost.,TC-FAULT-004 — XFAIL. ARCH-1.7.,,src/mission_fsm/test/m10_e2e_faults/test_e2e_faults.py,GAP
+FSM,FSM-022,El átomo gcs_lost SHALL activarse cuando se pierda el enlace con la GCS durante más de gcs_timeout_s (default 60s).,ARCH-1.7 — pendiente.,,,GAP
+FSM,FSM-023,El átomo geofence_breach SHALL activarse cuando /polycarp/violation_imminent=True sea publicado por el airspace_monitor.,TC-FAULT-009 — geofence_breach → EVENT.,src/upnext_airspace/upnext_airspace/airspace_monitor_node.py,src/mission_fsm/test/m10_e2e_faults/test_e2e_faults.py,PASS
+FSM,FSM-024,"El átomo rtb_command SHALL poder publicarse desde la GCS, FDIR o sistema de batería en /fsm/in/rtb_command.",TC-FSM-006 — rtb_command → RTB desde CRUISE.,src/mission_fsm/mission_fsm/mission_fsm_node.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-025,El átomo mission_complete SHALL publicarse desde trajectory_gen en /fsm/in/mission_complete cuando se alcanza el último waypoint.,TC-E2E-001 — mission_complete → LANDING.,src/mission_fsm/mission_fsm/mission_fsm_node.py,,PASS
+FSM,FSM-026,La transición PREFLIGHT→AUTOTAXI SHALL ejecutarse cuando preflight_checks_ok=True.,TC-FSM-001 — PREFLIGHT→AUTOTAXI con preflight_checks_ok.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-027,La transición AUTOTAXI→TAKEOFF SHALL ejecutarse cuando at_runway_threshold=True (posición en punto de despegue).,TC-FSM-002 — AUTOTAXI→TAKEOFF.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-028,La transición TAKEOFF→CRUISE SHALL ejecutarse cuando airborne_and_stable=True (altitud de crucero alcanzada y vehículo estabilizado).,TC-FSM-003 — TAKEOFF→CRUISE.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-029,CRUISE→EVENT SHALL ejecutarse cuando quality_degraded=True y ningun trigger de mayor prioridad (abort/fdir) esté activo.,TC-FSM-004 — quality_degraded→EVENT.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-030,CRUISE→EVENT SHALL ejecutarse cuando daidalus_escalated=True y ningún trigger de mayor prioridad esté activo.,TC-DAI-002 — daidalus_escalated→EVENT.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m5_daidalus/test_daidalus_alerts.py,PASS
+FSM,FSM-031,"CRUISE→ABORT SHALL ejecutarse cuando abort_command=True con máxima prioridad, antes de cualquier otra transición.",TC-FSM-007 — abort_command→ABORT desde CRUISE.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-032,"CRUISE→ABORT SHALL ejecutarse directamente cuando fdir_emergency=True, sin transicionar a EVENT como paso intermedio.",TC-FSM-008 — fdir_emergency→ABORT directo. PASS.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-033,CRUISE→RTB SHALL ejecutarse cuando rtb_command=True y no haya triggers de mayor prioridad activos.,TC-FSM-006 — rtb_command→RTB.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-034,CRUISE→LANDING SHALL ejecutarse cuando mission_complete=True y no haya triggers de mayor prioridad.,TC-E2E-001 — mission_complete→LANDING.,src/mission_fsm/config/mission_fsm.yaml,,PASS
+FSM,FSM-035,EVENT→CRUISE SHALL ejecutarse cuando tanto quality_degraded como daidalus_escalated son False (evento resuelto).,TC-E2E-006 — resolución DAA→retorno CRUISE.,src/mission_fsm/config/mission_fsm.yaml,,PASS
+FSM,FSM-036,"EVENT→ABORT SHALL ejecutarse cuando fdir_emergency=True o abort_command=True, con la misma prioridad máxima que desde CRUISE.",TC-FSM-013 — abort desde EVENT.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-037,EVENT→RTB SHALL ejecutarse por rtb_command=True o battery_critical=True.,TC-FAULT-005 — XFAIL. battery_critical no implementado. Transición LANDING → GO_AROUND por,,src/mission_fsm/test/m10_e2e_faults/test_e2e_faults.py,GAP (ARCH-1.6)
+FSM,FSM-038,LANDING→GO_AROUND SHALL ejecutarse cuando approach_not_stabilized=True.,TC-E2E-005 — approach_not_stabilized→GO_AROUND.,src/mission_fsm/config/mission_fsm.yaml,,PASS
+FSM,FSM-039,LANDING→ABORT SHALL tener la misma prioridad máxima que en cualquier otro estado.,TC-FSM-014 — abort desde LANDING.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-040,GO_AROUND→LANDING SHALL ejecutarse cuando la maniobra de go-around se complete y go_around_count < go_around_max_attempts.,TC-E2E-005 — go_around completo→LANDING.,src/mission_fsm/config/mission_fsm.yaml,,PASS
+FSM,FSM-041,GO_AROUND→RTB SHALL ejecutarse cuando go_around_count >= go_around_max_attempts.,TC-E2E-005 — go_around_count=max→RTB.,src/mission_fsm/config/mission_fsm.yaml,,PARTIAL
+FSM,FSM-042,RTB→LANDING SHALL ejecutarse cuando home_reached=True (posición sobre el punto de retorno).,TC-E2E-003 — home_reached→LANDING.,src/mission_fsm/config/mission_fsm.yaml,,PASS
+FSM,FSM-043,RTB→ABORT SHALL ejecutarse cuando fdir_emergency=True durante el RTB.,TC-FSM-016 — fdir durante RTB→ABORT.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-044,Ningún átomo SHALL causar transición fuera de ABORT. Solo reset() o reinicio del nodo.,TC-FAULT-011 — publicar cualquier átomo en ABORT no produce transición.,fsm.py,src/mission_fsm/test/m10_e2e_faults/test_e2e_faults.py,PASS
+FSM,FSM-045,"El orden de evaluación de transiciones desde CRUISE SHALL ser: (1) abort_command|fdir_emergency → ABORT, (2) daidalus_escalated|quality_degraded → EVENT, (3) rtb_command|battery_critical → RTB, (4) mission_complete → LANDING.",TC-FSM-011 — ABORT y EVENT simultáneos: ABORT gana. TC-FSM-012 — EVENT y RTB: EVENT gana.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-046,"Los estados TAKEOFF, CRUISE, EVENT, LANDING, GO_AROUND, RTB SHALL tener transición a ABORT con prioridad máxima.",Análisis estático YAML — todos los estados de vuelo contienen transición a ABORT como primera.,src/mission_fsm/config/mission_fsm.yaml,,PASS
+FSM,FSM-047,El FSM SHALL incrementar go_around_count cada vez que se entre en GO_AROUND. Se resetea con reset().,TC-E2E-005 — go_around_count incrementado.,fsm.py,,PASS
+FSM,FSM-048,"El límite de go-arounds SHALL ser configurable como parámetro ROS2 go_around_max_attempts (VTOL default 3, HELI default 5).","config/mission_fsm_vtol.yaml=3, config/mission_fsm_heli.yaml=5.",src/mission_fsm/config/mission_fsm.yaml,,PASS
+FSM,FSM-049,El YAML SHALL soportar el campo max_duration_sec por estado. El motor SHALL monitorizar el tiempo en el estado y ejecutar on_timeout si se supera.,ARCH-1.2 — timeouts no implementados. TC-TO-001..010 XFAIL.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m2_fsm_timeouts/test_fsm_timeouts.py,GAP
+FSM,FSM-050,"El estado TAKEOFF SHALL tener max_duration_sec configurable. Si se supera, SHALL transicionar a ABORT (configurado en on_timeout del YAML).",TC-TO-001 — XFAIL.,,src/mission_fsm/test/m2_fsm_timeouts/test_fsm_timeouts.py,GAP
+FSM,FSM-051,"LANDING SHALL tener max_duration_sec. Si se supera y go_around_count < max, SHALL ir a GO_AROUND; si se han agotado los intentos, SHALL ir a ABORT.",TC-TO-002 — XFAIL.,,src/mission_fsm/test/m2_fsm_timeouts/test_fsm_timeouts.py,GAP
+FSM,FSM-052,GO_AROUND SHALL tener max_duration_sec. Si se supera SHALL ir a RTB.,TC-TO-004 — XFAIL. ARCH-1.5.,,src/mission_fsm/test/m2_fsm_timeouts/test_fsm_timeouts.py,GAP
+FSM,FSM-053,RTB SHALL tener max_duration_sec. Si se supera SHALL ir a ABORT.,TC-TO-005 — XFAIL.,,src/mission_fsm/test/m2_fsm_timeouts/test_fsm_timeouts.py,GAP
+FSM,FSM-054,"El contador de tiempo SHALL resetearse a cero cada vez que se entre en un estado, incluyendo reentradas al mismo estado.",fsm.py — state_entry_time reseteado en _do_transition().,fsm.py,,GAP
+FSM,FSM-055,La frecuencia de evaluación SHALL ser configurable vía parámetro tick_hz.,TC-MW-006 — parámetro tick_hz.,mission_fsm_node.py,src/mission_fsm/test/m8_middleware/test_ros2_middleware.py,PASS
+FSM,FSM-056,El método step() SHALL completar en menos de 1/tick_hz para no bloquear el timer.,TC-PERF-004 — latencia step() < 2ms a 10Hz.,fsm.py,src/mission_fsm/test/m11_performance/test_performance.py,PASS
+FSM,FSM-057,El tiempo de ejecución de step() SHALL ser < 2ms en hardware de referencia (Jetson Orin / Intel NUC).,TC-PERF-004 — medición con timeit.,test/test_m11_performance.py,src/mission_fsm/test/m11_performance/test_performance.py,PASS
+FSM,FSM-058,Las condiciones basadas en quality_flag y daidalus_alert_level SHALL implementar histéresis: el umbral de activación es mayor que el de desactivación.,TC-FSM-023 — XFAIL. ARCH-1.1. Publicación ROS2 y campos de FSMState Publicación de FSMState en /fsm/state con QoS RELIABLE +,,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,GAP
+FSM,FSM-059,El nodo SHALL publicar flightmind_msgs/FSMState con reliability=RELIABLE y durability=TRANSIENT_LOCAL.,TC-MW-002 — análisis QoS. TC-MW-004 — suscripción tardía.,mission_fsm_node.py,src/mission_fsm/test/m8_middleware/test_ros2_middleware.py,PASS
+FSM,FSM-060,"FSMState SHALL publicarse síncronamente en el mismo ciclo en que ocurre la transición, no en el siguiente tick.",fsm.py — _do_transition() publica FSMState inmediatamente.,fsm.py,,PASS
+FSM,FSM-061,FSMState.state SHALL contener el nombre exacto del estado actual como string.,flightmind_msgs/FSMState.msg,src/flightmind_msgs/msg/FSMState.msg,,PASS
+FSM,FSM-062,FSMState.active_trigger SHALL contener el nombre del átomo o condición que causó la última transición.,flightmind_msgs/FSMState.msg,src/flightmind_msgs/msg/FSMState.msg,,PASS
+FSM,FSM-063,"FSMState.event_substate SHALL indicar la causa del EVENT: vacío si no está en EVENT, SENSOR_DEGRADED si fue por quality_degraded, TRAFFIC_CONFLICT si fue por daidalus_escalated.",TC-FSM-021 — event_substate verificado. XFAIL actualmente. ARCH-1.3.,src/flightmind_msgs/msg/FSMState.msg,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,GAP
+FSM,FSM-064,FSMState.go_around_count SHALL contener el número de go-arounds desde el inicio.,flightmind_msgs/FSMState.msg,src/flightmind_msgs/msg/FSMState.msg,,PASS
+FSM,FSM-065,"FSMState.tick_count SHALL incrementarse en cada step(), independientemente de si hubo transición.",flightmind_msgs/FSMState.msg,src/flightmind_msgs/msg/FSMState.msg,,PASS
+FSM,FSM-066,FSMState.stamp SHALL contener el timestamp del momento exacto de publicación.,flightmind_msgs/FSMState.msg,src/flightmind_msgs/msg/FSMState.msg,,PASS
+FSM,FSM-067,Los topics std_msgs/String /fsm/current_mode y /fsm/active_trigger SHALL mantenerse para compatibilidad con herramientas existentes.,TC-MW verifican ambos topics.,mission_fsm_node.py,,PASS
+FSM,FSM-068,El estado inicial del FSM SHALL ser configurable como parámetro ROS2 initial_state (default: PREFLIGHT).,TC-MW-006 — initial_state=CRUISE. Mocks M1.,mission_fsm_node.py,src/mission_fsm/test/m8_middleware/test_ros2_middleware.py,PASS
+FSM,FSM-069,El nodo SHALL publicar el primer FSMState en menos de 2s desde el lanzamiento.,TC-MW-001 — primer FSMState < 2s. CUBIERTO.,test/test_m8_middleware.py,src/mission_fsm/test/m8_middleware/test_ros2_middleware.py,PASS
+FSM,FSM-070,"reset() SHALL: (1) volver a initial_state, (2) limpiar todos los átomos a False/0, (3) resetear go_around_count y tick_count, (4) publicar FSMState actualizado.",TC-FSM-017 — reset() verificado.,src/mission_fsm/mission_fsm/fsm.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-071,reset() SHALL lanzar StateError si se llama desde cualquier estado que no sea ABORT o PREFLIGHT.,fsm.py — reset() guard condition.,src/mission_fsm/mission_fsm/fsm.py,,GAP
+FSM,FSM-072,"SHALL existir al menos: mission_fsm_vtol.yaml, mission_fsm_heli.yaml, mission_fsm_male.yaml con parámetros diferenciados.",TC-MW-007 — 3 YAMLs con parámetros distintos.,src/mission_fsm/config/mission_fsm.yaml,src/mission_fsm/test/m8_middleware/test_ros2_middleware.py,PASS
+FSM,FSM-073,mission_fsm_vtol.yaml SHALL incluir go_around_max_attempts=3 y takeoff_timeout_s=60.,config/mission_fsm_vtol.yaml.,src/mission_fsm/config/mission_fsm.yaml,,PASS
+FSM,FSM-074,mission_fsm_heli.yaml SHALL incluir go_around_max_attempts=5.,config/mission_fsm_heli.yaml.,src/mission_fsm/config/mission_fsm.yaml,,PASS
+FSM,FSM-075,mission_fsm_male.yaml SHALL incluir c2_timeout_sec=30 y bvlos_mode=true.,config/mission_fsm_male.yaml.,src/mission_fsm/config/mission_fsm.yaml,,PASS
+FSM,FSM-076,"El FSM SHALL registrar en ROS2 log (INFO) cada transición con: timestamp, from_state, to_state, trigger.",fsm.py — _do_transition() logging.,fsm.py,,PASS
+FSM,FSM-077,El FSM SHALL registrar a nivel DEBUG cada vez que un átomo cambia de valor.,fsm.py — atom setter con logging.debug.,src/mission_fsm/mission_fsm/fsm.py,,PARTIAL
+FSM,FSM-078,"fsm.to_dict() SHALL retornar un dict JSON-serializable con: state, atoms (dict), active_trigger, event_substate, go_around_count, tick_count.",TC-FSM-022 — json.dumps(fsm.to_dict()) sin excepción.,src/mission_fsm/mission_fsm/fsm.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-079,"to_dict()[""atoms""] SHALL contener un dict con todos los átomos declarados y sus valores actuales.",TC-FSM-022 — atoms en to_dict().,src/mission_fsm/mission_fsm/fsm.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-080,El módulo fsm.py SHALL alcanzar 100% de branch coverage.,"pytest --cov: 113 stmts, 60 branches, 0 miss = 100%.",src/mission_fsm/test/,,PASS
+FSM,FSM-081,SHALL existir al menos un TC que verifique cada transición definida en el YAML.,TC-FSM-001..022 — cobertura de transiciones. VV_MATRIX.md.,docs/vnv/VV_MATRIX.md,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-082,SHALL existir TCs que inyecten dos triggers simultáneos en cada estado crítico.,"TC-FSM-011, TC-FSM-012.",test/test_m1_fsm_transitions.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+FSM,FSM-083,Cada test XFAIL SHALL referenciar el gap ARCH-X.X en su docstring.,XFAIL_INDEX.md.,src/mission_fsm/docs/vnv/XFAIL_INDEX.md,,PASS
+FSM,FSM-084,El plan V&V; SHALL incluir una matriz SR→TC donde cada requisito tiene al menos un TC.,docs/vnv/VV_MATRIX.md.,src/mission_fsm/docs/vnv/VV_MATRIX.md,,PASS
+TEST,GCS-001,"La GCS SHALL mostrar estado FSM, trigger activo y event_substate con latencia < 500ms.",testbench FsmGraphPanel.,testbench/js/panels/FsmGraphPanel.js,,PASS
+TEST,GCS-002,El grafo FSM SHALL mostrarse con estado activo diferenciado.,testbench FsmGraphPanel — canvas.,testbench/js/panels/FsmGraphPanel.js,,PASS
+TEST,GCS-003,El nombre del átomo que causó la última transición SHALL mostrarse.,testbench FsmGraphPanel — trigger label.,testbench/js/panels/FsmGraphPanel.js,,PASS
+GCS,GCS-004,SENSOR_DEGRADED o TRAFFIC_CONFLICT SHALL mostrarse.,testbench FsmGraphPanel — substate.,,,PARTIAL
+GCS,GCS-005,La GCS SHALL mostrar el historial reciente.,testbench FsmGraphPanel — history list.,,,PARTIAL
+GCS,GCS-006,El contador SHALL mostrarse de forma prominente.,"testbench FsmGraphPanel. Mapa de misión 2D : GCS INTERFACE Mapa 2D con posición UAS, ruta planificada, waypoints",,,PARTIAL
+TEST,GCS-007,"La GCS SHALL mostrar posición UAS, ruta y waypoints.",testbench MapPanel.,testbench/js/panels/MapPanel.js,,PASS
+TEST,GCS-008,Las NFZ SHALL mostrarse como polígonos semitransparentes.,testbench MapPanel — NFZ overlay.,testbench/js/panels/MapPanel.js,,PASS
+TEST,GCS-009,El mapa SHALL mostrar el trail del UAS.,testbench MapPanel — trail.,testbench/js/panels/MapPanel.js,,PASS
+GCS,GCS-010,El icono SHALL rotar según el heading actual.,testbench MapPanel — heading rotation.,,,PARTIAL
+GCS,GCS-011,Los intrusos SHALL mostrarse en el mapa.,testbench MapPanel — traffic overlay.,,,GAP
+GCS,GCS-012,El operador SHALL poder ajustar la escala y centrar en el UAS.,testbench MapPanel — zoom. Alertas y notificaciones : GCS INTERFACE,,,PARTIAL
+TEST,GCS-013,"Al transicionar a EVENT, SHALL mostrarse banner con causa.",testbench WatchdogPanel — EVENT banner.,testbench/js/panels/WatchdogPanel.js,,PASS
+TEST,GCS-014,"Al transicionar a RTB, SHALL mostrarse banner naranja.",testbench WatchdogPanel — RTB banner.,testbench/js/panels/WatchdogPanel.js,,PASS
+TEST,GCS-015,"Al transicionar a ABORT, SHALL mostrarse banner rojo parpadeante.",testbench WatchdogPanel — ABORT banner.,testbench/js/panels/WatchdogPanel.js,,PASS
+TEST,GCS-016,"NONE=verde, FAR=amarillo, MID=naranja, NEAR=rojo.",testbench — daidalus indicator.,testbench/index.html,,PASS
+TEST,GCS-017,fdir_emergency SHALL mostrarse con indicador rojo parpadeante.,testbench WatchdogPanel.,testbench/js/panels/WatchdogPanel.js,,PASS
+TEST,GCS-018,La GCS SHALL mostrar display PPI con sectores rojos/verdes e intruso.,testbench RadarPanel.,testbench/js/panels/RadarPanel.js,,PASS
+GCS,GCS-019,min_horizontal_dist_m y time_to_violation_s SHALL mostrarse.,testbench RadarPanel — threat metrics.,,,PARTIAL
+GCS,GCS-020,El heading de recuperación SHALL marcarse en el PPI.,"testbench RadarPanel — recovery heading. Señales, watchdog y control",,,PARTIAL
+TEST,GCS-021,"quality_flag, daidalus_alert_level, battery_remaining, fdir_emergency, FSM state.",testbench — signals panel.,testbench/index.html,,PASS
+TEST,GCS-022,La GCS SHALL mostrar estado de cada nodo crítico.,testbench WatchdogPanel — node cards.,testbench/js/panels/WatchdogPanel.js,,PASS
+TEST,GCS-023,La GCS SHALL mostrar RAM por proceso y latencias.,testbench MemoryPanel.,testbench/js/panels/MemoryPanel.js,,PASS
+GCS,GCS-024,Un botón de ABORT SHALL estar siempre presente.,testbench — abort button. : GCS INTERFACE,,,PARTIAL
+TEST,GCS-025,La GCS SHALL permitir publicar manualmente cualquier átomo.,testbench/js/tc_runner.js.,testbench/js/tc_runner.js,,PASS
+TEST,GCS-026,"La GCS SHALL mostrar log con timestamp, tipo y descripción.",testbench — event log.,testbench/index.html,,PASS
+GPP,GPP-001,El planificador SHALL usar Informed-RRT* (Gammell et al. 2014) para búsqueda de ruta en el espacio de configuración 3D.,src/gpp/gpp/rrt_star.py,src/gpp/gpp/rrt_star.py,,PASS
+GPP,GPP-002,"Una vez encontrada la primera solución, el muestreo SHALL restringirse al elipsoide prolate que contiene todas las soluciones mejores que la actual.",src/gpp/gpp/rrt_star.py — _sample_informed().,src/gpp/gpp/rrt_star.py,,PARTIAL
+GPP,GPP-003,"La conexión entre waypoints SHALL usar curvas Dubins (RSR, LSL, RSL, LSR, RLR, LRL) seleccionando el tipo de menor longitud.",src/gpp/gpp/dubins.py,src/gpp/gpp/dubins.py,,PASS
+GPP,GPP-004,El radio mínimo de giro en Dubins SHALL leerse de VehicleModelState.turn_radius_min_m en cada planificación.,gpp_node.py — query Vehicle Model.,src/gpp/gpp/dubins.py,,PARTIAL
+GPP,GPP-005,"De los 6 tipos Dubins posibles, SHALL seleccionarse el que produce la curva de menor longitud total.",src/gpp/gpp/dubins.py — all_paths() + argmin.,src/gpp/gpp/dubins.py,,PASS
+GPP,GPP-006,El número máximo de iteraciones RRT* SHALL ser configurable.,config/gpp_params.yaml — max_iter.,src/gpp/config/gpp_params.yaml,,PARTIAL
+GPP,GPP-007,La longitud del paso de expansión RRT* SHALL ser configurable.,config/gpp_params.yaml — step_size.,src/gpp/config/gpp_params.yaml,,PARTIAL
+GPP,GPP-008,El radio de búsqueda de vecinos para rewiring SHALL ser configurable.,config/gpp_params.yaml — neighbor_radius.,src/gpp/config/gpp_params.yaml,,PARTIAL
+GPP,GPP-009,Cualquier ruta que intersecte una NFZ SHALL rechazarse. Las NFZ son restricciones absolutas.,TC-NAV-004 — waypoint en NFZ rechazado.,src/gpp/gpp/rrt_star.py,src/mission_fsm/test/m7_nav2/test_nav2_interface.py,PARTIAL (ARCH-NAV)
+GPP,GPP-010,"La verificación de colisión SHALL muestrear cada segmento con steps = max(24, int(length_m / 5.0)) puntos.",Fix GPP-G02 aplicado. TC-NAV-004.,src/gpp/gpp/rrt_star.py,src/mission_fsm/test/m7_nav2/test_nav2_interface.py,PARTIAL (ARCH-NAV)
+GPP,GPP-011,El planificador SHALL suscribirse a /airspace/status y actualizar su lista de NFZ en cada mensaje recibido.,gpp_node.py — /airspace/status subscriber.,src/gpp/gpp/gpp_node.py,,PARTIAL
+GPP,GPP-012,El planificador SHALL aplicar un margen de nfz_margin_m alrededor de cada NFZ antes de la verificación de colisión.,config/gpp_params.yaml — nfz_margin_m.,,,PARTIAL
+GPP,GPP-013,La verificación de colisión SHALL considerar las altitudes alt_min_m y alt_max_m de cada NFZ. Una ruta que pasa por encima/debajo de la zona es válida.,"gpp_node.py — 3D NFZ check. Bounds del espacio de búsqueda: min(start,goal),",,,GAP
+GPP,GPP-014,"Los límites del espacio de búsqueda SHALL calcularse como min(start,goal) y max(start,goal) en cada dimensión, más un margen de search_margin_m.",Fix GPP-G05 aplicado.,src/gpp/gpp/rrt_star.py,,PASS
+GPP,GPP-015,Los bounds SHALL expandirse en search_margin_m en todas las dimensiones para permitir rodeos alrededor de NFZ.,config/gpp_params.yaml — search_margin_m. : GLOBAL PATH PLANNER,,,PARTIAL
+GPP,GPP-016,"Si RRT* no converge, el fallback SHALL verificar que la ruta Dubins directa es libre de NFZ. Si no lo es, retornar None.",Fix GPP-G03 aplicado.,src/gpp/gpp/rrt_star.py,,PASS
+GPP,GPP-017,"Si ni RRT* ni el fallback Dubins encuentran ruta libre de NFZ, SHALL retornarse None y publicarse un error explícito.",gpp_node.py — None return + /gpp/error topic.,,,PARTIAL
+GPP,GPP-018,Todos los waypoints SHALL tener altitud >= terrain_agl_floor_m sobre el terreno en esa posición.,gpp_node.py — AGL floor check. Restricciones cinemáticas y altitudinales,,,GAP
+GPP,GPP-018,Todos los waypoints SHALL tener altitud >= terrain_agl_floor_m sobre el terreno en esa posición.,gpp_node.py — AGL floor check.,,,GAP
+GPP,GPP-019,Ningún waypoint SHALL superar la altitud máxima de espacio aéreo autorizado.,gpp_node.py — ceiling check.,,,GAP
+GPP,GPP-020,"Las velocidades de crucero de la ruta SHALL estar dentro del rango [v_min, v_max] del Vehicle Model activo.",gpp_node.py — velocity bounds check. : GLOBAL PATH PLANNER,,,GAP
+GPP,GPP-021,Los segmentos de ascenso SHALL tener climb_rate <= vehicle_model.climb_rate_max_mps.,gpp_node.py — climb rate check.,,,GAP
+GPP,GPP-022,Los segmentos de descenso SHALL tener descent_rate <= vehicle_model.descent_rate_max_mps.,gpp_node.py — descent rate check. Rendimiento y función de coste Tiempo de planificación < 2s para rutas de hasta 10km con 5,,,GAP
+GPP,GPP-023,El tiempo de planificación SHALL ser < 2s en hardware de referencia.,TC-PERF-007.,test/test_m11_performance.py,src/mission_fsm/test/m11_performance/test_performance.py,PARTIAL
+GPP,GPP-024,"Para rutas cortas (hasta 2km), el tiempo SHALL ser < 500ms.",TC-PERF-007b — ruta 2km.,,src/mission_fsm/test/m11_performance/test_performance.py,GAP
+GPP,GPP-025,La función de coste SHALL ser la longitud total de la ruta Dubins resultante.,src/gpp/gpp/rrt_star.py — cost = dubins_length.,src/gpp/gpp/rrt_star.py,,PASS
+GPP,GPP-026,El planificador SHOULD soportar una capa de coste de densidad de población para rutas de menor riesgo sobre el suelo.,Pendiente para fase post-demo. Interfaz ROS2 : GLOBAL PATH PLANNER,,,GAP
+GPP,GPP-027,El planificador SHALL aceptar start_pose y goal_pose como geometry_msgs/PoseStamped en frame NED.,gpp_node.py — service request.,,,PARTIAL
+GPP,GPP-028,El nodo SHALL exponer el servicio /gpp/plan que recibe start+goal+NFZ y retorna la ruta.,gpp_node.py — /gpp/plan service.,,,GAP
+GPP,GPP-029,La ruta planificada SHALL publicarse en /gpp/path como nav_msgs/Path con waypoints en NED.,gpp_node.py — /gpp/path publisher.,src/gpp/gpp/gpp_node.py,,PARTIAL
+GPP,GPP-030,Cada PoseStamped en la ruta SHALL indicar en header.frame_id el tipo de waypoint: MISSION / DAA_AVOIDANCE / NFZ_AVOIDANCE / LZ_CONTINGENCY.,gpp_node.py — waypoint_type metadata.,,,GAP
+GPP,GPP-031,SHALL existir el servicio /gpp/replan para replanificación dinámica ante NFZ añadidas.,gpp_node.py — /gpp/replan service.,,,GAP
+GPP,GPP-032,"Si no se encuentra ruta, SHALL publicarse un mensaje de error en /gpp/error con la causa (NFZ_BLOCKING / NO_CONVERGENCE / KINEMATIC_INFEASIBLE).",gpp_node.py — /gpp/error publisher. Contingencias y LZ de emergencia : GLOBAL PATH PLANNER,,,GAP
+GPP,GPP-033,El planificador SHALL cargar una lista de LZ de contingencia desde config/contingency_lz.yaml.,config/contingency_lz.yaml.,,,GAP
+GPP,GPP-034,"Ante battery_critical, el planificador SHALL calcular ruta a la LZ más cercana en < 500ms.",gpp_node.py — emergency_lz_planning(). Alcanzabilidad de LZ verificada con energy_model (batería,,,GAP
+GPP,GPP-035,Una LZ SHALL considerarse alcanzable solo si la energía restante es suficiente para completar la ruta más el margen de aterrizaje.,gpp_node.py — energy_feasibility_check(). Verificación,,,GAP
+GPP,GPP-036,SHALL existir TCs que verifiquen que ningún punto de la ruta generada intersecta una NFZ.,TC-NAV-004 — CUBIERTO.,test/test_m7_nav2.py,src/mission_fsm/test/m7_nav2/test_nav2_interface.py,PARTIAL (ARCH-NAV)
+GPP,GPP-037,SHALL existir TC que verifique que el fallback retorna None cuando la ruta directa pasa por NFZ.,TC-GPP-003 — fix GPP-G03 verificado.,test/,,PASS
+GPP,GPP-038,SHALL existir TC que planifique con start en coordenadas positivas respecto a goal.,TC-GPP-002 — fix GPP-G05 verificado.,test/,,PASS
+GPP,GPP-039,SHALL existir TC que mida el tiempo de planificación y falle si > 2s.,TC-PERF-007.,test/test_m11_performance.py,src/mission_fsm/test/m11_performance/test_performance.py,PARTIAL
+NAV,NAV-001,navigation_bridge_node SHALL publicar NavigationState a 50 Hz con QoS RELIABLE+TRANSIENT_LOCAL.,TC-MW-001.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,src/mission_fsm/test/m8_middleware/test_ros2_middleware.py,PASS
+NAV,NAV-002,El tiempo desde recepción del mensaje PX4 hasta publicación SHALL ser < 5ms.,TC-MW benchmark.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,,PASS
+NAV,NAV-003,"Si vehicle_odometry no llega en odom_timeout_s, quality_flag SHALL forzarse a 0.0.",TC-LOC-001.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,src/mission_fsm/test/m4_localization/test_localization_interface.py,PASS
+NAV,NAV-004,El timeout SHALL ser configurable vía declare_parameter.,declare_parameter odom_timeout_s.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,,PASS
+NAV,NAV-005,quality_flag SHALL calcularse con tres tramos de covarianza.,TC-LOC-001/002.,navigation_bridge_node.py,src/mission_fsm/test/m4_localization/test_localization_interface.py,PASS
+NAV,NAV-006,El umbral que separa quality_flag 0.7/1.0 SHALL ser configurable.,declare_parameter covariance_med.,,,GAP
+NAV,NAV-007,El umbral que separa quality_flag 0.3/0.7 SHALL ser configurable.,declare_parameter covariance_high. quality_flag publicado también en /nav/quality_flag,,,GAP
+NAV,NAV-008,quality_flag SHALL publicarse en topic separado para el FSM.,navigation_bridge_node.py — dual publisher.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,,PASS
+NAV,NAV-009,gnss_available SHALL derivarse automáticamente.,navigation_bridge_node.py.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,,PASS
+NAV,NAV-010,Saltos de posición entre ticks > umbral SHALL forzar quality_flag=0.0.,TC-LOC-003 — XFAIL. ARCH-1.8.,,src/mission_fsm/test/m4_localization/test_localization_interface.py,GAP (ARCH-1.8)
+NAV,NAV-011,El umbral de detección de jump SHALL ser configurable.,declare_parameter pose_jump_threshold_m.,,,GAP
+NAV,NAV-012,Un jump SHALL registrarse como WARNING con ambas posiciones.,navigation_bridge_node.py — pose_jump_logger. Campos de NavigationState : NAVIGATION BRIDGE,,,GAP
+NAV,NAV-013,position_ned SHALL contener posición NED en metros.,navigation_bridge_node.py.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,,PASS
+NAV,NAV-014,velocity_ned SHALL contener velocidad NED en m/s.,navigation_bridge_node.py.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,,PASS
+NAV,NAV-015,Orientación como quaternion convención ROS2.,navigation_bridge_node.py.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,,PASS
+NAV,NAV-016,heading_rad SHALL incluirse en NavigationState.,navigation_bridge_node.py — heading_rad.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,,PASS
+NAV,NAV-017,Matriz 6×6 aplanada en NavigationState.,navigation_bridge_node.py.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,,PARTIAL
+NAV,NAV-018,stamp SHALL ser el tiempo de medición del sensor.,navigation_bridge_node.py.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,,PASS
+NAV,NAV-019,NavigationState SHALL incluir battery_remaining_pct (0.0-1.0).,navigation_bridge_node.py — battery_status subscriber. fuel_consumed_wh: integral del consumo desde inicio de,,,GAP
+NAV,NAV-020,fuel_consumed_wh SHALL acumularse desde mission_start.,navigation_bridge_node.py — energy_integrator. Interfaz PX4 y fuentes alternativas,,,GAP
+NAV,NAV-021,El nodo SHALL suscribirse al topic PX4 vía uXRCE-DDS.,navigation_bridge_node.py.,src/navigation_bridge/navigation_bridge/navigation_bridge_node.py,,PASS
+NAV,NAV-022,El nodo SHALL suscribirse para extraer num_satellites y hdop.,navigation_bridge_node.py — gps_position subscriber.,,,GAP
+NAV,NAV-023,El nodo SHALL suscribirse a /fmu/out/battery_status.,navigation_bridge_node.py — battery_status.,,,GAP
+NAV,NAV-024,odom_source=FAST_LIO2 SHALL poder seleccionarse por parámetro.,declare_parameter odom_source. Ciclo de vida : NAVIGATION BRIDGE,,,PARTIAL
+NAV,NAV-025,El primer mensaje SHALL publicarse en < 2s.,TC-MW-001.,test/test_m8_middleware.py,src/mission_fsm/test/m8_middleware/test_ros2_middleware.py,PASS
+NAV,NAV-026,"Desde el arranque hasta la primera odometría, quality_flag SHALL ser 0.0.",navigation_bridge_node.py — initial_state.,,,GAP
+REPL,REPL-001,El replanner SHALL activarse al recibir daidalus_alert_level >= 2.,local_replanner_node.py — daa_trigger.,,,GAP
+REPL,REPL-002,El replanner SHALL activarse al recibir violation_imminent=True.,local_replanner_node.py — geofence_trigger.,,,GAP
+REPL,REPL-003,El replanner SHALL activarse cuando un sensor detecte un obstáculo no en el mapa NFZ.,local_replanner_node.py — obstacle_trigger.,,,GAP
+REPL,REPL-004,El replanner SHALL activarse por comando del operador.,local_replanner_node.py — operator_cmd.,,,GAP
+REPL,REPL-005,"Si el trigger deja de ser activo antes de publicar la ruta, SHALL cancelarse.",local_replanner_node.py — trigger_cancel. Algoritmo RRT* local y coste DAA,,,GAP
+REPL,REPL-006,El algoritmo SHALL limitarse a una ventana espacial.,local_replanner — spatial window.,,,GAP
+REPL,REPL-007,La ventana SHALL ser configurable.,declare_parameter replan_window_m. : LOCAL REPLANNER,,,GAP
+REPL,REPL-008,El número máximo de iteraciones SHALL ser configurable.,declare_parameter max_iter_local. Función de coste: longitud + penalización por bandas,,,GAP
+REPL,REPL-009,La función de coste SHALL incluir término de bandas DAA.,local_replanner — daa_cost_term.,,,GAP
+REPL,REPL-010,El peso del término DAA SHALL ser configurable.,declare_parameter daa_cost_weight. Seguridad y verificación,,,GAP
+REPL,REPL-011,Ninguna ruta SHALL publicarse si intersecta una NFZ.,local_replanner — PolyCARP check.,,,GAP
+REPL,REPL-012,Cada waypoint de la ruta SHALL verificarse con is_feasible().,local_replanner — is_feasible.,,,GAP
+REPL,REPL-013,"Si RRT* no converge, SHALL publicarse status=FAILED.","local_replanner — failure_handler. Publicación, rendimiento e integración : LOCAL REPLANNER",,,GAP
+REPL,REPL-014,La ruta SHALL publicarse en /local_replanner/path.,local_replanner_node.py — publisher. Estado en /local_replanner/status:,,,GAP
+REPL,REPL-015,El estado SHALL publicarse para coordinación con trajectory_gen.,local_replanner_node.py — status publisher.,,,GAP
+REPL,REPL-016,La ruta SHALL calcularse y publicarse en < 500ms.,local_replanner — benchmark.,,,GAP
+REPL,REPL-017,Si excede replan_timeout_s SHALL publicarse FAILED.,local_replanner — timeout guard. Prioridad de /local_replanner/path sobre /gpp/path en,,,GAP
+REPL,REPL-018,"Mientras status=ACTIVE, trajectory_gen SHALL usar la ruta del replanner.",trajectory_gen_node.py — route_source. Continuidad y logging Continuidad: retomar ruta GPP desde waypoint de mayor,,,GAP
+REPL,REPL-019,Al completar la maniobra SHALL calcularse retorno al waypoint más avanzado alcanzable.,"TC-E2E-006. : LOCAL REPLANNER Log de cada activación: trigger_type, calc_time_ms,",,,PARTIAL
+REPL,REPL-020,Cada activación SHALL registrarse.,local_replanner_node.py — activation_logger.,,,GAP
+TEST,TEST-001,El testbench SHALL conectarse al stack real. No SHALL usar mocks en modo integración.,testbench/js/ros_bridge.js.,testbench/js/ros_bridge.js,,PASS
+TEST,TEST-002,ros_bridge.js SHALL intentar reconexión automática cada 2s.,ros_bridge.js — auto-reconnect.,testbench/js/ros_bridge.js,,PASS
+TEST,TEST-003,La UI SHALL mostrar CONNECTED o DISCONNECTED.,testbench/index.html — connection indicator.,testbench/index.html,,PASS
+TEST,TEST-004,launch.sh SHALL arrancar rosbridge + mission_fsm_node automáticamente.,testbench/launch.sh — en depuración.,testbench/launch.sh,,PARTIAL
+TEST,TEST-005,El fix de COLCON_TRACE SHALL estar en launch.sh.,testbench/launch.sh.,testbench/launch.sh,,PARTIAL
+TEST,TEST-006,SHALL existir testbench.desktop.,testbench/testbench.desktop.,testbench/testbench.desktop,,PASS
+TEST,TEST-007,ram_monitor.py SHALL exponer JSON de RAM en :9091.,testbench/ram_monitor.py.,testbench/ram_monitor.py,,PASS
+TEST,TEST-008,Al seleccionar un TC SHALL montarse el panel apropiado según TC_PANEL_MAP.,testbench/js/app.js — TC_PANEL_MAP.,testbench/js/app.js,,PASS
+TEST,TEST-009,TC_PANEL_MAP SHALL tener entrada para cada TC.,testbench/js/app.js.,testbench/js/app.js,,PASS
+TEST,TEST-010,Al completar un TC SHALL mostrarse overlay con evidencia exacta.,testbench/js/tc_runner.js — BasePanel.onTCEnd().,testbench/js/tc_runner.js,,PASS
+TEST,TEST-011,M1 SHALL usar FsmGraphPanel.,TC_PANEL_MAP — M1 → FsmGraphPanel.,testbench/js/panels/FsmGraphPanel.js,,PASS
+TEST,TEST-012,M5 SHALL usar RadarPanel con PPI y bandas 360°.,TC_PANEL_MAP — M5 → RadarPanel.,testbench/js/panels/RadarPanel.js,,PASS
+TEST,TEST-013,M6 SHALL usar WatchdogPanel con tarjetas ALIVE/DEAD.,TC_PANEL_MAP — M6 → WatchdogPanel.,testbench/js/panels/WatchdogPanel.js,,PASS
+TEST,TEST-014,Los TCs de latencia SHALL usar LatencyPanel.,TC_PANEL_MAP — M8/M11 → LatencyPanel.,testbench/js/panels/LatencyPanel.js,,PASS
+TEST,TEST-015,TC-E2E-007 SHALL usar MemoryPanel con gráfico durante 5 misiones.,testbench MemoryPanel + ram_monitor.py.,testbench/js/panels/MemoryPanel.js,,PASS
+TEST,TEST-016,M7 y TCs de geofence SHALL usar MapPanel.,TC_PANEL_MAP — M7 → MapPanel.,testbench/js/panels/MapPanel.js,,PASS
+TEST,TEST-017,M9 y M10 SHALL usar E2EPanel con timeline de estados.,TC_PANEL_MAP — M9/M10 → E2EPanel.,testbench/js/panels/E2EPanel.js,,PASS
+TEST,TEST-018,El plan SIL V&V; SHALL cubrir M1-M11 con ≥ 148 TCs.,"148 TCs. 140 passed, 38 XFAIL, 0 failed.",src/mission_fsm/test/,,PASS
+TEST,TEST-019,M1 SHALL cubrir cada transición individual.,TC-FSM-001..022.,test/test_m1_fsm_transitions.py,src/mission_fsm/test/m1_fsm_transitions/test_fsm_transitions.py,PASS
+TEST,TEST-020,M2 SHALL intentar verificar cada timeout.,TC-TO-001..010.,test/test_m2_fsm_timeouts.py,src/mission_fsm/test/m2_fsm_timeouts/test_fsm_timeouts.py,PASS
+TEST,TEST-021,El módulo fsm.py SHALL alcanzar 100% de branch coverage.,"113 stmts, 60 branches, 0 miss = 100%.",src/mission_fsm/mission_fsm/fsm.py,,PASS
+TEST,TEST-022,Todos los tests SIL SHALL ser deterministas.,TC-E2E-010. CUBIERTO.,test/test_m9_e2e.py,,PASS
+TEST,TEST-023,El comando colcon test SHALL retornar 0 sin failures.,"140 passed, 38 xfailed, 0 failed → 0.",src/mission_fsm/test/,,PASS
+TEST,TEST-024,Cada XFAIL SHALL referenciar el gap arquitectural.,XFAIL_INDEX.md.,src/mission_fsm/docs/vnv/XFAIL_INDEX.md,,PASS
+TEST,TEST-025,SHALL existir matriz de trazabilidad SR→TC.,docs/vnv/VV_MATRIX.md.,src/mission_fsm/docs/vnv/VV_MATRIX.md,,PASS
+TEST,TEST-026,SHALL existir XFAIL_INDEX.md con cada ARCH-X.X.,XFAIL_INDEX.md.,src/mission_fsm/docs/vnv/XFAIL_INDEX.md,,PASS
+TEST,TEST-027,SHALL existir workflow CI que ejecute colcon test.,.github/workflows/ci.yml — pendiente.,.github/workflows/,,GAP
+TEST,TEST-028,El README SHALL mostrar el badge del workflow CI.,README.md — badge pendiente.,,,GAP
+TEST,TEST-029,SHALL existir simulator/index.html que demuestre FSM/DAA/GPP sin ROS2.,simulator/index.html.,simulator/index.html,,PASS
+TEST,TEST-030,El simulador SHALL incluir los 5 botones de escenario.,simulator/index.html — 5 buttons.,simulator/index.html,,PASS
+TEST,TEST-031,"El simulador SHALL mostrar NFZ, trail y estado FSM.",simulator/index.html.,simulator/index.html,,PASS
+TEST,TEST-032,"El criterio formal SHALL ser: 0 failures, XFAIL ≤ 15 todos con ARCH-X.X, coverage 100%.",Estado actual: 38 XFAIL (excede límite). Objetivo antes de HIL.,,,PARTIAL
+TRAJ,TRAJ-001,"El generador SHALL convertir nav_msgs/Path en trayectoria 3D con posición, velocidad y aceleración.",trajectory_gen_node.py,src/trajectory_gen/,,GAP
+TRAJ,TRAJ-002,Cada segmento SHALL generarse con la curva Dubins más corta.,trajectory_gen_node.py — dubins_segment().,,,GAP
+TRAJ,TRAJ-003,En modo NOMINAL SHALL usarse velocidad de crucero y jerk suave.,trajectory_gen_node.py — NOMINAL mode.,,,GAP
+TRAJ,TRAJ-004,En modo ALERT SHALL usarse v_max y mayor jerk.,trajectory_gen_node.py — ALERT mode. Transición automática a ALERT cuando,,,GAP
+TRAJ,TRAJ-005,Al recibir ACTIVE del replanner SHALL activarse modo ALERT.,trajectory_gen_node.py — mode_switch.,,,GAP
+TRAJ,TRAJ-006,Al recibir IDLE SHALL volver a modo NOMINAL.,trajectory_gen_node.py — mode_switch. Límites cinemáticos y publicación : TRAJECTORY GENERATOR,,,GAP
+TRAJ,TRAJ-007,Cada setpoint SHALL respetar el rango de velocidades del Vehicle Model.,trajectory_gen_node.py — velocity bounds.,,,GAP
+TRAJ,TRAJ-008,Las tasas verticales SHALL respetar los límites del Vehicle Model.,trajectory_gen_node.py — vertical rate bounds.,,,GAP
+TRAJ,TRAJ-009,Los setpoints SHALL publicarse a ≥ 50 Hz con RELIABLE.,trajectory_gen_node.py — 50 Hz timer. Fuente de ruta: /local_replanner/path tiene prioridad sobre,,,GAP
+TRAJ,TRAJ-010,"Cuando replanner ACTIVE, SHALL usarse /local_replanner/path.",trajectory_gen_node.py — source_selector. Lógica de waypoints,,,GAP
+TRAJ,TRAJ-011,Los waypoints SHALL seguirse en el orden de la ruta.,trajectory_gen_node.py — sequential_logic. Waypoint alcanzado cuando distancia < waypoint_radius_m,,,GAP
+TRAJ,TRAJ-012,El criterio de alcance SHALL ser distancia < umbral.,trajectory_gen_node.py — waypoint_completion.,,,GAP
+TRAJ,TRAJ-013,El radio SHALL ser configurable por tipo de waypoint.,trajectory_gen_node.py — waypoint_radius_by_type. : TRAJECTORY GENERATOR,,,GAP
+TRAJ,TRAJ-014,La velocidad SHALL reducirse suavemente al acercarse al waypoint.,trajectory_gen_node.py — velocity_profiling. Telemetría e integración con FSM,,,GAP
+TRAJ,TRAJ-015,"SHALL publicarse waypoint_index, distancia al siguiente y % de misión.",trajectory_gen_node.py — progress_publisher. mission_complete en /fsm/in/mission_complete al alcanzar,,,GAP
+TRAJ,TRAJ-016,SHALL publicarse mission_complete=True al finalizar.,trajectory_gen_node.py.,,,GAP
+TRAJ,TRAJ-017,SHALL publicarse True cuando UAS esté en el punto de despegue.,trajectory_gen_node.py.,,,GAP
+TRAJ,TRAJ-018,SHALL publicarse True cuando se alcance la altitud de crucero estabilizada.,trajectory_gen_node.py.,,,GAP
+TRAJ,TRAJ-019,SHALL publicarse True cuando UAS esté sobre el home point en RTB.,trajectory_gen_node.py.,,,GAP
+TRAJ,TRAJ-020,SHALL publicarse True si los criterios de estabilización de aproximación no se cumplen.,trajectory_gen_node.py.,,,GAP
+VM,VM-001,VehicleModelState SHALL incluir v_min_ms en m/s calculado para la masa actual.,VehicleModelState.msg,src/flightmind_msgs/msg/VehicleModelState.msg,,PARTIAL
+VM,VM-002,VehicleModelState SHALL incluir v_max_ms (Velocity Never Exceed).,VehicleModelState.msg,src/flightmind_msgs/msg/VehicleModelState.msg,,PARTIAL
+VM,VM-003,VehicleModelState SHALL incluir v_cruise_ms.,VehicleModelState.msg,src/flightmind_msgs/msg/VehicleModelState.msg,,PARTIAL
+VM,VM-004,VehicleModelState SHALL incluir turn_radius_min_m.,VehicleModelState.msg,src/flightmind_msgs/msg/VehicleModelState.msg,,PARTIAL
+VM,VM-005,VehicleModelState SHALL incluir turn_rate_max_degs.,VehicleModelState.msg,src/flightmind_msgs/msg/VehicleModelState.msg,,PARTIAL
+VM,VM-006,VehicleModelState SHALL incluir climb_rate_max_mps.,VehicleModelState.msg,src/flightmind_msgs/msg/VehicleModelState.msg,,PARTIAL
+VM,VM-007,VehicleModelState SHALL incluir descent_rate_max_mps.,VehicleModelState.msg,src/flightmind_msgs/msg/VehicleModelState.msg,,PARTIAL
+VM,VM-008,VehicleModelState SHALL incluir max_bank_angle_deg.,VehicleModelState.msg,src/flightmind_msgs/msg/VehicleModelState.msg,,PARTIAL
+VM,VM-009,VehicleModelState SHALL incluir glide_ratio.,VehicleModelState.msg,src/flightmind_msgs/msg/VehicleModelState.msg,,PARTIAL
+VM,VM-010,current_weight_kg SHALL actualizarse en tiempo real.,VehicleModelState.msg,src/flightmind_msgs/msg/VehicleModelState.msg,,PARTIAL
+VM,VM-011,VehicleModelState SHALL incluir max_payload_kg.,VehicleModelState.msg,,,PARTIAL
+VM,VM-012,SHALL incluirse la capacidad total de energía.,VehicleModelState.msg : VEHICLE MODEL,,,GAP
+VM,VM-013,VehicleModelState SHALL incluir el modelo de consumo por fase.,VehicleModelState.msg Configuración y validación,,,GAP
+VM,VM-014,Los parámetros SHALL cargarse desde YAML seleccionable en launch.,launch arg vehicle_type.,src/vehicle_model/config/,,PARTIAL
+VM,VM-015,El nodo SHALL verificar la consistencia de parámetros.,"vehicle_model_node.py — _validate_params(). Publicación de VehicleModelState a 10 Hz, QoS",,,GAP
+VM,VM-016,VehicleModelState SHALL publicarse a 10 Hz.,"vehicle_model_node.py — publisher. Interfaz is_feasible Servicio /vehicle_model/is_feasible: {turn_rate, climb_rate,",,,GAP
+VM,VM-017,SHALL existir servicio is_feasible.,vehicle_model_node.py — is_feasible service.,,,GAP
+VM,VM-018,is_feasible SHALL retornar False si |turn_rate| excede el máximo.,vehicle_model_node.py. : VEHICLE MODEL,,,GAP
+VM,VM-019,is_feasible SHALL retornar False si airspeed fuera del rango.,vehicle_model_node.py.,,,GAP
+VM,VM-020,is_feasible SHALL verificar las tasas verticales.,vehicle_model_node.py.,,,GAP
+VM,VM-021,reason SHALL indicar qué parámetro falló.,"vehicle_model_node.py. Dinámica, telemetría y VTOL",,,GAP
+VM,VM-022,v_min_ms SHOULD actualizarse en tiempo real con current_weight_kg.,vehicle_model_node.py — dynamic_v_min.,,,GAP
+VM,VM-023,VehicleModelState SHALL incluir flight_mode.,VehicleModelState.msg — flight_mode.,src/flightmind_msgs/msg/VehicleModelState.msg,,PARTIAL
+VM,VM-024,elapsed_mission_h SHALL incrementarse durante estados de vuelo activo.,vehicle_model_node.py — elapsed_timer.,,,GAP
+VM,VM-025,Para VTOL SHALL incluirse parámetros de transición.,config/vtol_params.yaml.,,,GAP

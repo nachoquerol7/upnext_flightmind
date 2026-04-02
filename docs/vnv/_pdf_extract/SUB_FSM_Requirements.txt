@@ -1,0 +1,1068 @@
+                          SUB-FSM
+                                 Mission FSM
+Motor de estados de misión — 9 estados, 17+ transiciones, multi-plataforma
+
+                         84 requisitos · v1.1 · 2026-04-01
+                      UpNext — Flightmind Autonomy Stack
+         DO-178C · ARP4754A §5.3 · UML 2.5 · EU 2019/947 · STANAG 4671
+
+
+                    CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      65   SHALL       82
+
+                                      PARCIAL                       3    SHOULD      2
+
+                                      XFAIL                         13   MAY         0
+
+                                      PENDIENTE                     3
+
+                                      N/A-DEMO                      0
+
+                                      TOTAL                         84
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Arquitectura y modelo HFSM                                          8
+
+                 2     Átomos builtin y de contingencia                                   17
+
+                 3     Transiciones individuales                                          19
+
+                 4     Prioridades y contadores                                            4
+
+                 5     Timeouts por estado                                                 6
+
+                 6     Timing y rendimiento                                                4
+
+                 7     Publicación ROS2 y campos de FSMState                               9
+
+                 8     Ciclo de vida del nodo                                              4
+
+                 9     Configuración multi-plataforma                                      4
+
+                10     Logging y observabilidad                                            4
+
+                11     Verificación y cobertura                                            5
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                        v1.1 · 2026-04-01
+
+
+
+
+          Arquitectura y modelo HFSM
+
+                             Máquina de estados jerárquica (HFSM) con subestados en
+         FSM-001                                                                                      SHALL          XFAIL
+                             EVENT
+
+         Descripción          El sistema SHALL implementar una HFSM donde EVENT contiene los subestados
+                              SENSOR_DEGRADED y TRAFFIC_CONFLICT, heredando todas las transiciones de seguridad
+                              del nivel raíz.
+         Fuentes              UML 2.5 StateMachine §14 · ARP4754A §5.3 · SCXML W3C
+         Fundamento           La HFSM permite diferenciar el comportamiento dentro de EVENT sin duplicar las transiciones
+                              de seguridad en cada subestado.
+         Verificación         TC-FSM-021 — event_substate verificado. Análisis estático fsm.py.
+         Traza impl.          fsm.py — MissionFsm, subestados en YAML
+
+         FSM-002             Grafo completamente definido en YAML externo                             SHALL       CUBIERTO
+
+         Descripción          El grafo FSM (estados, subestados, transiciones, condiciones de guarda, acciones de
+                              entrada/salida) SHALL estar íntegramente en un fichero YAML externo. Ningún estado ni
+                              transición SHALL estar hardcodeado en Python.
+         Fuentes              ARP4754A §5.3 · DO-178C §5.1
+         Fundamento           La separación configuración/lógica permite cambiar el comportamiento sin recompilar y facilita la
+                              auditoría por el verificador.
+         Verificación         TC-FSM-018 — carga YAML sin excepción. TC-FSM-019 — YAML inválido lanza
+                              ValidationError.
+         Traza impl.          config/mission_fsm.yaml
+
+         FSM-003             Validación del esquema YAML al arranque del nodo                         SHALL       CUBIERTO
+
+         Descripción          Al cargar el YAML, el nodo SHALL verificar: (a) estados referenciados en transiciones existen,
+                              (b) condiciones usan átomos declarados, (c) no hay estados huérfanos sin transición de entrada.
+         Fuentes              DO-178C §5.1 · ARP4754A
+         Fundamento           Un YAML con referencias rotas fallará silenciosamente en tiempo de ejecución. La validación en
+                              arranque detecta errores de configuración antes del vuelo.
+         Verificación         TC-FSM-019 — YAML con estado inexistente en transición lanza ValidationError al startup.
+         Traza impl.          fsm.py — _validate_graph()
+
+         FSM-004             9 macroestados de misión obligatorios                                    SHALL       CUBIERTO
+
+         Descripción          El FSM SHALL implementar exactamente los estados: PREFLIGHT, AUTOTAXI, TAKEOFF,
+                              CRUISE, EVENT, LANDING, GO_AROUND, RTB, ABORT.
+         Fuentes              OPS ConOps Flightmind · SDD §3.1
+         Fundamento           Los 9 estados cubren el ciclo de vida completo de misión autónoma incluyendo todas las
+                              contingencias del ConOps.
+         Verificación         grep de estados en YAML. TC-FSM-001..022 visitan todos los estados.
+         Traza impl.          config/mission_fsm.yaml — states section
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                  Page 3
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                      v1.1 · 2026-04-01
+
+
+
+
+         FSM-005             Semántica first-match en evaluación de transiciones                    SHALL        CUBIERTO
+
+         Descripción          Las transiciones de cada estado SHALL evaluarse en el orden exacto de definición del YAML.
+                              La primera con condición verdadera se ejecuta y las restantes no se evalúan.
+         Fuentes              SDD Flightmind §3.2
+         Fundamento           First-match es la base del modelo de prioridad. Sin ella dos condiciones verdaderas simultáneas
+                              producen comportamiento indeterminado.
+         Verificación         TC-FSM-011 — ABORT y EVENT simultáneos: ABORT gana. TC-FSM-012 — EVENT y RTB
+                              simultáneos: EVENT gana.
+         Traza impl.          fsm.py — MissionFsm.step() bucle de transiciones
+
+         FSM-006             Condiciones compuestas: all (AND), any (OR), not (negación)            SHALL        CUBIERTO
+
+         Descripción          El motor SHALL soportar condiciones booleanas compuestas: all (AND lógico), any (OR lógico),
+                              not (negación). Deben poder anidarse a profundidad arbitraria.
+         Fuentes              SDD Flightmind
+         Fundamento           Las condiciones reales requieren expresiones booleanas. Ej: ABORT si abort_command OR
+                              fdir_emergency.
+         Verificación         TC-FSM-008 — condición any verificada. TC-FSM-009 — condición all. TC-FSM-010 — not
+                              anidado.
+         Traza impl.          fsm.py — _eval_cond()
+
+         FSM-007             Acciones on_enter y on_exit por estado                                 SHALL        PARCIAL
+
+         Descripción          El YAML SHALL soportar listas de acciones on_enter y on_exit por estado. El motor SHALL
+                              ejecutarlas al entrar y salir respectivamente.
+         Fuentes              UML 2.5 · SDD Flightmind
+         Fundamento           Las acciones on_enter permiten publicar comandos (p.ej. activar go-around) sin lógica fuera del
+                              FSM.
+         Verificación         Análisis estático del YAML. TC-FSM-015 — on_enter de GO_AROUND publica go_around_cmd.
+         Traza impl.          fsm.py — _execute_actions()
+
+                             Transición autónoma vs. transición de usuario distinguidas en
+         FSM-008                                                                                    SHALL       PENDIENTE
+                             FSMState
+
+         Descripción          FSMState.trigger_type SHALL indicar si la transición fue AUTO (condición) o MANUAL
+                              (comando de operador).
+         Fuentes              OPS · USR
+         Fundamento           El operador y el log deben saber si el FSM transitó autónomamente o por un comando explícito.
+         Verificación         FSMState.msg — trigger_type field.
+         Traza impl.          flightmind_msgs/FSMState.msg
+
+
+
+          Átomos builtin y de contingencia
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                Page 4
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                         v1.1 · 2026-04-01
+
+
+
+
+         FSM-009             Suscripción genérica a /fsm/in/ para átomos booleanos                   SHALL       CUBIERTO
+
+         Descripción          El nodo SHALL suscribirse a cualquier topic /fsm/in/ de tipo std_msgs/Bool cuyos nombres estén
+                              declarados en el YAML bajo la sección atoms.
+         Fuentes              SDD Flightmind · SYS
+         Fundamento           La suscripción dinámica a átomos permite conectar cualquier fuente de señal sin modificar el
+                              nodo FSM.
+         Verificación         M1 completo — mocks publican en /fsm/in/* y FSM responde.
+         Traza impl.          mission_fsm_node.py — atom_subscriptions
+
+         FSM-010             Soporte de átomos numéricos Float64 en /fsm/in/                         SHALL       CUBIERTO
+
+         Descripción          El nodo SHALL suscribirse a topics std_msgs/Float64 para átomos numéricos (quality_flag,
+                              daidalus_alert_level) que se comparan con umbrales.
+         Fuentes              SDD Flightmind
+         Fundamento           Muchas señales relevantes son continuas. Sin soporte numérico el FSM solo puede operar con
+                              señales binarias.
+         Verificación         TC-FSM-003 — quality_flag=0.3 desde /fsm/in/quality_flag (Float64).
+         Traza impl.          mission_fsm_node.py — numeric_atom_subscriptions
+
+         FSM-011             Latencia atom-topic a evaluación < 1 tick (100ms a 10Hz)                SHALL       CUBIERTO
+
+         Descripción          El tiempo entre publicación de un átomo en /fsm/in/* y su uso en la evaluación del siguiente
+                              step() SHALL ser inferior a 1 tick (1/tick_hz segundos).
+         Fuentes              SYS · DO-365
+         Fundamento           Una latencia mayor que 1 tick significa que el FSM evalúa con información desactualizada.
+         Verificación         TC-MW-003 — latencia átomo→step < 100ms a 10Hz.
+         Traza impl.          mission_fsm_node.py — callback inmediato
+
+                             Átomo      builtin:  quality_degraded       =    (quality_flag    <
+         FSM-012                                                                                     SHALL       CUBIERTO
+                             quality_flag_threshold)
+
+         Descripción          El FSM SHALL calcular quality_degraded internamente como quality_flag                           <
+                              quality_flag_threshold (default 0.5). No requiere publicación externa del booleano.
+         Fuentes              SDD Flightmind
+         Fundamento           El umbral es un parámetro del FSM, no una señal externa. El FSM debe ser el árbitro.
+         Verificación         TC-FSM-003 — quality_flag=0.3 → quality_degraded=True → EVENT.
+         Traza impl.          fsm.py — _update_builtins()
+
+         FSM-013             Parámetro quality_flag_threshold configurable (default 0.5)             SHALL       CUBIERTO
+
+         Descripción          El umbral de quality_degraded          SHALL    ser   configurable    como   parámetro   ROS2
+                              quality_flag_threshold, default 0.5.
+         Fuentes              SYS
+         Fundamento           Distintas plataformas y condiciones operacionales pueden requerir umbrales distintos.
+         Verificación         mission_fsm_node.py — declare_parameter quality_flag_threshold.
+         Traza impl.          mission_fsm_node.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                   Page 5
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                     v1.1 · 2026-04-01
+
+
+
+
+                             Átomo builtin: daidalus_escalated = (daidalus_alert_level >=
+         FSM-014                                                                                      SHALL     CUBIERTO
+                             daidalus_alert_amber)
+
+         Descripción          El FSM SHALL calcular daidalus_escalated como daidalus_alert_level >= daidalus_alert_amber
+                              (default 1, escalada a EVENT).
+         Fuentes              DO-365 · SDD Flightmind
+         Fundamento           El umbral de escalada a EVENT es configurable por escenario. Centralizar el cálculo evita
+                              duplicación.
+         Verificación         TC-DAI-002 — daidalus_alert_level=1 → daidalus_escalated=True → EVENT.
+         Traza impl.          fsm.py — _update_builtins()
+
+         FSM-015             Parámetro daidalus_alert_amber configurable (default 1)                  SHALL     CUBIERTO
+
+         Descripción          El umbral de escalada DAIDALUS SHALL ser configurable como parámetro ROS2
+                              daidalus_alert_amber, default 1.
+         Fuentes              SDD Flightmind
+         Fundamento           El nivel de alerta que activa EVENT puede variar según el perfil de operación.
+         Verificación         mission_fsm_node.py — declare_parameter daidalus_alert_amber.
+         Traza impl.          mission_fsm_node.py
+
+                             Átomo builtin:       fdir_emergency    suscrito    directamente    a
+         FSM-016                                                                                      SHALL     CUBIERTO
+                             /fdir/emergency
+
+         Descripción          El FSM SHALL suscribirse a /fdir/emergency (std_msgs/Bool) y usarlo como átomo builtin
+                              fdir_emergency con prioridad máxima.
+         Fuentes              SAF · SDD Flightmind
+         Fundamento           fdir_emergency es una señal de seguridad crítica. Debe llegar al FSM con mínima latencia.
+         Verificación         TC-FDIR-001 — fdir_emergency=True → ABORT desde CRUISE.
+         Traza impl.          mission_fsm_node.py — /fdir/emergency subscriber
+
+         FSM-017             Átomo builtin: approach_not_stabilized                                   SHALL     CUBIERTO
+
+         Descripción          El FSM SHALL soportar el átomo approach_not_stabilized para triggear GO_AROUND desde
+                              LANDING cuando la aproximación no cumple los criterios de estabilización.
+         Fuentes              OPS · SDD Flightmind
+         Fundamento           La aproximación desestabilizada es la causa principal de go-arounds en aviación. Debe ser un
+                              átomo de primera clase.
+         Verificación         TC-E2E-005 — approach_not_stabilized → GO_AROUND.
+         Traza impl.          fsm.py — builtin approach_not_stabilized
+
+         FSM-018             Átomo: abort_command (operador o sistema externo)                        SHALL     CUBIERTO
+
+         Descripción          El átomo abort_command SHALL poder publicarse en /fsm/in/abort_command desde la GCS,
+                              ACAS Xu o cualquier otro sistema de seguridad.
+         Fuentes              SAF · SDD Flightmind
+         Fundamento           El ABORT debe poder activarse desde múltiples fuentes de forma independiente.
+         Verificación         TC-FSM-008 — abort_command → ABORT.
+         Traza impl.          mission_fsm_node.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                               Page 6
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                      v1.1 · 2026-04-01
+
+
+
+
+         FSM-019             Átomo: battery_low (batería por debajo del umbral de aviso)              SHALL        XFAIL
+
+         Descripción          El átomo battery_low SHALL activarse cuando battery_remaining_pct < battery_low_threshold
+                              (default 30%). SHALL triggear transición configurable (default: continuar misión con aviso).
+         Fuentes              SAF · OPS
+         Fundamento           battery_low da margen para planificar RTB antes de situación crítica.
+         Verificación         mission_fsm.yaml — battery_low transitions. ARCH-1.7.
+
+         FSM-020             Átomo: battery_critical (batería por debajo del umbral crítico)          SHALL        XFAIL
+
+         Descripción          El    átomo      battery_critical   SHALL    activarse    cuando    battery_remaining_pct      <
+                              battery_critical_threshold (default 15%). SHALL triggear RTB inmediato.
+         Fuentes              SAF · EU 2019/947
+         Fundamento           battery_critical requiere RTB sin demora para garantizar capacidad de aterrizaje.
+         Verificación         TC-FAULT-005 — XFAIL. ARCH-1.6.
+
+         FSM-021             Átomo: c2_lost (pérdida de enlace de mando y control)                    SHALL        XFAIL
+
+         Descripción          El átomo c2_lost SHALL activarse cuando el nodo C2 detecte pérdida de enlace y lo publique en
+                              /fsm/in/c2_lost.
+         Fuentes              EU 2019/947 Annex III · STANAG 4586
+         Fundamento           EU 2019/947 requiere procedimiento automatizado ante pérdida de C2. El FSM es el árbitro de
+                              la respuesta.
+         Verificación         TC-FAULT-004 — XFAIL. ARCH-1.7.
+
+         FSM-022             Átomo: gcs_lost (pérdida de Ground Control Station)                      SHALL        XFAIL
+
+         Descripción          El átomo gcs_lost SHALL activarse cuando se pierda el enlace con la GCS durante más de
+                              gcs_timeout_s (default 60s).
+         Fuentes              EU 2019/947 · STANAG 4586
+         Fundamento           La pérdida de GCS es distinta a la pérdida del enlace de control. El timeout puede configurarse
+                              diferente.
+         Verificación         ARCH-1.7 — pendiente.
+
+         FSM-023             Átomo: geofence_breach (violación de geofence inminente)                 SHALL       CUBIERTO
+
+         Descripción          El átomo geofence_breach SHALL activarse cuando /polycarp/violation_imminent=True sea
+                              publicado por el airspace_monitor.
+         Fuentes              SAF · EU 2019/947
+         Fundamento           La violación de geofence debe triggear replanning. El FSM debe ser notificado para coordinar la
+                              respuesta.
+         Verificación         TC-FAULT-009 — geofence_breach → EVENT.
+         Traza impl.          mission_fsm_node.py — /polycarp/violation_imminent subscriber
+
+         FSM-024             Átomo: rtb_command (retorno a base)                                      SHALL       CUBIERTO
+
+         Descripción          El átomo rtb_command SHALL poder publicarse desde la GCS, FDIR o sistema de batería en
+                              /fsm/in/rtb_command.
+         Fuentes              OPS · SAF
+         Fundamento           RTB debe poder iniciarse desde múltiples fuentes independientemente.
+         Verificación         TC-FSM-006 — rtb_command → RTB desde CRUISE.
+         Traza impl.          mission_fsm_node.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                Page 7
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                            v1.1 · 2026-04-01
+
+
+
+
+         FSM-025             Átomo: mission_complete (último waypoint alcanzado)                        SHALL        CUBIERTO
+
+         Descripción          El     átomo     mission_complete    SHALL        publicarse   desde          trajectory_gen      en
+                              /fsm/in/mission_complete cuando se alcanza el último waypoint.
+         Fuentes              SDD Flightmind · OPS
+         Fundamento           mission_complete es el trigger normal que inicia la secuencia de aterrizaje al final de la misión.
+         Verificación         TC-E2E-001 — mission_complete → LANDING.
+         Traza impl.          mission_fsm_node.py
+
+
+
+          Transiciones individuales
+
+         FSM-026             Transición PREFLIGHT → AUTOTAXI: preflight_checks_ok                       SHALL        CUBIERTO
+
+         Descripción          La transición PREFLIGHT→AUTOTAXI SHALL ejecutarse cuando preflight_checks_ok=True.
+         Fuentes              OPS ConOps
+         Fundamento           Los checks de pre-vuelo (sensores, batería, calibración) deben completarse antes del taxi
+                              autónomo.
+         Verificación         TC-FSM-001 — PREFLIGHT→AUTOTAXI con preflight_checks_ok.
+         Traza impl.          mission_fsm.yaml
+
+         FSM-027             Transición AUTOTAXI → TAKEOFF: at_runway_threshold                         SHALL        CUBIERTO
+
+         Descripción          La transición AUTOTAXI→TAKEOFF SHALL ejecutarse cuando at_runway_threshold=True
+                              (posición en punto de despegue).
+         Fuentes              OPS ConOps
+         Fundamento           El despegue solo debe iniciarse cuando el vehículo está en la posición correcta.
+         Verificación         TC-FSM-002 — AUTOTAXI→TAKEOFF.
+         Traza impl.          mission_fsm.yaml
+
+         FSM-028             Transición TAKEOFF → CRUISE: airborne_and_stable                           SHALL        CUBIERTO
+
+         Descripción          La transición TAKEOFF→CRUISE SHALL ejecutarse cuando airborne_and_stable=True (altitud
+                              de crucero alcanzada y vehículo estabilizado).
+         Fuentes              OPS ConOps
+         Fundamento           La misión no debe iniciarse hasta que el vehículo esté en condiciones de vuelo estable.
+         Verificación         TC-FSM-003 — TAKEOFF→CRUISE.
+         Traza impl.          mission_fsm.yaml
+
+         FSM-029             Transición CRUISE → EVENT por quality_degraded                             SHALL        CUBIERTO
+
+         Descripción          CRUISE→EVENT SHALL ejecutarse cuando quality_degraded=True y ningun trigger de mayor
+                              prioridad (abort/fdir) esté activo.
+         Fuentes              SDD Flightmind · OPS
+         Fundamento           La degradación de sensores requiere transicionar a modo de contingencia.
+         Verificación         TC-FSM-004 — quality_degraded→EVENT.
+         Traza impl.          mission_fsm.yaml
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                      Page 8
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                       v1.1 · 2026-04-01
+
+
+
+
+         FSM-030             Transición CRUISE → EVENT por daidalus_escalated                          SHALL       CUBIERTO
+
+         Descripción          CRUISE→EVENT SHALL ejecutarse cuando daidalus_escalated=True y ningún trigger de
+                              mayor prioridad esté activo.
+         Fuentes              DO-365 · SDD Flightmind
+         Fundamento           Un conflicto de tráfico detectado requiere entrar en modo de evasión.
+         Verificación         TC-DAI-002 — daidalus_escalated→EVENT.
+         Traza impl.          mission_fsm.yaml
+
+         FSM-031             Transición CRUISE → ABORT por abort_command                               SHALL       CUBIERTO
+
+         Descripción          CRUISE→ABORT SHALL ejecutarse cuando abort_command=True con máxima prioridad,
+                              antes de cualquier otra transición.
+         Fuentes              SAF
+         Fundamento           El abort del operador tiene máxima prioridad sobre cualquier otra acción.
+         Verificación         TC-FSM-007 — abort_command→ABORT desde CRUISE.
+         Traza impl.          mission_fsm.yaml
+
+                             Transición CRUISE → ABORT por fdir_emergency (directa, sin
+         FSM-032                                                                                       SHALL       CUBIERTO
+                             pasar por EVENT)
+
+         Descripción          CRUISE→ABORT SHALL ejecutarse directamente                   cuando    fdir_emergency=True,   sin
+                              transicionar a EVENT como paso intermedio.
+         Fuentes              SAF · EU 2019/947
+         Fundamento           Pasar por EVENT introduce latencia adicional en emergencia. Gap ARCH-1.4 cerrado
+                              2026-04-01.
+         Verificación         TC-FSM-008 — fdir_emergency→ABORT directo. PASS.
+         Traza impl.          mission_fsm.yaml
+
+         FSM-033             Transición CRUISE → RTB por rtb_command                                   SHALL       CUBIERTO
+
+         Descripción          CRUISE→RTB SHALL ejecutarse cuando rtb_command=True y no haya triggers de mayor
+                              prioridad activos.
+         Fuentes              OPS · SAF
+         Fundamento           RTB puede iniciarse por comando del operador, batería baja o fallo FDIR de nivel HIGH.
+         Verificación         TC-FSM-006 — rtb_command→RTB.
+         Traza impl.          mission_fsm.yaml
+
+         FSM-034             Transición CRUISE → LANDING por mission_complete                          SHALL       CUBIERTO
+
+         Descripción          CRUISE→LANDING SHALL ejecutarse cuando mission_complete=True y no haya triggers de
+                              mayor prioridad.
+         Fuentes              OPS
+         Fundamento           La finalización nominal de misión inicia la secuencia de aterrizaje.
+         Verificación         TC-E2E-001 — mission_complete→LANDING.
+         Traza impl.          mission_fsm.yaml
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 9
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                        v1.1 · 2026-04-01
+
+
+
+
+         FSM-035             Transición EVENT → CRUISE: resolución del evento                         SHALL       CUBIERTO
+
+         Descripción          EVENT→CRUISE SHALL ejecutarse cuando tanto quality_degraded como daidalus_escalated
+                              son False (evento resuelto).
+         Fuentes              SDD Flightmind
+         Fundamento           Una vez resuelto el conflicto o recuperada la calidad, el sistema debe volver a modo nominal.
+         Verificación         TC-E2E-006 — resolución DAA→retorno CRUISE.
+         Traza impl.          mission_fsm.yaml
+
+                             Transición EVENT          →     ABORT      por   fdir_emergency     o
+         FSM-036                                                                                      SHALL       CUBIERTO
+                             abort_command
+
+         Descripción          EVENT→ABORT SHALL ejecutarse cuando fdir_emergency=True o abort_command=True, con
+                              la misma prioridad máxima que desde CRUISE.
+         Fuentes              SAF
+         Fundamento           Un ABORT puede ser necesario también durante un evento activo.
+         Verificación         TC-FSM-013 — abort desde EVENT.
+         Traza impl.          mission_fsm.yaml
+
+         FSM-037             Transición EVENT → RTB por rtb_command o battery_critical                SHALL         XFAIL
+
+         Descripción          EVENT→RTB SHALL ejecutarse por rtb_command=True o battery_critical=True.
+         Fuentes              SAF · OPS
+         Fundamento           Durante un evento DAA, la batería crítica o un comando RTB deben interrumpir la evasión.
+         Verificación         TC-FAULT-005 — XFAIL. battery_critical no implementado.
+
+                             Transición     LANDING                 →     GO_AROUND             por
+         FSM-038                                                                                      SHALL       CUBIERTO
+                             approach_not_stabilized
+
+         Descripción          LANDING→GO_AROUND SHALL ejecutarse cuando approach_not_stabilized=True.
+         Fuentes              OPS · EU 2019/947
+         Fundamento           Una aproximación inestable requiere go-around para evitar un aterrizaje duro.
+         Verificación         TC-E2E-005 — approach_not_stabilized→GO_AROUND.
+         Traza impl.          mission_fsm.yaml
+
+                             Transición LANDING          →    ABORT     por   fdir_emergency     o
+         FSM-039                                                                                      SHALL       CUBIERTO
+                             abort_command
+
+         Descripción          LANDING→ABORT SHALL tener la misma prioridad máxima que en cualquier otro estado.
+         Fuentes              SAF
+         Fundamento           Un fallo crítico durante la aproximación final puede requerir ABORT inmediato.
+         Verificación         TC-FSM-014 — abort desde LANDING.
+         Traza impl.          mission_fsm.yaml
+
+         FSM-040             Transición GO_AROUND → LANDING: nuevo intento                            SHALL       CUBIERTO
+
+         Descripción          GO_AROUND→LANDING SHALL ejecutarse cuando la maniobra de go-around se complete y
+                              go_around_count < go_around_max_attempts.
+         Fuentes              OPS
+         Fundamento           El go-around tiene sentido solo si quedan intentos disponibles.
+         Verificación         TC-E2E-005 — go_around completo→LANDING.
+         Traza impl.          mission_fsm.yaml
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 10
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                        v1.1 · 2026-04-01
+
+
+
+
+         FSM-041             Transición GO_AROUND → RTB: máximos intentos alcanzados                  SHALL        PARCIAL
+
+         Descripción          GO_AROUND→RTB           SHALL              ejecutarse        cuando   go_around_count          >=
+                              go_around_max_attempts.
+         Fuentes              OPS · EU 2019/947
+         Fundamento           Si se agotan los intentos de go-around, el vehículo debe buscar alternativa (RTB a otra LZ).
+         Verificación         TC-E2E-005 — go_around_count=max→RTB.
+         Traza impl.          mission_fsm.yaml
+
+         FSM-042             Transición RTB → LANDING: home reached                                   SHALL       CUBIERTO
+
+         Descripción          RTB→LANDING SHALL ejecutarse cuando home_reached=True (posición sobre el punto de
+                              retorno).
+         Fuentes              OPS
+         Fundamento           La llegada al punto de retorno inicia la fase de aterrizaje final.
+         Verificación         TC-E2E-003 — home_reached→LANDING.
+         Traza impl.          mission_fsm.yaml
+
+         FSM-043             Transición RTB → ABORT por fdir_emergency                                SHALL       CUBIERTO
+
+         Descripción          RTB→ABORT SHALL ejecutarse cuando fdir_emergency=True durante el RTB.
+         Fuentes              SAF
+         Fundamento           Un fallo crítico durante el RTB no puede ignorarse aunque el vehículo esté retornando.
+         Verificación         TC-FSM-016 — fdir durante RTB→ABORT.
+         Traza impl.          mission_fsm.yaml
+
+                             ABORT como estado terminal: ningún trigger automático sale
+         FSM-044                                                                                      SHALL       CUBIERTO
+                             de él
+
+         Descripción          Ningún átomo SHALL causar transición fuera de ABORT. Solo reset() o reinicio del nodo.
+         Fuentes              SAF · EU 2019/947
+         Fundamento           ABORT indica fallo grave. La salida automática sin inspección del operador es inaceptable.
+         Verificación         TC-FAULT-011 — publicar cualquier átomo en ABORT no produce transición.
+         Traza impl.          fsm.py — ABORT sin transiciones de salida en YAML
+
+
+
+          Prioridades y contadores
+
+                             Prioridad de evaluación desde CRUISE: ABORT > EVENT > RTB
+         FSM-045                                                                                      SHALL       CUBIERTO
+                             > LANDING
+
+         Descripción          El orden de evaluación de transiciones desde CRUISE SHALL ser: (1)
+                              abort_command|fdir_emergency → ABORT, (2) daidalus_escalated|quality_degraded →
+                              EVENT, (3) rtb_command|battery_critical → RTB, (4) mission_complete → LANDING.
+         Fuentes              SAF · SDD Flightmind
+         Fundamento           La prioridad de seguridad sobre la misión es un principio fundamental. ABORT jamás puede
+                              bloquearse.
+         Verificación         TC-FSM-011 — ABORT y EVENT simultáneos: ABORT gana. TC-FSM-012 — EVENT y RTB:
+                              EVENT gana.
+         Traza impl.          mission_fsm.yaml — orden en transitions CRUISE
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 11
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                    v1.1 · 2026-04-01
+
+
+
+
+         FSM-046             ABORT accesible desde todos los estados de vuelo activo               SHALL       CUBIERTO
+
+         Descripción          Los estados TAKEOFF, CRUISE, EVENT, LANDING, GO_AROUND, RTB SHALL tener
+                              transición a ABORT con prioridad máxima.
+         Fuentes              SAF · EU 2019/947
+         Fundamento           Un ABORT puede ser necesario en cualquier fase de vuelo. No tenerlo en algún estado es un
+                              fallo de seguridad.
+         Verificación         Análisis estático YAML — todos los estados de vuelo contienen transición a ABORT como
+                              primera.
+         Traza impl.          mission_fsm.yaml
+
+                             Contador go_around_count incrementado en cada entrada a
+         FSM-047                                                                                   SHALL       CUBIERTO
+                             GO_AROUND
+
+         Descripción          El FSM SHALL incrementar go_around_count cada vez que se entre en GO_AROUND. Se
+                              resetea con reset().
+         Fuentes              OPS
+         Fundamento           El contador es necesario para la transición GO_AROUND→RTB por máximos intentos.
+         Verificación         TC-E2E-005 — go_around_count incrementado.
+         Traza impl.          fsm.py — go_around_count
+
+                             Parámetro       go_around_max_attempts       configurable     por
+         FSM-048                                                                                   SHALL       CUBIERTO
+                             plataforma
+
+         Descripción          El   límite de   go-arounds   SHALL      ser   configurable       como   parámetro     ROS2
+                              go_around_max_attempts (VTOL default 3, HELI default 5).
+         Fuentes              OPS · SDD Flightmind
+         Fundamento           Las distintas plataformas tienen distintas capacidades de go-around en función de autonomía y
+                              consumo.
+         Verificación         config/mission_fsm_vtol.yaml=3, config/mission_fsm_heli.yaml=5.
+         Traza impl.          config/mission_fsm_vtol.yaml, _heli.yaml
+
+
+
+          Timeouts por estado
+
+                             Campo max_duration_sec en el YAML por cada estado de vuelo
+         FSM-049                                                                                   SHALL         XFAIL
+                             activo
+
+         Descripción          El YAML SHALL soportar el campo max_duration_sec por estado. El motor SHALL monitorizar
+                              el tiempo en el estado y ejecutar on_timeout si se supera.
+         Fuentes              SAF · EU 2019/947
+         Fundamento           Un estado sin timeout puede mantener el vehículo indefinidamente en una fase que consume
+                              energía.
+         Verificación         ARCH-1.2 — timeouts no implementados. TC-TO-001..010 XFAIL.
+         Traza impl.          mission_fsm.yaml — max_duration_sec (pendiente)
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                             Page 12
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                     v1.1 · 2026-04-01
+
+
+
+
+         FSM-050             Timeout en TAKEOFF: on_timeout → ABORT                                  SHALL         XFAIL
+
+         Descripción          El estado TAKEOFF SHALL tener max_duration_sec configurable. Si se supera, SHALL
+                              transicionar a ABORT (configurado en on_timeout del YAML).
+         Fuentes              SAF
+         Fundamento           Un TAKEOFF que no alcanza altitud de crucero en el tiempo esperado puede indicar fallo de
+                              motor.
+         Verificación         TC-TO-001 — XFAIL.
+
+         FSM-051             Timeout en LANDING: on_timeout → GO_AROUND o ABORT                      SHALL         XFAIL
+
+         Descripción          LANDING SHALL tener max_duration_sec. Si se supera y go_around_count < max, SHALL ir a
+                              GO_AROUND; si se han agotado los intentos, SHALL ir a ABORT.
+         Fuentes              SAF · OPS
+         Fundamento           Un LANDING indefinido puede agotar el combustible en fase de aproximación.
+         Verificación         TC-TO-002 — XFAIL.
+
+         FSM-052             Timeout en GO_AROUND: on_timeout → RTB                                  SHALL         XFAIL
+
+         Descripción          GO_AROUND SHALL tener max_duration_sec. Si se supera SHALL ir a RTB.
+         Fuentes              SAF
+         Fundamento           Un go-around sin límite temporal puede consumir todo el combustible en circuito.
+         Verificación         TC-TO-004 — XFAIL. ARCH-1.5.
+
+         FSM-053             Timeout en RTB: on_timeout → ABORT                                      SHALL         XFAIL
+
+         Descripción          RTB SHALL tener max_duration_sec. Si se supera SHALL ir a ABORT.
+         Fuentes              SAF
+         Fundamento           Un RTB infinito ante home_point no alcanzable (GPS drift) debe convertirse en ABORT.
+         Verificación         TC-TO-005 — XFAIL.
+
+         FSM-054             Contador de tiempo en estado reseteado en cada entrada                  SHALL       PENDIENTE
+
+         Descripción          El contador de tiempo SHALL resetearse a cero cada vez que se entre en un estado, incluyendo
+                              reentradas al mismo estado.
+         Fuentes              SDD Flightmind
+         Fundamento           Sin reset en cada entrada, un estado que se visita múltiples veces puede expirar
+                              prematuramente.
+         Verificación         fsm.py — state_entry_time reseteado en _do_transition().
+         Traza impl.          fsm.py — _do_transition()
+
+
+
+          Timing y rendimiento
+
+                             tick_hz configurable como parámetro ROS2 (default 10, rango
+         FSM-055                                                                                     SHALL       CUBIERTO
+                             1-100)
+
+         Descripción          La frecuencia de evaluación SHALL ser configurable vía parámetro tick_hz.
+         Fuentes              SYS
+         Fundamento           Distintas plataformas y fases pueden requerir frecuencias distintas.
+         Verificación         TC-MW-006 — parámetro tick_hz.
+         Traza impl.          mission_fsm_node.py — create_timer(1.0/tick_hz)
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                              Page 13
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                       v1.1 · 2026-04-01
+
+
+
+
+         FSM-056             step() completa en < 1/tick_hz segundos                                  SHALL       CUBIERTO
+
+         Descripción          El método step() SHALL completar en menos de 1/tick_hz para no bloquear el timer.
+         Fuentes              SYS · DO-178C
+         Fundamento           Un step() que tarda más que el período hace que el FSM pierda ciclos.
+         Verificación         TC-PERF-004 — latencia step() < 2ms a 10Hz.
+         Traza impl.          fsm.py — profiling
+
+         FSM-057             step() completa en < 2ms absoluto (hardware de referencia)               SHALL       CUBIERTO
+
+         Descripción          El tiempo de ejecución de step() SHALL ser < 2ms en hardware de referencia (Jetson Orin / Intel
+                              NUC).
+         Fuentes              SYS
+         Fundamento           2ms << 100ms (período a 10Hz). Garantiza que el FSM nunca sea el cuello de botella.
+         Verificación         TC-PERF-004 — medición con timeit.
+         Traza impl.          test/test_m11_performance.py
+
+                             Histéresis en condiciones analógicas: umbral entrada ≠ umbral
+         FSM-058                                                                                      SHALL         XFAIL
+                             salida
+
+         Descripción          Las condiciones basadas en quality_flag y daidalus_alert_level SHALL implementar histéresis: el
+                              umbral de activación es mayor que el de desactivación.
+         Fuentes              SAF
+         Fundamento           Sin histéresis, oscilaciones alrededor del umbral causan chattering CRUISE↔EVENT con
+                              comandos contradictorios.
+         Verificación         TC-FSM-023 — XFAIL. ARCH-1.1.
+
+
+          Publicación ROS2 y campos de FSMState
+
+                             Publicación de FSMState en /fsm/state con QoS RELIABLE +
+         FSM-059                                                                                      SHALL       CUBIERTO
+                             TRANSIENT_LOCAL
+
+         Descripción          El nodo SHALL publicar flightmind_msgs/FSMState                con      reliability=RELIABLE   y
+                              durability=TRANSIENT_LOCAL.
+         Fuentes              SYS · ROS2 QoS
+         Fundamento           RELIABLE garantiza entrega. TRANSIENT_LOCAL garantiza que suscriptores tardíos reciben el
+                              estado actual.
+         Verificación         TC-MW-002 — análisis QoS. TC-MW-004 — suscripción tardía.
+         Traza impl.          mission_fsm_node.py — QoSProfile
+
+                             FSMState publicado           en    cada   transición   de   estado
+         FSM-060                                                                                      SHALL       CUBIERTO
+                             inmediatamente
+
+         Descripción          FSMState SHALL publicarse síncronamente en el mismo ciclo en que ocurre la transición, no en
+                              el siguiente tick.
+         Fuentes              SYS · DO-365
+         Fundamento           Los consumidores de FSMState necesitan información actualizada sin delay de 1 tick.
+         Verificación         fsm.py — _do_transition() publica FSMState inmediatamente.
+         Traza impl.          fsm.py — _do_transition()
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                Page 14
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                        v1.1 · 2026-04-01
+
+
+
+
+         FSM-061             Campo FSMState.state: nombre del estado actual (string)                  SHALL       CUBIERTO
+
+         Descripción          FSMState.state SHALL contener el nombre exacto del estado actual como string.
+         Fuentes              SDD Flightmind
+         Fundamento           El nombre del estado es el campo más básico del mensaje.
+         Verificación         flightmind_msgs/FSMState.msg
+         Traza impl.          flightmind_msgs/FSMState.msg
+
+                             Campo FSMState.active_trigger: átomo que causó la última
+         FSM-062                                                                                      SHALL       CUBIERTO
+                             transición
+
+         Descripción          FSMState.active_trigger SHALL contener el nombre del átomo o condición que causó la última
+                              transición.
+         Fuentes              SDD Flightmind · OPS
+         Fundamento           El trigger activo es esencial para diagnóstico: el operador necesita saber por qué el FSM
+                              transitó.
+         Verificación         flightmind_msgs/FSMState.msg
+         Traza impl.          flightmind_msgs/FSMState.msg
+
+                             Campo   FSMState.event_substate: causa                del     EVENT
+         FSM-063                                                                                      SHALL           XFAIL
+                             (SENSOR_DEGRADED/TRAFFIC_CONFLICT)
+
+         Descripción          FSMState.event_substate SHALL indicar la causa del EVENT: vacío si no está en EVENT,
+                              SENSOR_DEGRADED si fue por quality_degraded, TRAFFIC_CONFLICT si fue por
+                              daidalus_escalated.
+         Fuentes              SYS · OPS
+         Fundamento           La respuesta operacional es distinta según la causa del EVENT.
+         Verificación         TC-FSM-021 — event_substate verificado. XFAIL actualmente. ARCH-1.3.
+         Traza impl.          flightmind_msgs/FSMState.msg
+
+                             Campo FSMState.go_around_count: contador de go-arounds de
+         FSM-064                                                                                      SHALL       CUBIERTO
+                             la misión
+
+         Descripción          FSMState.go_around_count SHALL contener el número de go-arounds desde el inicio.
+         Fuentes              SDD Flightmind
+         Fundamento           El contador permite a la GCS mostrar el estado de los intentos de aterrizaje.
+         Verificación         flightmind_msgs/FSMState.msg
+         Traza impl.          flightmind_msgs/FSMState.msg
+
+                             Campo FSMState.tick_count: número de evaluaciones desde el
+         FSM-065                                                                                      SHALL       CUBIERTO
+                             inicio
+
+         Descripción          FSMState.tick_count SHALL incrementarse en cada step(), independientemente de si hubo
+                              transición.
+         Fuentes              SDD Flightmind · DO-178C
+         Fundamento           El tick_count permite detectar si el FSM ha dejado de evaluar (tick_count no cambia).
+         Verificación         flightmind_msgs/FSMState.msg
+         Traza impl.          flightmind_msgs/FSMState.msg
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                 Page 15
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                       v1.1 · 2026-04-01
+
+
+
+
+                             Campo FSMState.stamp: timestamp ROS2 del momento de
+         FSM-066                                                                                      SHALL       CUBIERTO
+                             publicación
+
+         Descripción          FSMState.stamp SHALL contener el timestamp del momento exacto de publicación.
+         Fuentes              SDD Flightmind · DO-178C
+         Fundamento           El timestamp es necesario para correlacionar eventos en el log post-incidente.
+         Verificación         flightmind_msgs/FSMState.msg
+         Traza impl.          flightmind_msgs/FSMState.msg
+
+                             Topics legacy         /fsm/current_mode      y    /fsm/active_trigger
+         FSM-067                                                                                      SHOULD      CUBIERTO
+                             preservados
+
+         Descripción          Los topics std_msgs/String /fsm/current_mode y /fsm/active_trigger SHALL mantenerse para
+                              compatibilidad con herramientas existentes.
+         Fuentes              SYS · Compatibilidad
+         Fundamento           Los mocks y el testbench existentes usan estos topics. Eliminarlos rompería la cadena de tests.
+         Verificación         TC-MW verifican ambos topics.
+         Traza impl.          mission_fsm_node.py — legacy publishers
+
+
+
+          Ciclo de vida del nodo
+
+         FSM-068             Parámetro initial_state: arrancar en cualquier estado válido             SHALL       CUBIERTO
+
+         Descripción          El estado inicial del FSM SHALL ser configurable como parámetro ROS2 initial_state (default:
+                              PREFLIGHT).
+         Fuentes              SYS · DO-178C
+         Fundamento           Para testing es esencial poder iniciar el FSM en estados arbitrarios.
+         Verificación         TC-MW-006 — initial_state=CRUISE. Mocks M1.
+         Traza impl.          mission_fsm_node.py — declare_parameter initial_state
+
+         FSM-069             Nodo activo y publicando en < 2 segundos desde lanzamiento               SHALL       CUBIERTO
+
+         Descripción          El nodo SHALL publicar el primer FSMState en menos de 2s desde el lanzamiento.
+         Fuentes              SYS · OPS
+         Fundamento           Un arranque lento retrasa la verificación pre-vuelo.
+         Verificación         TC-MW-001 — primer FSMState < 2s. CUBIERTO.
+         Traza impl.          test/test_m8_middleware.py
+
+         FSM-070             reset() devuelve FSM a initial_state limpiando todo el estado            SHALL       CUBIERTO
+
+         Descripción          reset() SHALL: (1) volver a initial_state, (2) limpiar todos los átomos a False/0, (3) resetear
+                              go_around_count y tick_count, (4) publicar FSMState actualizado.
+         Fuentes              SYS
+         Fundamento           Las operaciones multi-misión requieren reinicio limpio entre vuelos.
+         Verificación         TC-FSM-017 — reset() verificado.
+         Traza impl.          fsm.py — MissionFsm.reset()
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                Page 16
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                      v1.1 · 2026-04-01
+
+
+
+
+                             reset() solo accesible cuando el FSM está en ABORT o
+         FSM-071                                                                                   SHALL       PENDIENTE
+                             PREFLIGHT
+
+         Descripción          reset() SHALL lanzar StateError si se llama desde cualquier estado que no sea ABORT o
+                              PREFLIGHT.
+         Fuentes              SAF · EU 2019/947
+         Fundamento           Resetear el FSM durante una misión activa podría interrumpir operaciones en curso.
+         Verificación         fsm.py — reset() guard condition.
+         Traza impl.          fsm.py — MissionFsm.reset()
+
+
+
+          Configuración multi-plataforma
+
+         FSM-072             Fichero YAML específico por plataforma: vtol, heli, male              SHALL           CUBIERTO
+
+         Descripción          SHALL existir al menos: mission_fsm_vtol.yaml, mission_fsm_heli.yaml, mission_fsm_male.yaml
+                              con parámetros diferenciados.
+         Fuentes              OPS · SDD Flightmind
+         Fundamento           VTOL, helicóptero y MALE tienen envolventes distintas que requieren configuraciones
+                              diferentes.
+         Verificación         TC-MW-007 — 3 YAMLs con parámetros distintos.
+         Traza impl.          config/mission_fsm_vtol.yaml, _heli.yaml, _male.yaml
+
+         FSM-073             VTOL: go_around_max_attempts=3, takeoff_timeout_s=60                  SHALL           CUBIERTO
+
+         Descripción          mission_fsm_vtol.yaml SHALL incluir go_around_max_attempts=3 y takeoff_timeout_s=60.
+         Fuentes              OPS VTOL
+         Fundamento           Un VTOL urbano con autonomía limitada no puede permitirse más de 3 intentos de go-around.
+         Verificación         config/mission_fsm_vtol.yaml.
+         Traza impl.          config/mission_fsm_vtol.yaml
+
+         FSM-074             HELI: go_around_max_attempts=5                                        SHALL           CUBIERTO
+
+         Descripción          mission_fsm_heli.yaml SHALL incluir go_around_max_attempts=5.
+         Fuentes              OPS HELI
+         Fundamento           Un helicóptero tiene mayor autonomía y capacidad de hover que permite más intentos.
+         Verificación         config/mission_fsm_heli.yaml.
+         Traza impl.          config/mission_fsm_heli.yaml
+
+         FSM-075             MALE: c2_timeout_sec=30, bvlos_mode=true                              SHALL           CUBIERTO
+
+         Descripción          mission_fsm_male.yaml SHALL incluir c2_timeout_sec=30 y bvlos_mode=true.
+         Fuentes              EU 2019/947 · STANAG 4671
+         Fundamento           Las operaciones MALE BVLOS de largo alcance requieren procedimientos de C2 distintos.
+         Verificación         config/mission_fsm_male.yaml.
+         Traza impl.          config/mission_fsm_male.yaml
+
+
+
+          Logging y observabilidad
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                               Page 17
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                       v1.1 · 2026-04-01
+
+
+
+
+                             Log de cada transición con timestamp, estado origen, destino y
+         FSM-076                                                                                        SHALL      CUBIERTO
+                             trigger
+
+         Descripción          El FSM SHALL registrar en ROS2 log (INFO) cada transición con: timestamp, from_state,
+                              to_state, trigger.
+         Fuentes              DO-178C · EU 2019/947
+         Fundamento           El log de transiciones es el registro primario para reconstrucción post-incidente.
+         Verificación         fsm.py — _do_transition() logging.
+         Traza impl.          fsm.py — logging.info en _do_transition()
+
+         FSM-077             Log de cada cambio de valor de átomo (DEBUG level)                        SHOULD      PARCIAL
+
+         Descripción          El FSM SHALL registrar a nivel DEBUG cada vez que un átomo cambia de valor.
+         Fuentes              DO-178C
+         Fundamento           El log de átomos permite reconstruir qué señales causaron qué transiciones.
+         Verificación         fsm.py — atom setter con logging.debug.
+         Traza impl.          fsm.py
+
+         FSM-078             to_dict() serializa estado completo a JSON                                 SHALL      CUBIERTO
+
+         Descripción          fsm.to_dict() SHALL retornar un dict JSON-serializable con: state, atoms (dict), active_trigger,
+                              event_substate, go_around_count, tick_count.
+         Fuentes              SYS · DO-178C
+         Fundamento           La serialización es necesaria para logging estructurado y reconstrucción de incidentes.
+         Verificación         TC-FSM-022 — json.dumps(fsm.to_dict()) sin excepción.
+         Traza impl.          fsm.py — MissionFsm.to_dict()
+
+         FSM-079             to_dict() incluye todos los átomos con sus valores actuales                SHALL      CUBIERTO
+
+         Descripción          to_dict()["atoms"] SHALL contener un dict con todos los átomos declarados y sus valores
+                              actuales.
+         Fuentes              SYS
+         Fundamento           Los valores de átomos en el momento del incidente son necesarios para el diagnóstico.
+         Verificación         TC-FSM-022 — atoms en to_dict().
+         Traza impl.          fsm.py
+
+
+
+          Verificación y cobertura
+
+         FSM-080             100% branch coverage en fsm.py                                             SHALL      CUBIERTO
+
+         Descripción          El módulo fsm.py SHALL alcanzar 100% de branch coverage.
+         Fuentes              DO-178C DAL-C
+         Fundamento           DO-178C DAL-C requiere cobertura de decisión completa.
+         Verificación         pytest --cov: 113 stmts, 60 branches, 0 miss = 100%.
+         Traza impl.          src/mission_fsm/test/
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                Page 18
+FLIGHTMIND — SUB-FSM: MISSION FSM                                                                                   v1.1 · 2026-04-01
+
+
+
+
+         FSM-081             Test individual por cada transición del YAML                           SHALL       CUBIERTO
+
+         Descripción          SHALL existir al menos un TC que verifique cada transición definida en el YAML.
+         Fuentes              DO-178C §6.4 · ARP4754A §6
+         Fundamento           Una transición no testada puede contener bugs que solo se manifiestan en esa combinación.
+         Verificación         TC-FSM-001..022 — cobertura de transiciones. VV_MATRIX.md.
+         Traza impl.          docs/vnv/VV_MATRIX.md
+
+                             Test de prioridad con triggers simultáneos para CRUISE,
+         FSM-082                                                                                    SHALL       CUBIERTO
+                             EVENT, RTB
+
+         Descripción          SHALL existir TCs que inyecten dos triggers simultáneos en cada estado crítico.
+         Fuentes              DO-178C §6.4
+         Fundamento           Los bugs de prioridad solo se manifiestan con triggers simultáneos.
+         Verificación         TC-FSM-011, TC-FSM-012.
+         Traza impl.          test/test_m1_fsm_transitions.py
+
+         FSM-083             XFAIL documentados con referencia ARCH-X.X                             SHALL       CUBIERTO
+
+         Descripción          Cada test XFAIL SHALL referenciar el gap ARCH-X.X en su docstring.
+         Fuentes              DO-178C §11.14
+         Fundamento           Sin referencia, un XFAIL es un fallo sin justificación.
+         Verificación         XFAIL_INDEX.md.
+         Traza impl.          src/mission_fsm/docs/vnv/XFAIL_INDEX.md
+
+         FSM-084             VV_MATRIX.md con trazabilidad SR → TC completa                         SHALL       CUBIERTO
+
+         Descripción          El plan V&V; SHALL incluir una matriz SR→TC donde cada requisito tiene al menos un TC.
+         Fuentes              DO-178C §11.13
+         Fundamento           Sin trazabilidad no se puede demostrar cobertura de requisitos.
+         Verificación         docs/vnv/VV_MATRIX.md.
+         Traza impl.          src/mission_fsm/docs/vnv/VV_MATRIX.md
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                            Page 19
+

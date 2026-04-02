@@ -1,0 +1,456 @@
+                       SUB-FDIR
+                                    FDIR
+Fault Detection, Isolation and Recovery — sensores, severidades, watchdog
+
+                       36 requisitos · v1.1 · 2026-04-01
+                     UpNext — Flightmind Autonomy Stack
+             ARP4754A §6 · DO-178C · EU 2019/947 · STANAG 4671
+
+
+                   CONFIDENTIAL — UpNext / Airbus UpNext
+FLIGHTMIND — SUB-FDIR: FDIR                                                                      v1.1 · 2026-04-01
+
+
+
+
+ Resumen
+                                      Estado                        N    Prioridad   N
+
+                                      CUBIERTO                      6    SHALL       34
+
+                                      PARCIAL                       6    SHOULD      2
+
+                                      XFAIL                         2    MAY         0
+
+                                      PENDIENTE                     22
+
+                                      N/A-DEMO                      0
+
+                                      TOTAL                         36
+
+
+
+ Índice
+                 #     Sección                                                            Req.
+
+                 1     Detección de fallos por sensor                                     13
+
+                 2     Clasificación y tabla de severidades                                3
+
+                 3     Políticas de respuesta por severidad                                6
+
+                 4     Reset y persistencia de emergencias                                 4
+
+                 5     Publicación y sistema watchdog                                      5
+
+                 6     Aislamiento, logging y verificación                                 5
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                          Page 2
+FLIGHTMIND — SUB-FDIR: FDIR                                                                                           v1.1 · 2026-04-01
+
+
+
+
+          Detección de fallos por sensor
+
+         FDIR-001            Monitorización de IMU: acelerómetro y giróscopo                            SHALL     PARCIAL
+
+         Descripción          El FDIR SHALL monitorizar los datos del IMU (acelerómetro 3-axis, giróscopo 3-axis) con
+                              detección por timeout y rango físico.
+         Fuentes              ARP4754A §6.2 · DO-178C
+         Fundamento           El IMU es el sensor más crítico. Su fallo sin detección puede causar pérdida de control
+                              inmediata.
+         Verificación         fdir_node.py — imu_monitor.
+         Traza impl.          src/fdir/fdir/fdir_node.py
+
+         FDIR-002            Detección de fallo de IMU por timeout (timeout default 100ms)              SHALL     PARCIAL
+
+         Descripción          Si no se recibe mensaje IMU durante imu_timeout_ms (default 100ms), SHALL generarse fault
+                              event CRITICAL.
+         Fuentes              ARP4754A §6 · SAF
+         Fundamento           El IMU publica a alta frecuencia. 100ms de silencio indica fallo grave.
+         Verificación         fdir_node.py — imu_timeout_monitor.
+         Traza impl.          fdir_node.py
+
+         FDIR-003            Detección de fallo de IMU por rango: aceleración > 10g o < -10g            SHALL     PARCIAL
+
+         Descripción          Una aceleración fuera del rango [-98m/s², +98m/s²] en cualquier eje SHALL generar fault
+                              CRITICAL.
+         Fuentes              ARP4754A §6.3
+         Fundamento           Valores fuera del rango físico indican fallo del sensor o corrupcción de datos.
+         Verificación         fdir_node.py — imu_range_check.
+         Traza impl.          fdir_node.py
+
+         FDIR-004            Monitorización de GPS/GNSS: posición y calidad                             SHALL     PARCIAL
+
+         Descripción          El FDIR SHALL monitorizar el GPS por timeout (default 500ms) y calidad (PDOP, número de
+                              satélites).
+         Fuentes              ARP4754A §6.2
+         Fundamento           La pérdida de GPS sin detección puede hacer que el UAS vuele con posición desconocida.
+         Verificación         fdir_node.py — gps_monitor.
+         Traza impl.          fdir_node.py
+
+                             Detección de GPS degradado: PDOP > pdop_threshold (default
+         FDIR-005                                                                                       SHALL   PENDIENTE
+                             4.0)
+
+         Descripción          Si el PDOP supera pdop_threshold SHALL generarse fault MEDIUM.
+         Fuentes              ARP4754A
+         Fundamento           Un PDOP elevado indica baja calidad de la solución GNSS, sin llegar a fallo completo.
+         Verificación         fdir_node.py — pdop_check.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                               Page 3
+FLIGHTMIND — SUB-FDIR: FDIR                                                                                                  v1.1 · 2026-04-01
+
+
+
+
+                             Detección de pérdida de GPS: < min_satellites (default 6)
+         FDIR-006                                                                                        SHALL        PENDIENTE
+                             satélites
+
+         Descripción          Si el número de satélites tracked cae por debajo de min_satellites, SHALL generarse fault HIGH.
+         Fuentes              ARP4754A
+         Fundamento           Con menos de 6 satélites la geometría GNSS es insuficiente para precisión de vuelo.
+         Verificación         fdir_node.py — satellite_count_check.
+
+         FDIR-007            Monitorización de barómetro                                                 SHALL        PENDIENTE
+
+         Descripción          El FDIR SHALL monitorizar el barómetro por timeout (default 200ms) y rango (altitud entre
+                              -500m y 10000m).
+         Fuentes              ARP4754A §6.2
+         Fundamento           El barómetro es la referencia de altitud. Su fallo afecta directamente al control de altura.
+         Verificación         fdir_node.py — baro_monitor.
+
+         FDIR-008            Monitorización de magnetómetro (heading)                                    SHALL        PENDIENTE
+
+         Descripción          El FDIR SHALL monitorizar el magnetómetro por timeout y coherencia con el giróscopo.
+         Fuentes              ARP4754A §6.2
+         Fundamento           El magnetómetro es la referencia de heading absoluto. Su fallo degrada la estimación de
+                              orientación.
+         Verificación         fdir_node.py — mag_monitor.
+
+         FDIR-009            Monitorización de LiDAR / sensor de obstáculos (si presente)               SHOULD        PENDIENTE
+
+         Descripción          Si la plataforma incluye LiDAR, SHALL monitorizarse por timeout (default 500ms).
+         Fuentes              ARP4754A
+         Fundamento           El LiDAR es necesario para evitación de obstáculos. Su fallo silencioso es peligroso.
+         Verificación         fdir_node.py — lidar_monitor (condicional por plataforma).
+
+         FDIR-010            Monitorización de telemetría de motores (RPM)                               SHALL        PENDIENTE
+
+         Descripción          Si la plataforma expone telemetría ESC, SHALL monitorizarse RPM por motor con umbral >
+                              110% o < 50% de nominal.
+         Fuentes              ARP4754A §6 · STANAG 4671
+         Fundamento           El fallo de motor es el evento más crítico. Debe detectarse antes de pérdida de lift.
+         Verificación         fdir_node.py — esc_telemetry_monitor.
+
+         FDIR-011            Monitorización del enlace RC/C2                                             SHALL        PENDIENTE
+
+         Descripción          El FDIR SHALL monitorizar el enlace RC/C2 por timeout (default 2s) y publicar c2_link_lost.
+         Fuentes              EU 2019/947 · STANAG 4586
+         Fundamento           La pérdida de C2 requiere activar el procedimiento de contingencia automático.
+         Verificación         fdir_node.py — c2_timeout_monitor.
+
+                             Consistencia entre fuentes             redundantes:   desacuerdo      >
+         FDIR-012                                                                                        SHALL        PENDIENTE
+                             threshold → fault HIGH
+
+         Descripción          Si dos fuentes del mismo tipo (p.ej. dos IMU, dos GPS) difieren en más de
+                              consistency_threshold, SHALL generarse fault HIGH.
+         Fuentes              ARP4754A §6.4
+         Fundamento           La redundancia solo es útil si hay un árbitro que detecta el desacuerdo.
+         Verificación         fdir_node.py — consistency_check (para plataformas con sensores redundantes).
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                      Page 4
+FLIGHTMIND — SUB-FDIR: FDIR                                                                                                  v1.1 · 2026-04-01
+
+
+
+
+         FDIR-013            Detección de vibración anómala via FFT del IMU (SHOULD)                    SHOULD       PENDIENTE
+
+         Descripción          El FDIR SHOULD analizar el espectro de frecuencias del acelerómetro para detectar vibraciones
+                              asociadas a desequilibrio de rotor.
+         Fuentes              ARP4754A
+         Fundamento           El desequilibrio de rotor puede no ser detectable por rango pero sí por espectro.
+         Verificación         fdir_node.py — FFT vibration analysis. Pendiente HIL.
+
+
+          Clasificación y tabla de severidades
+
+         FDIR-014            4 niveles de severidad: LOW / MEDIUM / HIGH / CRITICAL                      SHALL          XFAIL
+
+         Descripción          Cada fault event SHALL clasificarse en: LOW (log+telemetría), MEDIUM (degradar quality_flag),
+                              HIGH (activar RTB), CRITICAL (activar ABORT).
+         Fuentes              ARP4754A §5.2 · FHA Flightmind
+         Fundamento           La respuesta proporcional minimiza el impacto en misión para fallos menores, garantizando
+                              seguridad para críticos.
+         Verificación         TC-FDIR-010 — XFAIL. Tabla de severidad pendiente.
+         Traza impl.          fdir_node.py — severity_table
+
+         FDIR-015            Tabla de severidades sensor→nivel definida en YAML                          SHALL       PENDIENTE
+
+         Descripción          La asignación de sensor_id → severity SHALL estar en un YAML externo, no hardcodeada en
+                              Python.
+         Fuentes              ARP4754A · DO-178C
+         Fundamento           La severidad puede variar por plataforma. La parametrización evita recompilación.
+         Verificación         config/fdir_severity_table.yaml.
+
+         FDIR-016            Tabla de severidades cargada y validada al arranque                         SHALL       PENDIENTE
+
+         Descripción          El nodo SHALL cargar fdir_severity_table.yaml al arranque y validar que todos los sensores
+                              monitorizados tienen severidad asignada.
+         Fuentes              DO-178C
+         Fundamento           Un sensor sin severidad asignada sería monitorizado pero sin respuesta definida.
+         Verificación         fdir_node.py — _load_severity_table().
+
+
+          Políticas de respuesta por severidad
+
+                             Política LOW: log INFO y publicar en active_faults, no
+         FDIR-017                                                                                        SHALL       PENDIENTE
+                             interrumpir misión
+
+         Descripción          Fallos LOW SHALL loguearse y añadirse a active_faults sin afectar quality_flag ni activar
+                              contingencias.
+         Fuentes              ARP4754A · OPS
+         Fundamento           Interrumpir la misión por fallo no crítico reduce disponibilidad sin beneficio de seguridad.
+         Verificación         fdir_node.py — LOW policy.
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                      Page 5
+FLIGHTMIND — SUB-FDIR: FDIR                                                                                               v1.1 · 2026-04-01
+
+
+
+
+                             Política MEDIUM:        reducir    quality_flag   según    tabla   de
+         FDIR-018                                                                                     SHALL        PENDIENTE
+                             degradación
+
+         Descripción          Fallos MEDIUM SHALL reducir quality_flag según la tabla: magnetómetro → 0.7, GPS PDOP
+                              alto → 0.6, barómetro degradado → 0.5.
+         Fuentes              SAF · SDD Flightmind
+         Fundamento           La degradación gradual de quality_flag activa la respuesta graduada del FSM (EVENT a
+                              EVENT+RTB).
+         Verificación         fdir_node.py — MEDIUM policy → quality_flag.
+
+                             Política     HIGH:         publicar     rtb_command=True           en
+         FDIR-019                                                                                     SHALL         PARCIAL
+                             /fsm/in/rtb_command
+
+         Descripción          Fallos HIGH (GPS perdido, motor degradado) SHALL publicar rtb_command=True.
+         Fuentes              SAF
+         Fundamento           Un fallo HIGH no justifica continuar la misión. RTB minimiza exposición al riesgo.
+         Verificación         fdir_node.py — HIGH policy → /fsm/in/rtb_command.
+
+                             Política   CRITICAL:    publicar        fdir_emergency=True        en
+         FDIR-020                                                                                     SHALL        CUBIERTO
+                             /fdir/emergency inmediatamente
+
+         Descripción          Fallos CRITICAL (IMU total, doble fallo) SHALL publicar fdir_emergency=True síncronamente,
+                              sin esperar el siguiente ciclo de monitorización.
+         Fuentes              SAF · ARP4754A
+         Fundamento           Un fallo CRITICAL requiere ABORT inmediato. La latencia de 1 ciclo puede ser crítica.
+         Verificación         TC-FDIR-001 — fdir_emergency → ABORT. CUBIERTO.
+         Traza impl.          fdir_node.py — CRITICAL → /fdir/emergency
+
+         FDIR-021            Tiempo de detección a publicación < 500ms P99                            SHALL        CUBIERTO
+
+         Descripción          El tiempo entre ocurrencia del fallo y publicación del fault event SHALL ser < 500ms P99.
+         Fuentes              DO-365 §7 · SAF
+         Fundamento           500ms es el tiempo máximo antes de que un fallo de sensor resulte en maniobra incorrecta.
+         Verificación         TC-FDIR-011 — CUBIERTO.
+         Traza impl.          test/test_m6_fdir.py — TC-FDIR-011
+
+         FDIR-022            Tiempo de detección a publicación CRITICAL < 100ms P99                   SHALL        PENDIENTE
+
+         Descripción          Para fallos CRITICAL, el tiempo SHALL ser < 100ms P99.
+         Fuentes              SAF
+         Fundamento           Un fallo CRITICAL requiere respuesta más rápida que uno HIGH.
+         Verificación         TC-FDIR-012 — latencia CRITICAL.
+
+
+          Reset y persistencia de emergencias
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                   Page 6
+FLIGHTMIND — SUB-FDIR: FDIR                                                                                                v1.1 · 2026-04-01
+
+
+
+
+         FDIR-023            fdir_emergency requiere reset explícito: no reseteo automático              SHALL      CUBIERTO
+
+         Descripción          fdir_emergency  SHALL      permanecer         activo        hasta   que   el   operador   publique
+                              reset_emergency=True en /fdir/reset.
+         Fuentes              SAF · EU 2019/947
+         Fundamento           Un reset automático puede enmascarar un fallo persistente.
+         Verificación         TC-FDIR-009 — CUBIERTO.
+         Traza impl.          fdir_node.py
+
+                             reset_emergency       requiere    que   FSM   esté      en    ABORT    o
+         FDIR-024                                                                                        SHALL      PENDIENTE
+                             PREFLIGHT
+
+         Descripción          El comando reset_emergency SHALL rechazarse con error si el FSM no está en ABORT o
+                              PREFLIGHT.
+         Fuentes              SAF
+         Fundamento           Resetear fdir_emergency durante una misión activa anularía la protección de seguridad.
+         Verificación         fdir_node.py — reset_guard.
+
+                             active_faults se limpia en reset_emergency si ya no hay fallos
+         FDIR-025                                                                                        SHALL      PENDIENTE
+                             activos
+
+         Descripción          Al recibir reset_emergency, el nodo SHALL verificar si los fallos originales siguen activos. Si no,
+                              limpiar active_faults.
+         Fuentes              SAF
+         Fundamento           No limpiar active_faults después del reset daría falsa información al operador.
+         Verificación         fdir_node.py — reset_emergency handler.
+
+         FDIR-026            Sin false positives en condiciones nominales durante 30s                    SHALL      CUBIERTO
+
+         Descripción          El FDIR NO SHALL generar ningún fault event durante 30s de operación nominal.
+         Fuentes              SAF · DO-178C
+         Fundamento           Los false positives degradan la confianza del operador y causan interrupciones innecesarias.
+         Verificación         TC-FDIR-006 — CUBIERTO.
+         Traza impl.          test/test_m6_fdir.py
+
+
+
+          Publicación y sistema watchdog
+
+                             Publicación de active_faults como JSON en /fdir/active_fault a 1
+         FDIR-027                                                                                        SHALL      CUBIERTO
+                             Hz
+
+         Descripción          El topic /fdir/active_fault (std_msgs/String) SHALL publicar un JSON array con todos los fallos
+                              activos: {subsystem, fault_name, severity, timestamp_s}.
+         Fuentes              SYS · USR
+         Fundamento           La visibilidad de todos los fallos activos permite diagnóstico remoto.
+         Verificación         TC-FDIR-003, TC-FDIR-005 — CUBIERTOS.
+         Traza impl.          fdir_node.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                    Page 7
+FLIGHTMIND — SUB-FDIR: FDIR                                                                                               v1.1 · 2026-04-01
+
+
+
+
+         FDIR-028            Publicación de fdir_summary en /fdir/summary a 10 Hz                        SHALL      PENDIENTE
+
+         Descripción          /fdir/summary      SHALL       publicar:     highest_severity,      fault_count,   fdir_emergency,
+                              quality_flag_override.
+         Fuentes              SYS · USR
+         Fundamento           El resumen de estado FDIR es necesario para la GCS y el testbench.
+         Verificación         fdir_node.py — /fdir/summary publisher.
+
+         FDIR-029            Watchdog externo: monitorizar heartbeats de FSM, DAA, Nav                   SHALL         XFAIL
+
+         Descripción          SHALL existir un nodo watchdog que monitorice los heartbeats de FSM, DAIDALUS y Nav
+                              bridge. Un nodo sin heartbeat durante watchdog_timeout_s → safe_mode.
+         Fuentes              SAF · ARP4754A §6
+         Fundamento           Un nodo muerto silenciosamente es más peligroso que uno con error explícito.
+         Verificación         TC-FDIR-007, TC-FDIR-008 — XFAIL. ARCH-FDIR.
+
+         FDIR-030            Heartbeat publicado por nodos críticos en /*/heartbeat cada 1s              SHALL      PENDIENTE
+
+         Descripción          Los nodos FSM, DAIDALUS y Nav bridge SHALL publicar std_msgs/Header en /*/heartbeat al
+                              menos cada 1s.
+         Fuentes              SAF · SYS
+         Fundamento           Sin heartbeats el watchdog no puede distinguir nodo silencioso de nodo muerto.
+         Verificación         ARCH-FDIR — pendiente.
+
+                             safe_mode: safe_mode=True              en   /fdir/safe_mode       cuando
+         FDIR-031                                                                                        SHALL      PENDIENTE
+                             watchdog detecta nodo muerto
+
+         Descripción          Cuando el watchdog detecte un nodo crítico muerto SHALL publicar safe_mode=True para que
+                              el FSM active procedimiento de contingencia.
+         Fuentes              SAF · ARP4754A
+         Fundamento           safe_mode es la señal de seguridad del watchdog al FSM.
+         Verificación         /fdir/safe_mode publisher. Pendiente.
+
+
+          Aislamiento, logging y verificación
+
+                             Validación de rango en mensajes de sensores antes de
+         FDIR-032                                                                                        SHALL      PENDIENTE
+                             distribuirlos
+
+         Descripción          El FDIR SHALL verificar que los valores de cada topic de sensor están dentro de rangos
+                              físicamente plausibles antes de forwarding.
+         Fuentes              ARP4754A §6.5
+         Fundamento           Datos corruptos pueden propagarse a otros nodos causando fallos en cascada.
+         Verificación         fdir_node.py — range validators.
+
+                             Log de cada fault event con timestamp, sensor, severity,
+         FDIR-033                                                                                        SHALL      PENDIENTE
+                             FSM_state
+
+         Descripción          Cada fault event SHALL registrarse con: timestamp, sensor_id, fault_type, severity, fsm_state en
+                              ese momento.
+         Fuentes              DO-178C · EU 2019/947
+         Fundamento           La reconstrucción post-incidente requiere el contexto completo del momento del fallo.
+         Verificación         fdir_node.py — _log_fault_event().
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                   Page 8
+FLIGHTMIND — SUB-FDIR: FDIR                                                                                                     v1.1 · 2026-04-01
+
+
+
+
+                             Log de recovery: cuando un fallo se resuelve, registrar tiempo
+         FDIR-034                                                                                        SHALL        PENDIENTE
+                             activo
+
+         Descripción          Al resolverse un fallo (condición ya no activa), SHALL registrarse la duración total del fallo.
+         Fuentes              DO-178C
+         Fundamento           La duración del fallo es información relevante para análisis de mantenimiento.
+         Verificación         fdir_node.py — fault_duration logging.
+
+                             TC por cada sensor monitorizado con inyección de fallo
+         FDIR-035                                                                                        SHALL         PARCIAL
+                             sintético
+
+         Descripción          SHALL existir al menos un TC por sensor que inyecte el tipo de fallo correspondiente (timeout,
+                              rango, consistencia).
+         Fuentes              DO-178C §6.4
+         Fundamento           Cada modo de detección debe verificarse.
+         Verificación         TC-FDIR-001..004 — parcial.
+         Traza impl.          test/test_m6_fdir.py
+
+         FDIR-036            TC de no false positive (30s nominal)                                       SHALL        CUBIERTO
+
+         Descripción          TC-FDIR-006 SHALL verificar 30s sin fault events en condiciones nominales.
+         Fuentes              DO-178C · SAF
+         Fundamento           Los false positives son tan problemáticos como los fallos no detectados.
+         Verificación         TC-FDIR-006 — CUBIERTO.
+         Traza impl.          test/test_m6_fdir.py
+
+
+
+
+CONFIDENTIAL — UpNext / Airbus UpNext — Flightmind Autonomy Stack                                                                         Page 9
+
