@@ -24,7 +24,11 @@ pytestmark = pytest.mark.tight_dwell
 
 
 def _dwell_spin(h: SimpleNamespace, iterations: int = 120) -> None:
-    """Avanza tiempo real (morada FSM por reloj) y drena el ejecutor."""
+    """Avanza tiempo real (morada FSM por reloj) y drena el ejecutor.
+
+    Cada iteración ~0.28 s de reloj; con ``tight_dwell`` PREFLIGHT tiene
+    ``max_duration_sec`` 5.0 — iteraciones altas disparan timeout antes de lo esperado.
+    """
     for _ in range(iterations):
         time.sleep(0.045)
         for _ in range(12):
@@ -45,7 +49,8 @@ def test_m2_yaml_states_expose_max_duration_for_flight_states() -> None:
 @pytest.mark.slow
 def test_m2_preflight_stable_under_short_dwell(mission_fsm_sil_harness: SimpleNamespace) -> None:
     """Por debajo del umbral de morada, PREFLIGHT permanece estable."""
-    _dwell_spin(mission_fsm_sil_harness, 40)
+    # < ~5 s de reloj total (ver docstring de _dwell_spin); 40 iteraciones superaban 5 s y forzaban timeout→RTB.
+    _dwell_spin(mission_fsm_sil_harness, 14)
     assert mission_fsm_sil_harness.fsm._fsm.state == "PREFLIGHT"  # noqa: SLF001
 
 
